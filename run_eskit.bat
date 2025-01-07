@@ -10,7 +10,7 @@ echo  Laravel X Npm X Composer Easy Kit Menu
 echo ================================
 echo.
 echo 0. Exit
-echo 1. NPM Menu
+echo 1. Npm Menu
 echo 2. Laravel Menu
 echo 3. Composer Menu
 echo.
