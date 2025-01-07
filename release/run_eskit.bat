@@ -1,12 +1,12 @@
 @echo off
 color 0A
-title Laravel X Npm X Composer Easy Kit Menu
+title EasyKit Menu
 
 :Menu
 cls
 echo.
 echo ================================
-echo  Laravel X Npm X Composer Easy Kit Menu
+echo  EasyKit Menu
 echo ================================
 echo.
 echo 0. Exit
