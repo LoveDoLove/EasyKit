@@ -45,7 +45,3 @@ This project is licensed under the MIT License.
 ## Contact
 
 For any questions or suggestions, feel free to open an issue or contact the repository owner.
-
-### About Description
-
-"EasyKit is a collection of batch scripts designed to simplify various tasks on Windows systems, providing automation and ease of use for system maintenance and repetitive tasks. Feel free to contribute and help make EasyKit more powerful."
