@@ -27,17 +27,17 @@ exit /b
 :Install
 call :CheckSoftwareMethod composer
 call composer install -W
-exit /b
+goto Menu
 
 :UpdatePackages
 call :CheckSoftwareMethod composer
 call composer update -W
-exit /b
+goto Menu
 
 :RegenerateAutoload
 call :CheckSoftwareMethod composer
 call composer dump-autoload
-exit /b
+goto Menu
 
 @REM Method
 :CheckSoftwareMethod

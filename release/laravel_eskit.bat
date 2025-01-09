@@ -38,27 +38,27 @@ call :UpdateLaravelPackages
 call copy .env.example .env
 call php artisan key:generate
 call php artisan migrate
-exit /b
+goto Menu
 
 :Install
 call :CheckSoftwareMethod composer
 call composer install -W
-exit /b
+goto Menu
 
 :UpdateLaravelPackages
 call :CheckSoftwareMethod composer
 call composer update -W
-exit /b
+goto Menu
 
 :RegenerateComposerAutoload
 call :CheckSoftwareMethod composer
 call composer dump-autoload
-exit /b
+goto Menu
 
 :BuildToProduction
 call :CheckSoftwareMethod npm
 call npm run build
-exit /b
+goto Menu
 
 @REM Dangerous
 :ResetAllCache
@@ -69,7 +69,7 @@ call php artisan route:clear
 call php artisan view:clear
 call php artisan clear-compiled
 call php artisan optimize
-exit /b
+goto Menu
 
 @REM Method
 :CheckSoftwareMethod

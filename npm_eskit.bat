@@ -31,25 +31,25 @@ exit /b
 :InstallNpmPackages
 call :CheckSoftwareMethod npm
 call npm install
-exit /b
+goto Menu
 
 :UpdateNpmPackages
 call :CheckSoftwareMethod npm
 call :CheckSoftwareMethod ncu
 call ncu -u
 call npm install
-exit /b
+goto Menu
 
 :BuildToProduction
 call :CheckSoftwareMethod npm
 call npm run build
-exit /b
+goto Menu
 
 @REM Dangerous
 :ResetAllCache
 call :CheckSoftwareMethod npm
 call npm cache clean --force
-exit /b
+goto Menu
 
 @REM Method
 :CheckSoftwareMethod
