@@ -21,23 +21,20 @@ if %choice%==2 goto UpdatePackages
 if %choice%==3 goto RegenerateAutoload
 goto Menu
 
-:Exit
-exit /b
-
 :Install
 call :CheckSoftwareMethod composer
 call composer install -W
-goto Menu
+exit /b
 
 :UpdatePackages
 call :CheckSoftwareMethod composer
 call composer update -W
-goto Menu
+exit /b
 
 :RegenerateAutoload
 call :CheckSoftwareMethod composer
 call composer dump-autoload
-goto Menu
+exit /b
 
 @REM Method
 :CheckSoftwareMethod
