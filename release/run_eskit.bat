@@ -20,6 +20,3 @@ if %choice%==1 call npm_eskit.bat
 if %choice%==2 call laravel_eskit.bat
 if %choice%==3 call composer_eskit.bat
 goto Menu
-
-:Exit
-exit

@@ -25,31 +25,28 @@ if %choice%==3 goto BuildToProduction
 if %choice%==44 goto ResetAllCache
 goto Menu
 
-:Exit
-exit /b
-
 :InstallNpmPackages
 call :CheckSoftwareMethod npm
 call npm install
-goto Menu
+exit /b
 
 :UpdateNpmPackages
 call :CheckSoftwareMethod npm
 call :CheckSoftwareMethod ncu
 call ncu -u
 call npm install
-goto Menu
+exit /b
 
 :BuildToProduction
 call :CheckSoftwareMethod npm
 call npm run build
-goto Menu
+exit /b
 
 @REM Dangerous
 :ResetAllCache
 call :CheckSoftwareMethod npm
 call npm cache clean --force
-goto Menu
+exit /b
 
 @REM Method
 :CheckSoftwareMethod

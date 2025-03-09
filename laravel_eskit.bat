@@ -29,36 +29,33 @@ if %choice%==5 goto BuildToProduction
 if %choice%==44 goto ResetAllCache
 goto Menu
 
-:Exit
-exit /b
-
 :Setup
 call :Install
 call :UpdateLaravelPackages
 call copy .env.example .env
 call php artisan key:generate
 call php artisan migrate
-goto Menu
+exit /b
 
 :Install
 call :CheckSoftwareMethod composer
 call composer install -W
-goto Menu
+exit /b
 
 :UpdateLaravelPackages
 call :CheckSoftwareMethod composer
 call composer update -W
-goto Menu
+exit /b
 
 :RegenerateComposerAutoload
 call :CheckSoftwareMethod composer
 call composer dump-autoload
-goto Menu
+exit /b
 
 :BuildToProduction
 call :CheckSoftwareMethod npm
 call npm run build
-goto Menu
+exit /b
 
 @REM Dangerous
 :ResetAllCache
@@ -69,7 +66,7 @@ call php artisan route:clear
 call php artisan view:clear
 call php artisan clear-compiled
 call php artisan optimize
-goto Menu
+exit /b
 
 @REM Method
 :CheckSoftwareMethod
