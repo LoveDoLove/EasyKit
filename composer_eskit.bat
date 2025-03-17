@@ -23,12 +23,12 @@ goto Menu
 
 :Install
 call :CheckSoftwareMethod composer
-call composer install -W
+call composer install
 exit /b
 
 :UpdatePackages
 call :CheckSoftwareMethod composer
-call composer update -W
+call composer update
 exit /b
 
 :RegenerateAutoload
