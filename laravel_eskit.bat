@@ -39,12 +39,12 @@ exit /b
 
 :Install
 call :CheckSoftwareMethod composer
-call composer install -W
+call composer install
 exit /b
 
 :UpdateLaravelPackages
 call :CheckSoftwareMethod composer
-call composer update -W
+call composer update
 exit /b
 
 :RegenerateComposerAutoload
