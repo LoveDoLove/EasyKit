@@ -16,12 +16,9 @@ if "%~1"=="" (
 
 :: Set software name
 set "software=%~1"
-set "installChoice=Y"
 
-:: Check if user confirmation is requested (optional second parameter)
-if not "%~2"=="" (
-    if /i "%~2"=="ask" set "askInstall=1"
-)
+:: Always ask for confirmation regardless of parameters
+set "askInstall=1"
 
 :: Main software checking logic
 call :Check_%software%
@@ -40,12 +37,10 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] Chocolatey is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install Chocolatey? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] Chocolatey installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install Chocolatey? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] Chocolatey installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing Chocolatey...
@@ -68,12 +63,10 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] Winget is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install Winget? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] Winget installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install Winget? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] Winget installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing Winget...
@@ -100,12 +93,10 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] npm is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install Node.js and npm? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] Node.js installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install Node.js and npm? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] Node.js installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing Node.js and npm...
@@ -146,12 +137,10 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] npm-check-updates is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install npm-check-updates? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] npm-check-updates installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install npm-check-updates? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] npm-check-updates installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing npm-check-updates...
@@ -176,12 +165,10 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] Composer is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install Composer? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] Composer installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install Composer? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] Composer installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing Composer...
@@ -222,12 +209,10 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] Git is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install Git? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] Git installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install Git? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] Git installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing Git...
@@ -289,38 +274,98 @@ if %errorlevel% equ 0 (
 )
 
 echo [WARN] GitHub CLI is not installed.
-if defined askInstall (
-    choice /c YN /m "Do you want to install GitHub CLI? (Y/N)"
-    if !errorlevel! equ 2 (
-        echo [INFO] GitHub CLI installation cancelled.
-        exit /b 1
-    )
+choice /c YN /m "Do you want to install GitHub CLI? (Y/N)"
+if !errorlevel! equ 2 (
+    echo [INFO] GitHub CLI installation cancelled.
+    exit /b 1
 )
 
 echo [INFO] Installing GitHub CLI...
+echo [WARN] Administrator rights are required to install GitHub CLI.
+
+:: Check if running with admin rights
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] This script must be run as administrator to install GitHub CLI.
+    echo [INFO] Please right-click on the command prompt and select "Run as administrator".
+    echo [INFO] Then try again, or install GitHub CLI manually from: https://cli.github.com/
+    exit /b 1
+)
 
 :: Try with Chocolatey first
 call :Check_choco
 if %errorlevel% equ 0 (
     echo [INFO] Installing GitHub CLI using Chocolatey...
     choco install -y gh
-    if %errorlevel% equ 0 (
-        echo [OK] GitHub CLI installed successfully.
-        
-        :: Setup authentication
-        echo [INFO] Setting up GitHub authentication...
-        echo [INFO] A browser window will open for you to login...
-        pause
-        gh auth login
-        if %errorlevel% neq 0 (
-            echo [ERROR] Failed to authenticate with GitHub.
-            exit /b 1
-        )
-        echo [OK] Successfully authenticated with GitHub.
+    
+    :: Verify installation worked
+    where gh.exe >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [ERROR] GitHub CLI installation failed. Chocolatey reported success but 'gh' command not found.
+        echo [INFO] Try installing manually from: https://cli.github.com/
+        exit /b 1
+    )
+    
+    echo [OK] GitHub CLI installed successfully.
+    
+    :: Setup authentication
+    echo [INFO] Setting up GitHub authentication...
+    choice /c YN /m "Do you want to login to GitHub now? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] GitHub authentication skipped.
         exit /b 0
     )
-    echo [WARN] Failed to install GitHub CLI using Chocolatey.
+    
+    echo [INFO] A browser window will open for you to login...
+    pause
+    gh auth login
+    if %errorlevel% neq 0 (
+        echo [ERROR] Failed to authenticate with GitHub.
+        exit /b 1
+    )
+    echo [OK] Successfully authenticated with GitHub.
+    exit /b 0
 )
+
+:: Try direct download as fallback
+echo [INFO] Installing GitHub CLI via direct download...
+echo [INFO] This may take a moment...
+
+:: Create temp directory
+set "tempdir=%TEMP%\ghcli_install_%RANDOM%"
+mkdir "%tempdir%" 2>nul
+pushd "%tempdir%"
+
+:: Download and extract GitHub CLI
+powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/cli/cli/releases/download/v2.29.0/gh_2.29.0_windows_amd64.zip' -OutFile 'gh.zip'}"
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to download GitHub CLI.
+    popd
+    rmdir /s /q "%tempdir%" 2>nul
+    exit /b 1
+)
+
+powershell -Command "& {Expand-Archive -Path 'gh.zip' -DestinationPath '.' -Force}"
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to extract GitHub CLI.
+    popd
+    rmdir /s /q "%tempdir%" 2>nul
+    exit /b 1
+)
+
+:: Move to Program Files
+set "ghdir=%ProgramFiles%\GitHub CLI"
+mkdir "%ghdir%" 2>nul
+xcopy /E /Y "gh_*\*" "%ghdir%\" >nul
+
+:: Add to PATH
+setx PATH "%PATH%;%ghdir%\bin" /M
+
+echo [INFO] Installation completed. Please restart your terminal/command prompt.
+echo [INFO] After restarting, run this script again to verify the installation.
+
+popd
+rmdir /s /q "%tempdir%" 2>nul
 
 echo [ERROR] Failed to install GitHub CLI.
 echo [INFO] Please install manually from: https://cli.github.com/
