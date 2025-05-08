@@ -260,57 +260,101 @@ echo Creating a pull request...
 call :CheckSoftwareMethod git
 if %errorlevel% neq 0 goto OperationFailed
 
+:: Verify GitHub CLI is installed and working
+echo [INFO] Checking for GitHub CLI...
 call :CheckSoftwareMethod gh
-if %errorlevel% neq 0 goto OperationFailed
-
-REM Check if we're in a git repository
-git rev-parse --is-inside-work-tree >nul 2>&1
 if %errorlevel% neq 0 (
-    echo You must be inside a git repository to create a pull request.
+    echo [ERROR] GitHub CLI (gh) is required for pull request operations but installation failed.
+    echo [INFO] You may need to run this script as administrator to install GitHub CLI.
+    echo [INFO] Alternatively, you can install GitHub CLI manually from: https://cli.github.com/
     pause
     goto Menu
 )
 
-REM Push current branch if needed
+:: Check if we're in a git repository
+git rev-parse --is-inside-work-tree >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Not inside a git repository.
+    pause
+    goto Menu
+)
+
+:: Get current branch
+for /f "tokens=*" %%a in ('git branch --show-current') do set "current_branch=%%a"
 echo Current branch status:
 git status -sb
+
 echo.
-choice /c YN /m "Do you want to push your current branch before creating PR? (Y/N)"
-if %errorlevel% equ 1 (
-    git push --set-upstream origin HEAD
-    if %errorlevel% neq 0 (
-        echo Failed to push changes.
+echo [INFO] Will create a pull request from branch: %current_branch%
+echo.
+
+:: Check for uncommitted changes
+git diff-index --quiet HEAD -- >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [WARN] You have uncommitted changes. Consider committing before creating a PR.
+    choice /c YNC /m "Continue anyway? (Y)es/(N)o/(C)ommit changes first"
+    if !errorlevel! equ 2 (
+        echo Operation cancelled.
         pause
         goto Menu
     )
+    if !errorlevel! equ 3 (
+        goto Commit
+    )
 )
 
+:: Push current branch if it's not already pushed
+git ls-remote --exit-code origin %current_branch% >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [INFO] Current branch is not yet pushed to remote.
+    choice /c YN /m "Push branch %current_branch% to remote before creating PR? (Y/N)"
+    if !errorlevel! equ 1 (
+        echo Pushing branch to remote...
+        git push -u origin %current_branch%
+        if !errorlevel! neq 0 (
+            echo [ERROR] Failed to push branch.
+            pause
+            goto Menu
+        )
+    ) else (
+        echo [WARN] Creating PR without pushing may fail if the branch doesn't exist remotely.
+    )
+)
+
+:: Create the PR
 echo.
-echo Creating pull request...
 set /p title=Enter PR title: 
 if "%title%"=="" (
-    echo Title cannot be empty!
+    echo [WARN] Title cannot be empty.
     pause
-    goto Menu
+    goto CreatePullRequest
 )
 
 set /p body=Enter PR description (optional): 
+set /p base=Enter target branch (leave empty for default branch): 
 
-if "%body%"=="" (
-    gh pr create --title "%title%"
+if "%base%"=="" (
+    if "%body%"=="" (
+        gh pr create --title "%title%"
+    ) else (
+        gh pr create --title "%title%" --body "%body%"
+    )
 ) else (
-    gh pr create --title "%title%" --body "%body%"
+    if "%body%"=="" (
+        gh pr create --title "%title%" --base "%base%"
+    ) else (
+        gh pr create --title "%title%" --body "%body%" --base "%base%"
+    )
 )
 
 if %errorlevel% neq 0 (
-    echo Failed to create pull request. 
-    echo Make sure your branch is pushed to GitHub and the repository is configured correctly.
+    echo [ERROR] Failed to create pull request.
     pause
     goto Menu
 )
 
 echo.
-echo Pull request created successfully!
+echo [OK] Pull request created successfully!
 pause
 goto Menu
 
@@ -320,63 +364,79 @@ echo Listing pull requests...
 call :CheckSoftwareMethod git
 if %errorlevel% neq 0 goto OperationFailed
 
+:: Verify GitHub CLI is installed and working
+echo [INFO] Checking for GitHub CLI...
 call :CheckSoftwareMethod gh
-if %errorlevel% neq 0 goto OperationFailed
+if %errorlevel% neq 0 (
+    echo [ERROR] GitHub CLI (gh) is required for pull request operations but installation failed.
+    echo [INFO] You may need to run this script as administrator to install GitHub CLI.
+    echo [INFO] Alternatively, you can install GitHub CLI manually from: https://cli.github.com/
+    pause
+    goto Menu
+)
 
-REM Check if we're in a git repository
+:: Check if we're in a git repository
 git rev-parse --is-inside-work-tree >nul 2>&1
 if %errorlevel% neq 0 (
-    echo You must be inside a git repository to list pull requests.
+    echo [ERROR] Not inside a git repository.
     pause
     goto Menu
 )
 
 echo.
-echo Pull requests for current repository:
-gh pr list
-if %errorlevel% neq 0 (
-    echo Failed to list pull requests.
-    echo Make sure you're in a git repository connected to GitHub.
-    pause
-    goto Menu
-)
-
-echo.
-set /p prnumber=Enter PR number to view details (leave empty to go back): 
-if "%prnumber%"=="" goto Menu
-
-echo.
-echo Pull request details:
-gh pr view %prnumber%
-if %errorlevel% neq 0 (
-    echo Failed to view pull request details.
-    pause
-    goto Menu
-)
+echo Pull Request Options:
+echo 1. List open pull requests
+echo 2. List your pull requests
+echo 3. View a specific pull request
+echo 4. Check out a pull request branch
+echo 5. Back to main menu
 echo.
 
-choice /c YNC /m "Do you want to check out this PR (Y), comment on it (C), or go back (N)? "
-if errorlevel 3 (
-    set /p comment=Enter your comment: 
-    gh pr comment %prnumber% --body "%comment%"
-    if %errorlevel% neq 0 (
-        echo Failed to add comment.
-    ) else (
-        echo Comment added successfully.
+set /p proption=Choose an option (1-5): 
+if "%proption%"=="" goto ListPullRequests
+
+if "%proption%"=="1" (
+    echo.
+    echo Listing all open pull requests:
+    gh pr list
+) else if "%proption%"=="2" (
+    echo.
+    echo Listing your pull requests:
+    gh pr list --author "@me"
+) else if "%proption%"=="3" (
+    echo.
+    set /p prnumber=Enter PR number to view: 
+    if "%prnumber%"=="" goto ListPullRequests
+    gh pr view %prnumber%
+    
+    echo.
+    choice /c YN /m "Add a comment to this PR? (Y/N)"
+    if !errorlevel! equ 1 (
+        set /p comment=Enter your comment: 
+        gh pr comment %prnumber% --body "%comment%"
     )
-) else if errorlevel 2 (
-    rem Do nothing and return
-) else if errorlevel 1 (
+) else if "%proption%"=="4" (
+    echo.
+    set /p prnumber=Enter PR number to check out: 
+    if "%prnumber%"=="" goto ListPullRequests
+    
+    echo [WARN] This will switch your current branch to the PR branch.
+    choice /c YN /m "Continue? (Y/N)"
+    if !errorlevel! equ 2 (
+        goto ListPullRequests
+    )
+    
     gh pr checkout %prnumber%
-    if %errorlevel% neq 0 (
-        echo Failed to checkout PR.
-    ) else (
-        echo PR %prnumber% checked out successfully.
-    )
+) else if "%proption%"=="5" (
+    goto Menu
+) else (
+    echo Invalid option.
+    pause
+    goto ListPullRequests
 )
 
 pause
-goto Menu
+goto ListPullRequests
 
 :OperationFailed
 echo.
