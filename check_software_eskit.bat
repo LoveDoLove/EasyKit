@@ -2,96 +2,333 @@
 color 0A
 title Package Checker
 
-setlocal
+setlocal EnableDelayedExpansion
 
+:: ======================================
+:: EasyKit Software Dependency Manager
+:: ======================================
+
+:: Check if software name was provided
 if "%~1"=="" (
-    echo No software specified. Exiting...
+    echo [ERROR] No software specified. Exiting...
     exit /b 1
 )
 
+:: Set software name
 set "software=%~1"
+set "installChoice=Y"
 
-if /i "%software%"=="choco" (
-    REM Check if choco is installed
-    where choco.exe >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
-        echo choco is already installed.
-    ) else (
-        echo choco is not installed. Automatically installing choco...
-        powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
-        if %ERRORLEVEL% NEQ 0 (
-            echo Failed to install choco.
+:: Check if user confirmation is requested (optional second parameter)
+if not "%~2"=="" (
+    if /i "%~2"=="ask" set "askInstall=1"
+)
+
+:: Main software checking logic
+call :Check_%software%
+exit /b %errorlevel%
+
+:: ======================================
+:: Software-specific check functions
+:: ======================================
+
+:Check_choco
+echo [INFO] Checking for Chocolatey...
+where choco.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] Chocolatey is already installed.
+    exit /b 0
+)
+
+echo [WARN] Chocolatey is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install Chocolatey? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] Chocolatey installation cancelled.
+        exit /b 1
+    )
+)
+
+echo [INFO] Installing Chocolatey...
+powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to install Chocolatey.
+    echo [INFO] Please install manually from: https://chocolatey.org/install
+    exit /b 1
+)
+
+echo [OK] Chocolatey installed successfully.
+exit /b 0
+
+:Check_winget
+echo [INFO] Checking for winget...
+where winget.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] Winget is already installed.
+    exit /b 0
+)
+
+echo [WARN] Winget is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install Winget? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] Winget installation cancelled.
+        exit /b 1
+    )
+)
+
+echo [INFO] Installing Winget...
+call :Check_choco
+if %errorlevel% neq 0 exit /b 1
+
+echo [INFO] Installing Winget using Chocolatey...
+choco install -y winget
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to install Winget.
+    echo [INFO] Please install manually from Microsoft Store.
+    exit /b 1
+)
+
+echo [OK] Winget installed successfully.
+exit /b 0
+
+:Check_npm
+echo [INFO] Checking for npm...
+where npm.cmd >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] npm is already installed.
+    exit /b 0
+)
+
+echo [WARN] npm is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install Node.js and npm? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] Node.js installation cancelled.
+        exit /b 1
+    )
+)
+
+echo [INFO] Installing Node.js and npm...
+
+:: Try with Chocolatey first
+call :Check_choco
+if %errorlevel% equ 0 (
+    echo [INFO] Installing Node.js using Chocolatey...
+    choco install -y nodejs
+    if %errorlevel% equ 0 (
+        echo [OK] Node.js and npm installed successfully.
+        exit /b 0
+    )
+    echo [WARN] Failed to install Node.js using Chocolatey. Trying Winget...
+)
+
+:: Try with Winget as fallback
+call :Check_winget
+if %errorlevel% equ 0 (
+    echo [INFO] Installing Node.js using Winget...
+    winget install OpenJS.NodeJS
+    if %errorlevel% equ 0 (
+        echo [OK] Node.js and npm installed successfully.
+        exit /b 0
+    )
+)
+
+echo [ERROR] Failed to install Node.js.
+echo [INFO] Please install manually from: https://nodejs.org/
+exit /b 1
+
+:Check_ncu
+echo [INFO] Checking for npm-check-updates...
+where ncu.cmd >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] npm-check-updates is already installed.
+    exit /b 0
+)
+
+echo [WARN] npm-check-updates is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install npm-check-updates? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] npm-check-updates installation cancelled.
+        exit /b 1
+    )
+)
+
+echo [INFO] Installing npm-check-updates...
+call :Check_npm
+if %errorlevel% neq 0 exit /b 1
+
+npm install -g npm-check-updates
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to install npm-check-updates.
+    exit /b 1
+)
+
+echo [OK] npm-check-updates installed successfully.
+exit /b 0
+
+:Check_composer
+echo [INFO] Checking for Composer...
+where composer >nul 2>&1 || where composer.bat >nul 2>&1 || where composer.phar >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] Composer is already installed.
+    exit /b 0
+)
+
+echo [WARN] Composer is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install Composer? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] Composer installation cancelled.
+        exit /b 1
+    )
+)
+
+echo [INFO] Installing Composer...
+
+:: Try with Chocolatey first
+call :Check_choco
+if %errorlevel% equ 0 (
+    echo [INFO] Installing Composer using Chocolatey...
+    choco install -y composer
+    if %errorlevel% equ 0 (
+        echo [OK] Composer installed successfully.
+        exit /b 0
+    )
+    echo [WARN] Failed to install Composer using Chocolatey. Trying Winget...
+)
+
+:: Try with Winget as fallback
+call :Check_winget
+if %errorlevel% equ 0 (
+    echo [INFO] Installing Composer using Winget...
+    winget install Composer.Composer
+    if %errorlevel% equ 0 (
+        echo [OK] Composer installed successfully.
+        exit /b 0
+    )
+)
+
+echo [ERROR] Failed to install Composer.
+echo [INFO] Please install manually from: https://getcomposer.org/download/
+exit /b 1
+
+:Check_git
+echo [INFO] Checking for Git...
+where git.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] Git is already installed.
+    exit /b 0
+)
+
+echo [WARN] Git is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install Git? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] Git installation cancelled.
+        exit /b 1
+    )
+)
+
+echo [INFO] Installing Git...
+
+:: Try with Chocolatey first
+call :Check_choco
+if %errorlevel% equ 0 (
+    echo [INFO] Installing Git using Chocolatey...
+    choco install -y git
+    if %errorlevel% equ 0 (
+        echo [OK] Git installed successfully.
+        exit /b 0
+    )
+    echo [WARN] Failed to install Git using Chocolatey. Trying Winget...
+)
+
+:: Try with Winget as fallback
+call :Check_winget
+if %errorlevel% equ 0 (
+    echo [INFO] Installing Git using Winget...
+    winget install Git.Git
+    if %errorlevel% equ 0 (
+        echo [OK] Git installed successfully.
+        exit /b 0
+    )
+)
+
+echo [ERROR] Failed to install Git.
+echo [INFO] Please install manually from: https://git-scm.com/downloads
+exit /b 1
+
+:Check_gh
+echo [INFO] Checking for GitHub CLI...
+where gh.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [OK] GitHub CLI is already installed.
+    
+    :: Check for authentication
+    gh auth status >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [WARN] GitHub CLI is not authenticated.
+        choice /c YN /m "Do you want to login to GitHub now? (Y/N)"
+        if !errorlevel! equ 2 (
+            echo [INFO] GitHub authentication skipped.
             exit /b 1
         )
-    )
-)
-
-if /i "%software%"=="winget" (
-    REM Check if winget is installed
-    where winget.exe >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
-        echo winget is already installed.
-    ) else (
-        echo winget is not installed. Installing winget using choco...
-        choco install -y winget
-        if %ERRORLEVEL% NEQ 0 (
-            echo Failed to install winget.
+        
+        echo [INFO] A browser window will open for you to login...
+        pause
+        gh auth login
+        if %errorlevel% neq 0 (
+            echo [ERROR] Failed to authenticate with GitHub.
             exit /b 1
         )
+        echo [OK] Successfully authenticated with GitHub.
+    )
+    
+    exit /b 0
+)
+
+echo [WARN] GitHub CLI is not installed.
+if defined askInstall (
+    choice /c YN /m "Do you want to install GitHub CLI? (Y/N)"
+    if !errorlevel! equ 2 (
+        echo [INFO] GitHub CLI installation cancelled.
+        exit /b 1
     )
 )
 
-if /i "%software%"=="npm" (
-    REM Check if npm is installed
-    where npm.cmd >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo npm is not installed. Installing npm...
-        choco install -y nodejs
-        if %errorlevel% neq 0 (
-            echo Failed to install npm using choco. Trying to install using winget...
-            powershell -Command "winget install OpenJS.NodeJS"
-            if errorlevel 1 (
-                echo Failed to install npm using winget.
-                exit /b 1
-            )
-        )
-    ) else (
-        echo npm is already installed.
-    )
-)
+echo [INFO] Installing GitHub CLI...
 
-if /i "%software%"=="ncu" (
-    REM Check if ncu is installed
-    where ncu.cmd >nul 2>&1
-    if %errorlevel% neq 0 (
-        echo npm-check-updates is not installed. Installing npm-check-updates...
-        npm install -g npm-check-updates
+:: Try with Chocolatey first
+call :Check_choco
+if %errorlevel% equ 0 (
+    echo [INFO] Installing GitHub CLI using Chocolatey...
+    choco install -y gh
+    if %errorlevel% equ 0 (
+        echo [OK] GitHub CLI installed successfully.
+        
+        :: Setup authentication
+        echo [INFO] Setting up GitHub authentication...
+        echo [INFO] A browser window will open for you to login...
+        pause
+        gh auth login
         if %errorlevel% neq 0 (
-            echo Failed to install npm-check-updates.
+            echo [ERROR] Failed to authenticate with GitHub.
             exit /b 1
         )
-    ) else (
-        echo npm-check-updates is already installed.
+        echo [OK] Successfully authenticated with GitHub.
+        exit /b 0
     )
+    echo [WARN] Failed to install GitHub CLI using Chocolatey.
 )
 
-if /i "%software%"=="composer" (
-    REM Check if composer is installed
-    where /q composer.phar
-    if %errorlevel% neq 0 (
-        echo Composer is not installed. Installing Composer using choco...
-        powershell -Command "choco install -y composer"
-        if %errorlevel% neq 0 (
-            echo Failed to install Composer using choco. Trying to install using winget...
-            powershell -Command "winget install Composer.Composer"
-            if errorlevel 1 (
-                echo Failed to install Composer using winget.
-                exit /b 1
-            )
-        )
-    ) else (
-        echo Composer is already installed.
-    )
-)
+echo [ERROR] Failed to install GitHub CLI.
+echo [INFO] Please install manually from: https://cli.github.com/
+exit /b 1
+
+:Check_unknown
+echo [ERROR] Unknown software: %software%
+echo [INFO] Supported software: choco, winget, npm, ncu, composer, git, gh
+exit /b 1
 
 endlocal
