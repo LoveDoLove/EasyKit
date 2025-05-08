@@ -198,15 +198,29 @@ echo.
 echo Stashing changes...
 call :CheckSoftwareMethod git
 if %errorlevel% neq 0 goto OperationFailed
+
+echo.
+echo WARNING: Stashing will temporarily set aside all your uncommitted changes.
+echo          You can recover them later using the "Apply Stash" option.
+echo.
+choice /c YN /m "Are you sure you want to stash your changes? (Y/N)"
+if %errorlevel% equ 2 (
+    echo Operation cancelled.
+    pause
+    goto Menu
+)
+
 set /p message=Enter stash message (optional): 
 if "%message%"=="" (
-    git stash
+    git stash push -m "Stashed on %date% at %time%"
 ) else (
-    git stash save "%message%"
+    git stash push -m "%message%"
 )
 if %errorlevel% neq 0 goto OperationFailed
 echo.
 echo Changes stashed successfully!
+echo.
+echo Use the "Apply Stash" option to recover these changes.
 pause
 goto Menu
 
@@ -215,17 +229,81 @@ echo.
 echo Available stashes:
 call :CheckSoftwareMethod git
 if %errorlevel% neq 0 goto OperationFailed
+
+REM Check if there are any stashes
+git stash list > nul 2>&1
+if %errorlevel% neq 0 (
+    echo No stashes found.
+    pause
+    goto Menu
+)
+
 git stash list
 echo.
-set /p stashnum=Enter stash number to apply (leave empty for most recent): 
-if "%stashnum%"=="" (
-    git stash apply
-) else (
-    git stash apply stash@{%stashnum%}
-)
-if %errorlevel% neq 0 goto OperationFailed
+echo Options:
+echo 1. Apply the most recent stash (keep it in the stash list)
+echo 2. Pop the most recent stash (apply and remove it from stash list)
+echo 3. Apply a specific stash by index
+echo 4. Pop a specific stash by index
+echo 5. View stash contents before applying
+echo 6. Back to Menu
 echo.
-echo Stash applied successfully!
+
+set /p stashopt=Choose option (1-6): 
+if "%stashopt%"=="" goto ApplyStash
+
+if "%stashopt%"=="1" (
+    git stash apply
+    if %errorlevel% neq 0 (
+        echo Failed to apply stash.
+        pause
+        goto Menu
+    )
+    echo Stash applied successfully! (Still available in stash list)
+) else if "%stashopt%"=="2" (
+    git stash pop
+    if %errorlevel% neq 0 (
+        echo Failed to pop stash.
+        pause
+        goto Menu
+    )
+    echo Stash popped successfully! (Removed from stash list)
+) else if "%stashopt%"=="3" (
+    set /p stashnum=Enter stash index (e.g., 0 for stash@{0}): 
+    git stash apply stash@{%stashnum%}
+    if %errorlevel% neq 0 (
+        echo Failed to apply stash.
+        pause
+        goto Menu
+    )
+    echo Stash applied successfully! (Still available in stash list)
+) else if "%stashopt%"=="4" (
+    set /p stashnum=Enter stash index (e.g., 0 for stash@{0}): 
+    git stash pop stash@{%stashnum%}
+    if %errorlevel% neq 0 (
+        echo Failed to pop stash.
+        pause
+        goto Menu
+    )
+    echo Stash popped successfully! (Removed from stash list)
+) else if "%stashopt%"=="5" (
+    set /p stashnum=Enter stash index to view (leave empty for most recent): 
+    if "%stashnum%"=="" (
+        git stash show -p
+    ) else (
+        git stash show -p stash@{%stashnum%}
+    )
+    echo.
+    pause
+    goto ApplyStash
+) else if "%stashopt%"=="6" (
+    goto Menu
+) else (
+    echo Invalid option.
+    pause
+    goto ApplyStash
+)
+
 pause
 goto Menu
 
