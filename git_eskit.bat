@@ -1,6 +1,7 @@
 @echo off
 color 0A
 title Git Menu
+setlocal enabledelayedexpansion
 
 :Menu
 cls
@@ -24,8 +25,21 @@ echo Advanced:
 echo 10. View Commit History
 echo 11. Stash Changes
 echo 12. Apply Stash
+echo 13. Create Pull Request
+echo 14. List Pull Requests
 echo.
+set choice=
 set /p choice=Choose an option: 
+if not defined choice goto InvalidChoice
+set "numbers=0123456789"
+set "valid=true"
+for /L %%i in (0,1,9) do if "!choice:~%%i,1!" NEQ "" (
+    if "!numbers:!choice:~%%i,1!=!" EQU "%numbers%" set "valid=false"
+)
+if "!valid!" EQU "false" goto InvalidChoice
+if %choice% LSS 0 goto InvalidChoice
+if %choice% GTR 14 goto InvalidChoice
+
 if %choice%==0 goto Exit
 if %choice%==1 goto InitRepo
 if %choice%==2 goto CheckStatus
@@ -39,6 +53,14 @@ if %choice%==9 goto MergeBranch
 if %choice%==10 goto ViewHistory
 if %choice%==11 goto StashChanges
 if %choice%==12 goto ApplyStash
+if %choice%==13 goto CreatePullRequest
+if %choice%==14 goto ListPullRequests
+goto Menu
+
+:InvalidChoice
+echo.
+echo Invalid option. Please try again.
+timeout /t 2 >nul
 goto Menu
 
 :InitRepo
@@ -85,6 +107,9 @@ if "%message%"=="" (
     pause
     goto Menu
 )
+echo Staging all changes...
+git add .
+if %errorlevel% neq 0 goto OperationFailed
 git commit -m "%message%"
 if %errorlevel% neq 0 goto OperationFailed
 echo.
@@ -198,29 +223,15 @@ echo.
 echo Stashing changes...
 call :CheckSoftwareMethod git
 if %errorlevel% neq 0 goto OperationFailed
-
-echo.
-echo WARNING: Stashing will temporarily set aside all your uncommitted changes.
-echo          You can recover them later using the "Apply Stash" option.
-echo.
-choice /c YN /m "Are you sure you want to stash your changes? (Y/N)"
-if %errorlevel% equ 2 (
-    echo Operation cancelled.
-    pause
-    goto Menu
-)
-
 set /p message=Enter stash message (optional): 
 if "%message%"=="" (
-    git stash push -m "Stashed on %date% at %time%"
+    git stash
 ) else (
-    git stash push -m "%message%"
+    git stash save "%message%"
 )
 if %errorlevel% neq 0 goto OperationFailed
 echo.
 echo Changes stashed successfully!
-echo.
-echo Use the "Apply Stash" option to recover these changes.
 pause
 goto Menu
 
@@ -229,79 +240,139 @@ echo.
 echo Available stashes:
 call :CheckSoftwareMethod git
 if %errorlevel% neq 0 goto OperationFailed
+git stash list
+echo.
+set /p stashnum=Enter stash number to apply (leave empty for most recent): 
+if "%stashnum%"=="" (
+    git stash apply
+) else (
+    git stash apply stash@{%stashnum%}
+)
+if %errorlevel% neq 0 goto OperationFailed
+echo.
+echo Stash applied successfully!
+pause
+goto Menu
 
-REM Check if there are any stashes
-git stash list > nul 2>&1
+:CreatePullRequest
+echo.
+echo Creating a pull request...
+call :CheckSoftwareMethod git
+if %errorlevel% neq 0 goto OperationFailed
+
+call :CheckSoftwareMethod gh
+if %errorlevel% neq 0 goto OperationFailed
+
+REM Check if we're in a git repository
+git rev-parse --is-inside-work-tree >nul 2>&1
 if %errorlevel% neq 0 (
-    echo No stashes found.
+    echo You must be inside a git repository to create a pull request.
     pause
     goto Menu
 )
 
-git stash list
+REM Push current branch if needed
+echo Current branch status:
+git status -sb
 echo.
-echo Options:
-echo 1. Apply the most recent stash (keep it in the stash list)
-echo 2. Pop the most recent stash (apply and remove it from stash list)
-echo 3. Apply a specific stash by index
-echo 4. Pop a specific stash by index
-echo 5. View stash contents before applying
-echo 6. Back to Menu
+choice /c YN /m "Do you want to push your current branch before creating PR? (Y/N)"
+if %errorlevel% equ 1 (
+    git push --set-upstream origin HEAD
+    if %errorlevel% neq 0 (
+        echo Failed to push changes.
+        pause
+        goto Menu
+    )
+)
+
 echo.
-
-set /p stashopt=Choose option (1-6): 
-if "%stashopt%"=="" goto ApplyStash
-
-if "%stashopt%"=="1" (
-    git stash apply
-    if %errorlevel% neq 0 (
-        echo Failed to apply stash.
-        pause
-        goto Menu
-    )
-    echo Stash applied successfully! (Still available in stash list)
-) else if "%stashopt%"=="2" (
-    git stash pop
-    if %errorlevel% neq 0 (
-        echo Failed to pop stash.
-        pause
-        goto Menu
-    )
-    echo Stash popped successfully! (Removed from stash list)
-) else if "%stashopt%"=="3" (
-    set /p stashnum=Enter stash index (e.g., 0 for stash@{0}): 
-    git stash apply stash@{%stashnum%}
-    if %errorlevel% neq 0 (
-        echo Failed to apply stash.
-        pause
-        goto Menu
-    )
-    echo Stash applied successfully! (Still available in stash list)
-) else if "%stashopt%"=="4" (
-    set /p stashnum=Enter stash index (e.g., 0 for stash@{0}): 
-    git stash pop stash@{%stashnum%}
-    if %errorlevel% neq 0 (
-        echo Failed to pop stash.
-        pause
-        goto Menu
-    )
-    echo Stash popped successfully! (Removed from stash list)
-) else if "%stashopt%"=="5" (
-    set /p stashnum=Enter stash index to view (leave empty for most recent): 
-    if "%stashnum%"=="" (
-        git stash show -p
-    ) else (
-        git stash show -p stash@{%stashnum%}
-    )
-    echo.
+echo Creating pull request...
+set /p title=Enter PR title: 
+if "%title%"=="" (
+    echo Title cannot be empty!
     pause
-    goto ApplyStash
-) else if "%stashopt%"=="6" (
     goto Menu
+)
+
+set /p body=Enter PR description (optional): 
+
+if "%body%"=="" (
+    gh pr create --title "%title%"
 ) else (
-    echo Invalid option.
+    gh pr create --title "%title%" --body "%body%"
+)
+
+if %errorlevel% neq 0 (
+    echo Failed to create pull request. 
+    echo Make sure your branch is pushed to GitHub and the repository is configured correctly.
     pause
-    goto ApplyStash
+    goto Menu
+)
+
+echo.
+echo Pull request created successfully!
+pause
+goto Menu
+
+:ListPullRequests
+echo.
+echo Listing pull requests...
+call :CheckSoftwareMethod git
+if %errorlevel% neq 0 goto OperationFailed
+
+call :CheckSoftwareMethod gh
+if %errorlevel% neq 0 goto OperationFailed
+
+REM Check if we're in a git repository
+git rev-parse --is-inside-work-tree >nul 2>&1
+if %errorlevel% neq 0 (
+    echo You must be inside a git repository to list pull requests.
+    pause
+    goto Menu
+)
+
+echo.
+echo Pull requests for current repository:
+gh pr list
+if %errorlevel% neq 0 (
+    echo Failed to list pull requests.
+    echo Make sure you're in a git repository connected to GitHub.
+    pause
+    goto Menu
+)
+
+echo.
+set /p prnumber=Enter PR number to view details (leave empty to go back): 
+if "%prnumber%"=="" goto Menu
+
+echo.
+echo Pull request details:
+gh pr view %prnumber%
+if %errorlevel% neq 0 (
+    echo Failed to view pull request details.
+    pause
+    goto Menu
+)
+echo.
+
+choice /c YNC /m "Do you want to check out this PR (Y), comment on it (C), or go back (N)? "
+if errorlevel 3 (
+    set /p comment=Enter your comment: 
+    gh pr comment %prnumber% --body "%comment%"
+    if %errorlevel% neq 0 (
+        echo Failed to add comment.
+    ) else (
+        echo Comment added successfully.
+    )
+) else if errorlevel 2 (
+    rem Do nothing and return
+) else if errorlevel 1 (
+    gh pr checkout %prnumber%
+    if %errorlevel% neq 0 (
+        echo Failed to checkout PR.
+    ) else (
+        echo PR %prnumber% checked out successfully.
+    )
 )
 
 pause
