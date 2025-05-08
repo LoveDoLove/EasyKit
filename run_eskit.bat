@@ -13,10 +13,16 @@ echo 0. Exit
 echo 1. Npm Menu
 echo 2. Laravel Menu
 echo 3. Composer Menu
+echo 4. Git Menu
 echo.
 set /p choice=Choose an option: 
 if %choice%==0 goto Exit
 if %choice%==1 call npm_eskit.bat
 if %choice%==2 call laravel_eskit.bat
 if %choice%==3 call composer_eskit.bat
+if %choice%==4 call git_eskit.bat
 goto Menu
+
+:Exit
+echo Exiting EasyKit...
+exit /b 0
