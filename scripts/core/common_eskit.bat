@@ -4,7 +4,12 @@ REM  EasyKit Common Functions
 REM ================================
 
 REM Load configuration
-call "%~dp0config_eskit.bat"
+call "%~dp0..\..\config\config_eskit.bat"
+
+REM Load user configuration if it exists
+if exist "%~dp0..\..\config\user_config_eskit.bat" (
+    call "%~dp0..\..\config\user_config_eskit.bat"
+)
 
 :DrawHeader
     echo.

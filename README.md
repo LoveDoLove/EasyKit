@@ -3,7 +3,7 @@
 ![EasyKit Logo](images/icon.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.6-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
+[![Version](https://img.shields.io/badge/version-1.2.7-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
 
 EasyKit is a powerful collection of batch scripts designed to simplify web development and system maintenance tasks on Windows systems. It provides a convenient menu-driven interface for common development workflows including npm, Laravel, Composer, and Git operations.
 
@@ -15,7 +15,8 @@ EasyKit is a powerful collection of batch scripts designed to simplify web devel
 - **Composer Management**: Handle Composer dependencies and operations
 - **Git Workflows**: Streamline git operations, including repositories, branches, and PRs
 - **System Maintenance**: Perform system maintenance tasks without remembering complex commands
-- **Configuration System**: Customize settings to match your workflow
+- **Configuration System**: Customize settings to match your workflow. Default settings are in `config\config_eskit.bat`.
+- **User-Specific Settings**: Override default settings by creating `config\user_config_eskit.bat` with your preferred configurations.
 - **Logging**: Track operations with detailed logs for troubleshooting
 - **Desktop Integration**: Create desktop and Start Menu shortcuts
 
@@ -56,7 +57,7 @@ EasyKit is a powerful collection of batch scripts designed to simplify web devel
 
 ### Configuration
 
-EasyKit is configured through the `config_eskit.bat` file, where you can modify:
+EasyKit is configured through the `config\config_eskit.bat` file, where you can modify:
 
 - Color schemes
 - Default paths
@@ -64,13 +65,23 @@ EasyKit is configured through the `config_eskit.bat` file, where you can modify:
 - Update behavior
 - UI preferences
 
+To personalize your settings without altering the main configuration, you can create a `config\user_config_eskit.bat` file. Any settings defined in this file will override the corresponding settings in `config\config_eskit.bat`.
+
+**Example `user_config_eskit.bat`:**
+```bat
+REM My custom EasyKit settings
+set "ESKIT_COLOR=0B"         REM Light Aqua background, Light Blue text
+set "ESKIT_SHOW_TIPS=false"  REM Disable startup tips
+```
+
 ## 📁 Project Structure
 
 ```
 EasyKit/
 ├── run_eskit.bat             # Main entry point
 ├── config/                   # Configuration files
-│   └── config_eskit.bat      # Configuration settings
+│   ├── config_eskit.bat      # Default configuration settings
+│   └── user_config_eskit.bat # User-specific configuration (optional)
 ├── scripts/                  # Script files
 │   ├── core/                 # Core functionality
 │   │   ├── common_eskit.bat  # Shared functions
@@ -193,6 +204,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔄 Version History
 
+- **v1.2.7** - Added support for user-specific settings in `user_config_eskit.bat`
 - **v1.2.6** - Switched installer technology from NSIS to WiX Toolset (MSI)
 - **v1.2.5** - Fixed GitHub Actions workflow after project restructuring
 - **v1.2.4** - Restructured project for better organization and maintainability
