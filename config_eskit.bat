@@ -4,7 +4,7 @@ REM  EasyKit Configuration File
 REM ================================
 
 REM Base configuration
-set "ESKIT_VERSION=1.2.0"
+set "ESKIT_VERSION=1.2.1"
 set "ESKIT_COLOR=0A"
 set "ESKIT_TITLE_PREFIX=EasyKit"
 set "ESKIT_LOG_PATH=%~dp0logs"

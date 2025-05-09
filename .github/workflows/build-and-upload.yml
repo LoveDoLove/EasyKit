@@ -1,0 +1,153 @@
+name: Build and Upload EasyKit
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build EasyKit Packages
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create required directories
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "build")) { New-Item -Path "build" -ItemType Directory }
+          if (-not (Test-Path "dist")) { New-Item -Path "dist" -ItemType Directory }
+          
+          # Ensure images directory exists and has necessary files
+          if (-not (Test-Path "images")) { New-Item -Path "images" -ItemType Directory }
+          
+          # Generate required images if they don't exist
+          if (-not (Test-Path "images\installer-welcome.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 164, 314
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightBlue)
+            $font = New-Object System.Drawing.Font("Arial", 14)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit Installer", $font, $brush, 20, 150)
+            $bmp.Save("images\installer-welcome.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-welcome.bmp"
+          }
+
+          if (-not (Test-Path "images\installer-header.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 150, 57
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightGreen)
+            $font = New-Object System.Drawing.Font("Arial", 10)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit", $font, $brush, 50, 20)
+            $bmp.Save("images\installer-header.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-header.bmp"
+          }
+
+      - name: Build ZIP package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,images\* -DestinationPath build\EasyKit.zip -Force
+          Write-Host "Created EasyKit.zip package in build directory"
+
+      - name: Setup NSIS
+        uses: joncloud/makensis-action@v4
+
+      - name: Prepare NSIS installation
+        shell: pwsh
+        run: |
+          # Modify NSIS script to avoid EnVar plugin issues
+          $content = Get-Content -Path .\EasyKit.nsi -Raw
+          
+          # Update output path to be directly in build folder
+          $content = $content -replace 'OutFile "dist\\EasyKit_Setup.exe"', 'OutFile "build\EasyKit_Setup.exe"'
+          
+          # Comment out the EnVar plugin usage (which causes issues in GitHub Actions)
+          $content = $content -replace 'Section "Add to PATH" SecPath', '; Section "Add to PATH" SecPath - Disabled in CI'
+          $content = $content -replace 'EnVar::AddValue "PATH" "\$INSTDIR"', '; EnVar::AddValue "PATH" "$INSTDIR"'
+          
+          Set-Content -Path .\EasyKit.nsi -Value $content
+          Write-Host "Modified NSIS script for GitHub Actions compatibility"
+
+      - name: Build NSIS installer
+        shell: pwsh
+        run: |
+          & makensis -V4 EasyKit.nsi
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "NSIS build failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          # Check if the installer was created in the build directory
+          if (Test-Path "build\EasyKit_Setup.exe") {
+            Write-Host "NSIS installer created successfully in build directory"
+          } else {
+            Write-Host "Looking for installer in other locations..."
+            Get-ChildItem -Path . -Recurse -Filter "EasyKit_Setup.exe" | ForEach-Object {
+              Write-Host "Found installer at: $($_.FullName)"
+              if (-not (Test-Path "build\EasyKit_Setup.exe")) {
+                Copy-Item -Path $_.FullName -Destination "build\EasyKit_Setup.exe" -Force
+                Write-Host "Copied installer to build directory"
+              }
+            }
+          }
+
+      - name: Verify build artifacts
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "build\EasyKit.zip")) {
+            Write-Host "ERROR: EasyKit.zip was not created!"
+            exit 1
+          }
+          if (-not (Test-Path "build\EasyKit_Setup.exe")) {
+            Write-Host "ERROR: EasyKit_Setup.exe was not created!"
+            exit 1
+          }
+          Get-ChildItem -Path "build"
+          Write-Host "Build artifacts verified successfully"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyKit-Packages
+          path: |
+            build/EasyKit.zip
+            build/EasyKit_Setup.exe
+          retention-days: 14
+
+  release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: EasyKit-Packages
+          path: release-artifacts
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/EasyKit.zip
+            release-artifacts/EasyKit_Setup.exe
+          draft: false
+          fail_on_unmatched_files: true
+          generate_release_notes: true
