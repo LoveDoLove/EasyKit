@@ -1,0 +1,43 @@
+name: Build Installers
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Enables manual trigger from GitHub UI
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        
+      - name: Setup NSIS
+        uses: joncloud/makensis-action@v3.6
+      
+      - name: Create Build Directory
+        run: mkdir build
+        
+      - name: Build ZIP Package
+        run: |
+          powershell Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,.gitignore,images/* -DestinationPath build/EasyKit.zip -Force
+      
+      - name: Build NSIS Installer
+        run: |
+          makensis EasyKit.nsi
+          move EasyKit_Setup.exe build/
+      
+      - name: Upload ZIP Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: EasyKit-ZIP
+          path: build/EasyKit.zip
+          
+      - name: Upload NSIS Installer
+        uses: actions/upload-artifact@v3
+        with:
+          name: EasyKit-Installer
+          path: build/EasyKit_Setup.exe
