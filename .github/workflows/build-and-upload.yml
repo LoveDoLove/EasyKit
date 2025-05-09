@@ -27,24 +27,25 @@ jobs:
         shell: cmd 
         run: | 
           IF NOT EXIST scripts\build mkdir scripts\build 
-          IF NOT EXIST scripts\build\release_v1.2.6.bat ( 
-            echo @echo off > scripts\build\release_v1.2.6.bat 
-            echo echo EasyKit Release v1.2.6 >> scripts\build\release_v1.2.6.bat 
-            echo echo Build date: %%date%% %%time%% >> scripts\build\release_v1.2.6.bat 
-            echo echo. >> scripts\build\release_v1.2.6.bat 
-            echo echo This script is part of the EasyKit installation package. >> scripts\build\release_v1.2.6.bat 
-            echo echo For more information, visit: https://github.com/LoveDoLove/EasyKit >> scripts\build\release_v1.2.6.bat 
-            echo echo. >> scripts\build\release_v1.2.6.bat 
-            echo pause >> scripts\build\release_v1.2.6.bat 
+          IF NOT EXIST scripts\build\release_v1.2.8.bat ( 
+            echo @echo off > scripts\build\release_v1.2.8.bat 
+            echo echo EasyKit Release v1.2.8 >> scripts\build\release_v1.2.8.bat 
+            echo echo Build date: %%date%% %%time%% >> scripts\build\release_v1.2.8.bat 
+            echo echo. >> scripts\build\release_v1.2.8.bat 
+            echo echo This script is part of the EasyKit installation package. >> scripts\build\release_v1.2.8.bat 
+            echo echo For more information, visit: https://github.com/LoveDoLove/EasyKit >> scripts\build\release_v1.2.8.bat 
+            echo echo. >> scripts\build\release_v1.2.8.bat 
+            echo pause >> scripts\build\release_v1.2.8.bat 
           ) 
  
-      - name: Compile WiX source file 
+      - name: Install NSIS
+        run: | 
+          choco install nsis -y 
+        shell: pwsh
+
+      - name: Compile NSIS script 
         shell: cmd 
-        run: candle.exe -dProjectDir="%CD%\\" -out build\EasyKit.wxs.obj installer\EasyKit.wxs -ext WixUIExtension 
- 
-      - name: Link WiX object file to create MSI 
-        shell: cmd 
-        run: light.exe -out build\EasyKit_Setup.msi build\EasyKit.wxs.obj -ext WixUIExtension -cultures:en-us 
+        run: makensis.exe installer\easykit.nsi 
  
       - name: Build ZIP package 
         shell: pwsh 
@@ -61,7 +62,7 @@ jobs:
         with: 
           name: EasyKit-Packages 
           path: | 
-            build/EasyKit_Setup.msi 
+            build/EasyKit_Setup.exe 
             build/EasyKit.zip 
           retention-days: 14 
  
@@ -85,6 +86,6 @@ jobs:
         with: 
           files: | 
             release-artifacts/EasyKit.zip 
-            release-artifacts/EasyKit_Setup.msi 
+            release-artifacts/EasyKit_Setup.exe 
           draft: false 
-          generate_release_notes: true 
+          generate_release_notes: true

@@ -1,4 +1,4 @@
-# Release Notes - EasyKit v1.2.7
+# Release Notes - EasyKit v1.2.8
 
 **Release Date:** May 9, 2025
 
@@ -8,7 +8,7 @@
 
 ## Changes
 
-- Updated version numbers across project files to 1.2.7.
+- Updated version numbers across project files to 1.2.8.
 - Modified `scripts\core\common_eskit.bat` to load `config\user_config_eskit.bat` if it exists.
 
 ## Bug Fixes
