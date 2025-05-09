@@ -127,13 +127,12 @@ jobs:
             // Upload the Setup file
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.id,
+              repo: context.repo.repo,              release_id: release.id,
               name: 'EasyKit_Setup.exe',
               data: setupData
             });
-          env:
-            VERSION: ${{ steps.get_version.outputs.VERSION }}
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
             
       - name: Upload Artifacts (on manual run)
         if: github.event_name == 'workflow_dispatch'
