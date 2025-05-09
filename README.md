@@ -147,36 +147,27 @@ Contributions are welcome and appreciated! Here's how you can contribute:
 
 EasyKit uses GitHub Actions to automate building and releasing packages. The automation workflow:
 
-1. Automatically builds packages on code changes
-2. Creates installer packages for each tagged release
+1. Automatically builds packages when a version tag is pushed
+2. Creates installer packages for each release
 3. Publishes releases with both ZIP and NSIS installer options
 
 ### Working with GitHub Actions
 
-- **Continuous Integration**: Every push to main/master triggers a build
-- **Release Creation**: Creating a tag (e.g., `v1.2.0`) automatically creates a release
-- **Manual Builds**: You can manually trigger builds from the Actions tab
+- **Release Creation**: Creating a tag (e.g., `v1.2.0`) automatically triggers the build and release process
+- **Manual Builds**: You can manually trigger builds from the Actions tab in GitHub
 
 ### Workflow Diagram
 
 ```mermaid
 flowchart TD
-    A[Push to Repository] -->|Any Branch| B[Validate Batch Files]
-    A -->|"main/master branch"| C[Build Installers]
-    A -->|"Tag (v*.*.*)"|D[Create Release]
+    A[Push to Repository] -->|"Tag (v*.*.*)"|B[Build and Release]
+    A -->|"Manual Trigger"|B
     
-    B -->|Success| B1[Batch Files Validated]
-    B -->|Failure| B2[Report Errors]
+    B --> C1[Create ZIP Package]
+    B --> C2[Build NSIS Installer]
     
-    C --> C1[Create ZIP Package]
-    C --> C2[Build NSIS Installer]
-    C1 --> C3[Upload Artifacts]
-    C2 --> C3
-    
-    D --> D1[Create ZIP Package]
-    D --> D2[Build NSIS Installer]
-    D1 --> D3[Create GitHub Release]
-    D2 --> D3
+    C1 --> D[Create GitHub Release]
+    C2 --> D
 ```
 
 ### Creating a Release

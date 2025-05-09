@@ -1,24 +1,26 @@
-name: Create Release
+name: Build and Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'  # Push events to tags matching v*, i.e. v1.0.0, v20.15.10
+      - 'v*.*.*'  # Only run on version tags
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:
   build:
-    name: Create Release
+    name: Build Packages
     runs-on: windows-latest
     permissions:
-      contents: write
+      contents: write  # Needed for creating releases
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+        
       - name: Create Required Directories
         run: |
           mkdir -p build
           mkdir -p images
+          mkdir -p dist
 
       - name: Create Required Image Files
         shell: powershell
@@ -70,14 +72,14 @@ jobs:
         run: |
           makensis EasyKit.nsi
           move EasyKit_Setup.exe build/
-      
+
       - name: Get Version
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         shell: bash
-        
-      - name: Create Release
-        id: create_release
+
+      - name: Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/github-script@v7
         with:
           script: |
@@ -132,3 +134,13 @@ jobs:
             });
           env:
             VERSION: ${{ steps.get_version.outputs.VERSION }}
+            
+      - name: Upload Artifacts (on manual run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyKit-Packages
+          path: |
+            build/EasyKit.zip
+            build/EasyKit_Setup.exe
+          retention-days: 7

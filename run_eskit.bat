@@ -201,10 +201,8 @@ echo =====================================
 echo.
 echo EasyKit uses GitHub Actions for automated builds and releases.
 echo.
-echo Workflow Files:
-echo - .github\workflows\build-installers.yml   : Builds packages on code push
-echo - .github\workflows\create-release.yml     : Creates releases for tags
-echo - .github\workflows\validate-batch.yml     : Validates batch files
+echo Workflow File:
+echo - .github\workflows\build-and-release.yml  : Builds packages and creates releases
 echo.
 echo How to create a release:
 echo 1. Commit all your changes

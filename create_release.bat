@@ -47,6 +47,13 @@ echo    git push origin main
 echo    git push origin v%NEW_VERSION%
 echo.
 echo GitHub Actions will automatically:
+echo - Build the installers (ZIP and NSIS)
+echo - Create a release with these assets
+echo - Publish the release
+echo.
+echo    git push origin v%NEW_VERSION%
+echo.
+echo GitHub Actions will automatically:
 echo - Build the installers
 echo - Create a release with assets
 echo - Publish the release
