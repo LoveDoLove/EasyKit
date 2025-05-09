@@ -1,0 +1,146 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Only run on version tags
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build:
+    name: Build Packages
+    runs-on: windows-latest
+    permissions:
+      contents: write  # Needed for creating releases
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Create Required Directories
+        run: |
+          mkdir -p build
+          mkdir -p images
+          mkdir -p dist
+
+      - name: Create Required Image Files
+        shell: powershell
+        run: |
+          # Create required image files for NSIS if they don't exist
+          if (-not (Test-Path "images\installer-welcome.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 164, 314
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightBlue)
+            $font = New-Object System.Drawing.Font("Arial", 14)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit Installer", $font, $brush, 20, 150)
+            $bmp.Save("images\installer-welcome.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-welcome.bmp"
+          }
+
+          if (-not (Test-Path "images\installer-header.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 150, 57
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightGreen)
+            $font = New-Object System.Drawing.Font("Arial", 10)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit", $font, $brush, 50, 20)
+            $bmp.Save("images\installer-header.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-header.bmp"
+          }
+        
+      - name: Setup NSIS
+        uses: joncloud/makensis-action@v4
+      
+      - name: Build ZIP Package
+        run: |
+          powershell Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,.gitignore,images/* -DestinationPath build/EasyKit.zip -Force
+      
+      - name: Modify NSIS Script Output Path
+        shell: powershell
+        run: |
+          $content = Get-Content -Path .\EasyKit.nsi -Raw
+          $content = $content -replace 'OutFile "dist\\EasyKit_Setup.exe"', 'OutFile "EasyKit_Setup.exe"'
+          Set-Content -Path .\EasyKit.nsi -Value $content
+      
+      - name: Build NSIS Installer
+        run: |
+          makensis EasyKit.nsi
+          move EasyKit_Setup.exe build/
+
+      - name: Get Version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read file contents for uploading
+            const zipData = fs.readFileSync('build/EasyKit.zip');
+            const setupData = fs.readFileSync('build/EasyKit_Setup.exe');
+            
+            // Create the release
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.VERSION,
+              name: `EasyKit ${process.env.VERSION}`,
+              body: `# EasyKit ${process.env.VERSION}
+              
+              This release of EasyKit includes the following:
+              
+              - ZIP package containing all batch scripts
+              - NSIS installer for easy installation
+              
+              ## Installation
+              
+              ### Option 1: NSIS Installer
+              
+              Download \`EasyKit_Setup.exe\` and run it to install EasyKit with all dependencies.
+              
+              ### Option 2: Manual Installation
+              
+              Download \`EasyKit.zip\`, extract it to a directory of your choice, and run \`install_eskit.bat\`.`,
+              draft: false,
+              prerelease: false
+            });
+            
+            // Upload the ZIP file
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: 'EasyKit.zip',
+              data: zipData
+            });
+            
+            // Upload the Setup file
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: 'EasyKit_Setup.exe',
+              data: setupData
+            });
+          env:
+            VERSION: ${{ steps.get_version.outputs.VERSION }}
+            
+      - name: Upload Artifacts (on manual run)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyKit-Packages
+          path: |
+            build/EasyKit.zip
+            build/EasyKit_Setup.exe
+          retention-days: 7
