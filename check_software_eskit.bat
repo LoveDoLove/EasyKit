@@ -1,8 +1,15 @@
 @echo off
-color 0A
-title Package Checker
-
 setlocal EnableDelayedExpansion
+
+REM Load configuration if available
+if exist "%~dp0config_eskit.bat" (
+    call "%~dp0config_eskit.bat"
+    color %ESKIT_COLOR%
+    title %ESKIT_TITLE_PREFIX% - Software Checker
+) else (
+    color 0A
+    title Package Checker
+)
 
 :: ======================================
 :: EasyKit Software Dependency Manager
@@ -11,11 +18,19 @@ setlocal EnableDelayedExpansion
 :: Check if software name was provided
 if "%~1"=="" (
     echo [ERROR] No software specified. Exiting...
+    if "%ESKIT_ENABLE_LOGGING%"=="true" (
+        echo %DATE% %TIME% - [ERROR] Software checker called without specifying software >> "%ESKIT_LOG_PATH%\eskit.log"
+    )
     exit /b 1
 )
 
 :: Set software name
 set "software=%~1"
+
+:: Log the check
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Checking for software: %software% >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 
 :: Always ask for confirmation regardless of parameters
 set "askInstall=1"

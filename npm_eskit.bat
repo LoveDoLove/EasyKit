@@ -1,14 +1,23 @@
 @echo off
 setlocal enabledelayedexpansion
-color 0A
-title Npm Menu
+
+REM Load configuration
+call "%~dp0config_eskit.bat"
+
+color %ESKIT_COLOR%
+title %ESKIT_TITLE_PREFIX% - NPM Menu
+
+REM Log the startup
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Opened NPM Menu >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 
 :Menu
 cls
 echo.
-echo ================================
-echo  Npm Menu
-echo ================================
+echo =====================================
+echo  NPM Menu
+echo =====================================
 echo.
 echo 0. Back to Main Menu
 echo 1. Install Npm Packages
@@ -24,7 +33,16 @@ echo 9. Reset All Cache
 echo.
 echo H. Help
 echo.
+
+set choice=
 set /p choice=Choose an option: 
+if not defined choice (
+    echo.
+    echo Invalid option. Please try again.
+    timeout /t 2 >nul
+    goto Menu
+)
+
 if "%choice%"=="0" goto Exit
 if "%choice%"=="1" goto InstallNpmPackages
 if "%choice%"=="2" goto UpdateNpmPackages
@@ -217,15 +235,24 @@ goto Menu
 :OperationFailed
 echo.
 echo Operation failed with errors!
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Operation failed with error code: %errorlevel% >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 echo Error code: %errorlevel%
 pause
 goto Menu
 
 @REM Method
 :CheckSoftwareMethod
-call check_software_eskit.bat %1
-exit /b
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Checking for software: %1 >> "%ESKIT_LOG_PATH%\eskit.log"
+)
+call "%~dp0check_software_eskit.bat" %1
+exit /b %errorlevel%
 
 :Exit
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Exiting NPM Menu >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 endlocal
 exit /b 0

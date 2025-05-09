@@ -1,14 +1,24 @@
 @echo off
-color 0A
-title Git Menu
 setlocal enabledelayedexpansion
+
+REM Load configuration
+call "%~dp0config_eskit.bat"
+
+color %ESKIT_COLOR%
+title %ESKIT_TITLE_PREFIX% - Git Menu
+
+REM Log the startup
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Opened Git Menu >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 
 :Menu
 cls
 echo.
-echo ================================
+echo =====================================
 echo  Git Menu
-echo ================================
+echo =====================================
+echo.
 echo.
 echo 0. Back to Main Menu
 echo 1. Initialize Repository
@@ -60,6 +70,9 @@ goto Menu
 :InvalidChoice
 echo.
 echo Invalid option. Please try again.
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Invalid menu choice attempted >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 timeout /t 2 >nul
 goto Menu
 
@@ -441,13 +454,23 @@ goto ListPullRequests
 :OperationFailed
 echo.
 echo Operation failed with errors!
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Operation failed with error code: %errorlevel% >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 pause
 goto Menu
 
 @REM Method
 :CheckSoftwareMethod
-call check_software_eskit.bat %1
-exit /b
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Checking for software: %1 >> "%ESKIT_LOG_PATH%\eskit.log"
+)
+call "%~dp0check_software_eskit.bat" %1
+exit /b %errorlevel%
 
 :Exit
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Exiting Git Menu >> "%ESKIT_LOG_PATH%\eskit.log"
+)
+endlocal
 exit /b 0

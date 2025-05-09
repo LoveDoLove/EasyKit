@@ -29,6 +29,13 @@ REM ================================
 REM Create logs directory if it doesn't exist
 if not exist "%ESKIT_LOG_PATH%" (
     mkdir "%ESKIT_LOG_PATH%" >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo WARNING: Failed to create log directory at "%ESKIT_LOG_PATH%"
+        echo Logging will be disabled.
+        set "ESKIT_ENABLE_LOGGING=false"
+    ) else (
+        echo Created log directory at "%ESKIT_LOG_PATH%"
+    )
 )
 
 REM Function to log messages if logging is enabled

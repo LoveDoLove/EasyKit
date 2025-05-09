@@ -1,14 +1,24 @@
 @echo off
-color 0A
-title Composer Menu
 setlocal enabledelayedexpansion
+
+REM Load configuration
+call "%~dp0config_eskit.bat"
+
+color %ESKIT_COLOR%
+title %ESKIT_TITLE_PREFIX% - Composer Menu
+
+REM Log the startup
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Opened Composer Menu >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 
 :Menu
 cls
 echo.
-echo ================================
+echo =====================================
 echo  Composer Menu
-echo ================================
+echo =====================================
+echo.
 echo.
 echo 0. Back to Main Menu
 echo 1. Install Packages
@@ -169,14 +179,23 @@ goto Menu
 :OperationFailed
 echo.
 echo Operation failed with errors!
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Operation failed with error code: %errorlevel% >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 pause
 goto Menu
 
 @REM Method
 :CheckSoftwareMethod
-call check_software_eskit.bat %1
-exit /b
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Checking for software: %1 >> "%ESKIT_LOG_PATH%\eskit.log"
+)
+call "%~dp0check_software_eskit.bat" %1
+exit /b %errorlevel%
 
 :Exit
+if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    echo %DATE% %TIME% - Exiting Composer Menu >> "%ESKIT_LOG_PATH%\eskit.log"
+)
 endlocal
 exit /b 0
