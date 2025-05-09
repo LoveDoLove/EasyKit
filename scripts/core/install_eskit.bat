@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 :: EasyKit Installer
 :: Created: May 9, 2025
-:: Version: 1.0.0
+:: Version: 2.0.0
 
 title EasyKit Installer
 color 0A

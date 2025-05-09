@@ -1,228 +1,69 @@
-# EasyKit
+# EasyKit 2.0.0
 
-![EasyKit Logo](images/icon.jpg)
+**Your All-in-One Toolkit for Streamlined Web Development**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.7-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
+EasyKit is a comprehensive command-line utility designed to simplify and accelerate common web development tasks. It provides a unified interface to manage various tools and project configurations, boosting your productivity and ensuring consistency across your development workflow.
 
-EasyKit is a powerful collection of batch scripts designed to simplify web development and system maintenance tasks on Windows systems. It provides a convenient menu-driven interface for common development workflows including npm, Laravel, Composer, and Git operations.
+## Overview
 
-## 🚀 Features
+EasyKit 2.0.0 marks a significant update, focusing on enhanced performance, broader tool integration, and a more intuitive user experience. Whether you're managing dependencies, version control, or project-specific commands, EasyKit provides the necessary scripts and configurations to get you up and running quickly.
 
-- **Centralized Development Interface**: Access all your development tools from a single menu
-- **NPM Management**: Install, update, and manage npm packages with ease
-- **Laravel Tools**: Quickly set up, configure, and manage Laravel projects
-- **Composer Management**: Handle Composer dependencies and operations
-- **Git Workflows**: Streamline git operations, including repositories, branches, and PRs
-- **System Maintenance**: Perform system maintenance tasks without remembering complex commands
-- **Configuration System**: Customize settings to match your workflow. Default settings are in `config\config_eskit.bat`.
-- **User-Specific Settings**: Override default settings by creating `config\user_config_eskit.bat` with your preferred configurations.
-- **Logging**: Track operations with detailed logs for troubleshooting
-- **Desktop Integration**: Create desktop and Start Menu shortcuts
+## Features
 
-## 📋 Menu Structure
+*   **Simplified Tool Access:** Quickly access and run tools like Git, Composer, NPM, and Laravel Artisan commands through dedicated EasyKit scripts.
+*   **Centralized Configuration:** Manage global and user-specific settings via `config/config_eskit.bat` and `config/user_config_eskit.bat`.
+*   **Automated Setup:** Easy installation process using `scripts/core/install_eskit.bat`.
+*   **Update Management:** Keep EasyKit up-to-date with `scripts/core/update_eskit.bat`.
+*   **Project Initialization:** Streamlined project setup with `run_eskit.bat`.
+*   **Customizable:** Extend EasyKit with your own scripts and configurations.
 
-- **Main Menu**: Central hub for accessing all features
-- **NPM Menu**: NPM package and project management
-- **Laravel Menu**: Laravel project setup and management
-- **Composer Menu**: Composer dependency management
-- **Git Menu**: Git repository operations
-- **Settings**: Customize EasyKit behavior and appearance
-- **Update Manager**: Keep EasyKit up to date
-
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Windows OS
-- Required development tools:
-  - Node.js and npm (for NPM features)
-  - PHP and Composer (for Laravel and Composer features)
-  - Git (for version control features)
+Ensure you have the necessary underlying software installed (e.g., PHP, Node.js, Git) that EasyKit helps manage. The `scripts/core/check_software_eskit.bat` script can help verify your environment.
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/LoveDoLove/EasyKit.git
-   ```
-2. Navigate to the repository directory:
-   ```bash
-   cd EasyKit
-   ```
-3. Run EasyKit:
-   ```bash
-   run_eskit.bat
-   ```
+1.  Clone or download the EasyKit repository to your desired location.
+2.  Navigate to the `scripts/core` directory.
+3.  Run `install_eskit.bat` to set up EasyKit and create necessary environment configurations or shortcuts.
 
-### Configuration
+## Usage
 
-EasyKit is configured through the `config\config_eskit.bat` file, where you can modify:
+Once installed, you can primarily interact with EasyKit using `run_eskit.bat` from your project's root directory or by directly invoking the scripts in the `scripts/tools` directory.
 
-- Color schemes
-- Default paths
-- Logging settings
-- Update behavior
-- UI preferences
+*   **Main Interface:**
+    ```batch
+    run_eskit.bat
+    ```
+    This will typically present you with a menu or options based on your project type and EasyKit configuration.
 
-To personalize your settings without altering the main configuration, you can create a `config\user_config_eskit.bat` file. Any settings defined in this file will override the corresponding settings in `config\config_eskit.bat`.
+*   **Tool-Specific Scripts:**
+    *   `scripts/tools/git_eskit.bat [git commands]`
+    *   `scripts/tools/composer_eskit.bat [composer commands]`
+    *   `scripts/tools/npm_eskit.bat [npm commands]`
+    *   `scripts/tools/laravel_eskit.bat [artisan commands]`
 
-**Example `user_config_eskit.bat`:**
-```bat
-REM My custom EasyKit settings
-set "ESKIT_COLOR=0B"         REM Light Aqua background, Light Blue text
-set "ESKIT_SHOW_TIPS=false"  REM Disable startup tips
-```
+## Configuration
 
-## 📁 Project Structure
+EasyKit's behavior can be customized through configuration files located in the `config` directory:
 
-```
-EasyKit/
-├── run_eskit.bat             # Main entry point
-├── config/                   # Configuration files
-│   ├── config_eskit.bat      # Default configuration settings
-│   └── user_config_eskit.bat # User-specific configuration (optional)
-├── scripts/                  # Script files
-│   ├── core/                 # Core functionality
-│   │   ├── common_eskit.bat  # Shared functions
-│   │   ├── update_eskit.bat  # Update management
-│   │   ├── check_software_eskit.bat # Software dependency check
-│   │   └── create_shortcuts_eskit.bat # Shortcut creation
-│   ├── tools/                # Tool-specific scripts
-│   │   ├── npm_eskit.bat     # NPM tools
-│   │   ├── laravel_eskit.bat # Laravel tools
-│   │   ├── composer_eskit.bat # Composer tools
-│   │   └── git_eskit.bat     # Git tools
-│   ├── build/                # Build scripts (legacy, not needed for auto-build)
-│   └── EasyKit.wxs           # WiX installer script
-├── images/                   # Icon resources
-└── logs/                     # Operation logs
-```
+*   `config_eskit.bat`: Contains the main configuration for EasyKit, including the current version (`ESKIT_VERSION=2.0.0`).
+*   `user_config_eskit.bat`: For user-specific overrides and custom settings. This file is typically not version-controlled.
 
-## 🖥️ Usage Examples
+## Logging
 
-### NPM Package Management
+EasyKit maintains logs in the `logs/eskit.log` file (or `config/logs/eskit.log`), which can be helpful for troubleshooting.
 
-```bash
-# From the main menu, select option 1, then option 1 again to install packages
-# Or run directly:
-npm_eskit.bat
-# Then select option 1
-```
+## Contributing
 
-### Laravel Project Setup
+(Details on how to contribute can be added here if the project is open to contributions.)
 
-```bash
-# From the main menu, select option 2, then option 1 for quick setup
-# Or run directly:
-laravel_eskit.bat
-# Then select option 1
-```
+## License
 
-### Git Operations
+EasyKit is released under the [MIT License](LICENSE).
 
-```bash
-# From the main menu, select option 4, then navigate the Git menu
-# Or run directly:
-git_eskit.bat
-```
+---
 
-## 📈 Advanced Usage
-
-### Creating Desktop Shortcuts
-
-```bash
-# From the main menu, select option 5
-# Or run directly:
-create_shortcuts_eskit.bat
-```
-
-### Customizing Appearance
-
-```bash
-# From the main menu, select option 6, then option 4
-```
-
-## 🤝 Contributing
-
-Contributions are welcome and appreciated! Here's how you can contribute:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit your changes: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature-name`
-5. Open a pull request
-
-### Contribution Guidelines
-
-- Follow existing code style and structure
-- Update documentation for any new features or changes
-- Add detailed commit messages
-- Test your changes thoroughly
-
-## 🔄 CI/CD and Releases
-
-EasyKit uses GitHub Actions to automate building and releasing packages. The automation workflow:
-
-1. Automatically builds packages when a version tag is pushed
-2. Creates installer packages for each release
-3. Publishes releases with both ZIP and MSI installer options
-
-### Working with GitHub Actions
-
-- **Release Creation**: Creating a tag (e.g., `v1.2.6`) automatically triggers the build and release process
-- **Manual Builds**: You can manually trigger builds from the Actions tab in GitHub
-
-### Workflow Diagram
-
-```mermaid
-flowchart TD
-    A[Push to Repository] -->|"Tag (v*.*.*)"|B[Build and Release]
-    A -->|"Manual Trigger"|B
-    
-    B --> C1[Create ZIP Package]
-    B --> C2[Build MSI Installer]
-    
-    C1 --> D[Create GitHub Release]
-    C2 --> D
-```
-
-### Creating a Release
-
-To create a new release:
-
-```bash
-git tag v1.2.6
-git push origin v1.2.6
-```
-
-The GitHub Actions workflow will automatically build and publish the release.
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔄 Version History
-
-- **v1.2.7** - Added support for user-specific settings in `user_config_eskit.bat`
-- **v1.2.6** - Switched installer technology from NSIS to WiX Toolset (MSI)
-- **v1.2.5** - Fixed GitHub Actions workflow after project restructuring
-- **v1.2.4** - Restructured project for better organization and maintainability
-- **v1.2.3** - Fixed issues with shortcut creation and added more logging
-- **v1.2.2** - Fixed issues with shortcut creation and added more logging
-- **v1.2.1** - Bug fixes and minor improvements
-- **v1.2.0** - Added GitHub Actions for automated builds and releases, enhanced update system
-- **v1.1.0** - Added configuration system, improved logging, and standardized menus
-- **v1.0.0** - Initial release with basic functionality
-
-## 📞 Contact
-
-For any questions, suggestions or feedback:
-
-- Create an issue on GitHub
-- Contact the repository owner: [LoveDoLove](https://github.com/LoveDoLove)
-
-## 🙏 Acknowledgements
-
-- All the contributors who have helped improve EasyKit
-- The Windows batch scripting community for sharing knowledge and techniques
+Thank you for using EasyKit! We hope it makes your development process smoother and more efficient.

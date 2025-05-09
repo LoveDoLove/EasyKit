@@ -1,7 +1,7 @@
 !define PRODUCT_NAME "EasyKit"
-!define PRODUCT_VERSION "1.2.8" ; You might want to update this dynamically
-!define PRODUCT_PUBLISHER "Your Company Name"
-!define PRODUCT_WEB_SITE "https://example.com"
+!define PRODUCT_VERSION "2.0.0" ; You might want to update this dynamically
+!define PRODUCT_PUBLISHER "LoveDoLove"
+!define PRODUCT_WEB_SITE "https://lovedolove.github.io"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\EasyKit.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
@@ -22,7 +22,7 @@
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
 ; License page
-; !insertmacro MUI_PAGE_LICENSE "path\to\license.txt"
+!insertmacro MUI_PAGE_LICENSE "LICENSE"
 ; Directory page
 !insertmacro MUI_PAGE_DIRECTORY
 ; Instfiles page
@@ -50,12 +50,12 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
   ; Files to install
-  File "run_eskit.bat"
-  File "README.md"
-  File "LICENSE"
-  File /r "scripts\"
-  File /r "images\"
-  File /r "config\"
+  File "${__FILEDIR__}\\run_eskit.bat"
+  File "${__FILEDIR__}\\README.md"
+  File "${__FILEDIR__}\\LICENSE"
+  File /r "${__FILEDIR__}\\scripts\\"
+  File /r "${__FILEDIR__}\\images\\"
+  File /r "${__FILEDIR__}\\config\\"
   ; Add other files and folders here
 
   ; Store installation folder

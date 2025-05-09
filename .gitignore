@@ -43,3 +43,11 @@ $RECYCLE.BIN/
 
 # Backup folders
 backups/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+build/
+dist/

@@ -45,7 +45,7 @@ jobs:
 
       - name: Compile NSIS script 
         shell: cmd 
-        run: makensis.exe installer\easykit.nsi 
+        run: makensis.exe easykit.nsi 
  
       - name: Build ZIP package 
         shell: pwsh 

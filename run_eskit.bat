@@ -1,14 +1,64 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM Load configuration
-call "%~dp0config\config_eskit.bat"
+REM Define Core Paths
+set "ESKIT_INSTALL_DIR=%~dp0"
+set "ESKIT_APPDATA_DIR=%APPDATA%\EasyKit"
+set "ESKIT_APPDATA_CONFIG_PATH=%ESKIT_APPDATA_DIR%\config_eskit.bat"
+set "ESKIT_APPDATA_LOG_DIR=%ESKIT_APPDATA_DIR%\logs"
+set "ESKIT_INSTALL_DIR_CONFIG_TEMPLATE=%ESKIT_INSTALL_DIR%config\config_eskit.bat"
+set "ESKIT_INSTALL_DIR_ICON_PATH=%ESKIT_INSTALL_DIR%images\icon.ico"
+set "ESKIT_CORE_VERSION=2.0.0"
+
+REM Ensure AppData directories exist
+if not exist "%ESKIT_APPDATA_DIR%" mkdir "%ESKIT_APPDATA_DIR%"
+if not exist "%ESKIT_APPDATA_LOG_DIR%" mkdir "%ESKIT_APPDATA_LOG_DIR%"
+
+REM Initialize configuration if it doesn't exist in AppData
+if not exist "%ESKIT_APPDATA_CONFIG_PATH%" (
+    echo Initializing EasyKit configuration in AppData...
+    if exist "%ESKIT_INSTALL_DIR_CONFIG_TEMPLATE%" (
+        copy "%ESKIT_INSTALL_DIR_CONFIG_TEMPLATE%" "%ESKIT_APPDATA_CONFIG_PATH%" >nul
+        echo Default configuration copied to "%ESKIT_APPDATA_CONFIG_PATH%"
+    ) else (
+        echo WARNING: Default configuration template not found at "%ESKIT_INSTALL_DIR_CONFIG_TEMPLATE%"
+        echo Please ensure EasyKit is installed correctly.
+        REM Create a minimal config if template is missing
+        (
+            echo @echo off
+            echo set "ESKIT_COLOR=0A"
+            echo set "ESKIT_TITLE_PREFIX=EasyKit"
+            echo set "ESKIT_ENABLE_LOGGING=true"
+            echo set "ESKIT_CHECK_UPDATES=true"
+            echo set "ESKIT_UPDATE_URL=https://github.com/LoveDoLove/EasyKit/releases"
+            echo set "ESKIT_MENU_WIDTH=60"
+            echo set "ESKIT_SHOW_TIPS=true"
+            echo set "ESKIT_CONFIRM_EXIT=true"
+        ) > "%ESKIT_APPDATA_CONFIG_PATH%"
+    )
+)
+
+REM Load configuration from AppData
+if exist "%ESKIT_APPDATA_CONFIG_PATH%" (
+    call "%ESKIT_APPDATA_CONFIG_PATH%"
+) else (
+    echo CRITICAL ERROR: Configuration file could not be loaded or created in AppData.
+    echo "%ESKIT_APPDATA_CONFIG_PATH%"
+    pause
+    exit /b 1
+)
+
+REM Override/Set critical paths and version after loading config
+set "ESKIT_LOG_PATH=%ESKIT_APPDATA_LOG_DIR%"
+set "ESKIT_ICON_PATH=%ESKIT_INSTALL_DIR_ICON_PATH%"
+set "ESKIT_VERSION=%ESKIT_CORE_VERSION%"
 
 color %ESKIT_COLOR%
-title %ESKIT_TITLE_PREFIX% - Main Menu
+title %ESKIT_TITLE_PREFIX% - Main Menu v%ESKIT_VERSION%
 
 REM Log the startup
 if "%ESKIT_ENABLE_LOGGING%"=="true" (
+    if not exist "%ESKIT_LOG_PATH%" mkdir "%ESKIT_LOG_PATH%"
     echo %DATE% %TIME% - Started EasyKit v%ESKIT_VERSION% >> "%ESKIT_LOG_PATH%\eskit.log"
 )
 
@@ -100,7 +150,7 @@ if "%ESKIT_SHOW_TIPS%"=="true" (
 ) else (
     set "ESKIT_SHOW_TIPS=true"
 )
-REM Future implementation: Save settings to config file
+call :SaveUserSettings
 goto Settings
 
 :ToggleLogging
@@ -109,7 +159,7 @@ if "%ESKIT_ENABLE_LOGGING%"=="true" (
 ) else (
     set "ESKIT_ENABLE_LOGGING=true"
 )
-REM Future implementation: Save settings to config file
+call :SaveUserSettings
 goto Settings
 
 :ToggleUpdateChecking
@@ -118,7 +168,7 @@ if "%ESKIT_CHECK_UPDATES%"=="true" (
 ) else (
     set "ESKIT_CHECK_UPDATES=true"
 )
-REM Future implementation: Save settings to config file
+call :SaveUserSettings
 goto Settings
 
 :ChangeColor
@@ -145,7 +195,7 @@ set /p bg=Enter background color (0-9, A-F):
 set /p fg=Enter text color (0-9, A-F): 
 set "ESKIT_COLOR=%bg%%fg%"
 color %ESKIT_COLOR%
-REM Future implementation: Save settings to config file
+call :SaveUserSettings
 goto Settings
 
 :Exit
@@ -187,6 +237,24 @@ if "%choice%"=="0" goto Menu
 if "%choice%"=="1" call "%~dp0scripts\build\build_nsis_installer.bat"
 if "%choice%"=="2" goto GitHubActionsGuide
 goto BuildReleaseMenu
+
+:SaveUserSettings
+REM This will overwrite config_eskit.bat in APPDATA with current settings
+if not exist "%ESKIT_APPDATA_DIR%" mkdir "%ESKIT_APPDATA_DIR%"
+(
+    echo @echo off
+    echo REM EasyKit User Settings. This file is auto-generated.
+    echo set "ESKIT_COLOR=%ESKIT_COLOR%"
+    echo set "ESKIT_TITLE_PREFIX=%ESKIT_TITLE_PREFIX%"
+    echo set "ESKIT_ENABLE_LOGGING=%ESKIT_ENABLE_LOGGING%"
+    echo set "ESKIT_CHECK_UPDATES=%ESKIT_CHECK_UPDATES%"
+    echo set "ESKIT_UPDATE_URL=%ESKIT_UPDATE_URL%"
+    echo set "ESKIT_MENU_WIDTH=%ESKIT_MENU_WIDTH%"
+    echo set "ESKIT_SHOW_TIPS=%ESKIT_SHOW_TIPS%"
+    echo set "ESKIT_CONFIRM_EXIT=%ESKIT_CONFIRM_EXIT%"
+    REM ESKIT_VERSION, ESKIT_LOG_PATH, ESKIT_ICON_PATH are managed by run_eskit.bat directly
+) > "%ESKIT_APPDATA_CONFIG_PATH%"
+goto :eof
 
 :GitHubActionsGuide
 cls
