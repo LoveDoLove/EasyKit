@@ -9,12 +9,14 @@ jobs:
   build:
     name: Create Release
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         
       - name: Setup NSIS
-        uses: joncloud/makensis-action@v3.6
+        uses: joncloud/makensis-action@v4
       
       - name: Create Build Directory
         run: mkdir build
@@ -35,18 +37,60 @@ jobs:
         
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: actions/github-script@v7
         with:
-          name: EasyKit ${{ steps.get_version.outputs.VERSION }}
-          draft: false
-          prerelease: false
-          files: |
-            build/EasyKit.zip
-            build/EasyKit_Setup.exe
-          body: |
-            # EasyKit ${{ steps.get_version.outputs.VERSION }}
+          script: |
+            const fs = require('fs');
             
-            This release of EasyKit includes the following:
+            // Read file contents for uploading
+            const zipData = fs.readFileSync('build/EasyKit.zip');
+            const setupData = fs.readFileSync('build/EasyKit_Setup.exe');
+            
+            // Create the release
+            const { data: release } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.VERSION,
+              name: `EasyKit ${process.env.VERSION}`,
+              body: `# EasyKit ${process.env.VERSION}
+              
+              This release of EasyKit includes the following:
+              
+              - ZIP package containing all batch scripts
+              - NSIS installer for easy installation
+              
+              ## Installation
+              
+              ### Option 1: NSIS Installer
+              
+              Download \`EasyKit_Setup.exe\` and run it to install EasyKit with all dependencies.
+              
+              ### Option 2: Manual Installation
+              
+              Download \`EasyKit.zip\`, extract it to a directory of your choice, and run \`install_eskit.bat\`.`,
+              draft: false,
+              prerelease: false
+            });
+            
+            // Upload the ZIP file
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: 'EasyKit.zip',
+              data: zipData
+            });
+            
+            // Upload the Setup file
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.id,
+              name: 'EasyKit_Setup.exe',
+              data: setupData
+            });
+          env:
+            VERSION: ${{ steps.get_version.outputs.VERSION }}
             
             - ZIP package containing all batch scripts
             - NSIS installer for easy installation
