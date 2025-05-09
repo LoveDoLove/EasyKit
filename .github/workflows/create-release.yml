@@ -1,0 +1,62 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Push events to tags matching v*, i.e. v1.0.0, v20.15.10
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        
+      - name: Setup NSIS
+        uses: joncloud/makensis-action@v3.6
+      
+      - name: Create Build Directory
+        run: mkdir build
+        
+      - name: Build ZIP Package
+        run: |
+          powershell Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,.gitignore,images/* -DestinationPath build/EasyKit.zip -Force
+      
+      - name: Build NSIS Installer
+        run: |
+          makensis EasyKit.nsi
+          move EasyKit_Setup.exe build/
+      
+      - name: Get Version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        shell: bash
+        
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: EasyKit ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            build/EasyKit.zip
+            build/EasyKit_Setup.exe
+          body: |
+            # EasyKit ${{ steps.get_version.outputs.VERSION }}
+            
+            This release of EasyKit includes the following:
+            
+            - ZIP package containing all batch scripts
+            - NSIS installer for easy installation
+            
+            ## Installation
+            
+            ### Option 1: NSIS Installer
+            
+            Download `EasyKit_Setup.exe` and run it to install EasyKit with all dependencies.
+            
+            ### Option 2: Manual Installation
+            
+            Download `EasyKit.zip`, extract it to a directory of your choice, and run `install_eskit.bat`.

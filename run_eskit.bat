@@ -33,6 +33,7 @@ echo  4. Git Menu
 echo  5. Create Shortcuts
 echo  6. Settings
 echo  7. Update Manager
+echo  8. Build and Release
 echo.
 
 if "%ESKIT_SHOW_TIPS%"=="true" (
@@ -57,6 +58,7 @@ if "%choice%"=="4" call "%~dp0git_eskit.bat"
 if "%choice%"=="5" call "%~dp0create_shortcuts_eskit.bat"
 if "%choice%"=="6" goto Settings
 if "%choice%"=="7" call "%~dp0update_eskit.bat"
+if "%choice%"=="8" goto BuildReleaseMenu
 goto Menu
 
 :Settings
@@ -158,3 +160,64 @@ if "%ESKIT_CONFIRM_EXIT%"=="true" (
 
 echo Exiting EasyKit...
 exit /b 0
+
+:BuildReleaseMenu
+cls
+echo.
+echo =====================================
+echo  EasyKit Build and Release
+echo =====================================
+echo.
+
+echo  0. Back to Main Menu
+echo  1. Build Package (ZIP)
+echo  2. Build NSIS Installer
+echo  3. Create New Release
+echo  4. View GitHub Actions Guide
+echo.
+
+set choice=
+set /p choice=Choose an option: 
+if not defined choice (
+    echo.
+    echo Invalid option. Please try again.
+    timeout /t 2 >nul
+    goto BuildReleaseMenu
+)
+
+if "%choice%"=="0" goto Menu
+if "%choice%"=="1" call "%~dp0build_package.bat"
+if "%choice%"=="2" call "%~dp0build_nsis_installer.bat"
+if "%choice%"=="3" call "%~dp0create_release.bat"
+if "%choice%"=="4" goto GitHubActionsGuide
+goto BuildReleaseMenu
+
+:GitHubActionsGuide
+cls
+echo.
+echo =====================================
+echo  GitHub Actions Guide
+echo =====================================
+echo.
+echo EasyKit uses GitHub Actions for automated builds and releases.
+echo.
+echo Workflow Files:
+echo - .github\workflows\build-installers.yml   : Builds packages on code push
+echo - .github\workflows\create-release.yml     : Creates releases for tags
+echo - .github\workflows\validate-batch.yml     : Validates batch files
+echo.
+echo How to create a release:
+echo 1. Commit all your changes
+echo 2. Tag the release with: git tag v1.x.x
+echo 3. Push the tag with: git push origin v1.x.x
+echo.
+echo GitHub will automatically:
+echo - Build the installers (ZIP and NSIS)
+echo - Create a release with those assets
+echo - Publish the release on GitHub
+echo.
+echo To perform these steps easily, use Option 3 "Create New Release"
+echo from the Build and Release menu.
+echo.
+pause
+goto BuildReleaseMenu

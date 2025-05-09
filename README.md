@@ -3,7 +3,7 @@
 ![EasyKit Logo](images/icon.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
 
 EasyKit is a powerful collection of batch scripts designed to simplify web development and system maintenance tasks on Windows systems. It provides a convenient menu-driven interface for common development workflows including npm, Laravel, Composer, and Git operations.
 
@@ -143,12 +143,60 @@ Contributions are welcome and appreciated! Here's how you can contribute:
 - Add detailed commit messages
 - Test your changes thoroughly
 
+## 🔄 CI/CD and Releases
+
+EasyKit uses GitHub Actions to automate building and releasing packages. The automation workflow:
+
+1. Automatically builds packages on code changes
+2. Creates installer packages for each tagged release
+3. Publishes releases with both ZIP and NSIS installer options
+
+### Working with GitHub Actions
+
+- **Continuous Integration**: Every push to main/master triggers a build
+- **Release Creation**: Creating a tag (e.g., `v1.2.0`) automatically creates a release
+- **Manual Builds**: You can manually trigger builds from the Actions tab
+
+### Workflow Diagram
+
+```mermaid
+flowchart TD
+    A[Push to Repository] -->|Any Branch| B[Validate Batch Files]
+    A -->|"main/master branch"| C[Build Installers]
+    A -->|"Tag (v*.*.*)"|D[Create Release]
+    
+    B -->|Success| B1[Batch Files Validated]
+    B -->|Failure| B2[Report Errors]
+    
+    C --> C1[Create ZIP Package]
+    C --> C2[Build NSIS Installer]
+    C1 --> C3[Upload Artifacts]
+    C2 --> C3
+    
+    D --> D1[Create ZIP Package]
+    D --> D2[Build NSIS Installer]
+    D1 --> D3[Create GitHub Release]
+    D2 --> D3
+```
+
+### Creating a Release
+
+To create a new release:
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+The GitHub Actions workflow will automatically build and publish the release.
+
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🔄 Version History
 
+- **v1.2.0** - Added GitHub Actions for automated builds and releases, enhanced update system
 - **v1.1.0** - Added configuration system, improved logging, and standardized menus
 - **v1.0.0** - Initial release with basic functionality
 
