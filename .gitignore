@@ -1,0 +1,45 @@
+# EasyKit .gitignore file
+
+# Log files
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# User-specific files
+*.user
+*.userprefs
+*.suo
+
+# Backup files
+*.bak
+*~
+*.swp
+
+# IDE and editor folders
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# User-specific configuration
+# Uncomment the line below if you want users to create their own config
+# config_local.bat
+
+# Generated shortcuts
+*.lnk
+
+# Environment-specific files
+# You might want to add environment-specific exclusions here
+
+# Backup folders
+backups/
