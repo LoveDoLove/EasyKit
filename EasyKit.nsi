@@ -4,6 +4,9 @@
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 
+; Create output directory if it doesn't exist
+!system 'mkdir "$%TEMP%\dist" >nul 2>&1'
+
 ; General
 Name "EasyKit"
 OutFile "dist\EasyKit_Setup.exe"
