@@ -1,5 +1,6 @@
 @echo off
 REM Script to prepare the NSIS file for GitHub Actions by removing EnVar plugin usage
+REM and fixing paths for the new project structure
 
 echo Preparing NSIS script for GitHub Actions...
 
@@ -12,12 +13,14 @@ if not exist "%~dp0..\..\installer\EasyKit.nsi.original" (
 REM Ensure build directory exists
 if not exist "%~dp0..\..\build" mkdir "%~dp0..\..\build"
 
-REM Create a GitHub-compatible version without EnVar plugin usage
-powershell -Command "& {
-  $content = Get-Content -Path '%~dp0..\..\installer\EasyKit.nsi' -Raw
-  
-  # Update output path to build directory
-  $content = $content -replace 'OutFile \"dist\\EasyKit_Setup.exe\"', 'OutFile \"build\EasyKit_Setup.exe\"'
+REM Call our new fix script
+call "%~dp0fix_installer_paths.bat"
+
+REM Also fix the workflow file
+powershell -ExecutionPolicy Bypass -File "%~dp0fix_github_workflow.ps1"
+
+echo.
+echo Preparation complete. You can now commit these changes and push to GitHub.
   
   # Comment out the EnVar plugin section
   $pathSectionPattern = '(?s)Section \"Add to PATH\" SecPath.*?EndSection'

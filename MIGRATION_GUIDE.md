@@ -2,6 +2,18 @@
 
 This document provides guidance on the recent reorganization of the EasyKit project structure.
 
+## Version Updates
+
+### v1.2.5 (May 9, 2025)
+- Fixed GitHub Actions workflow after project restructuring
+- Added scripts to fix path issues in NSIS installer script
+- Added documentation for GitHub Actions workflow fixes
+
+### v1.2.4
+- Restructured project for better organization and maintainability
+- Moved scripts to dedicated subdirectories
+- Reorganized configuration files
+
 ## Changes Made
 
 The project has been reorganized to improve maintainability and clarity:
@@ -31,6 +43,25 @@ GitHub Actions workflow has been updated to use the new directory structure. The
 - `installer/EasyKit.nsi` - For the NSIS installer script
 - `scripts/**/*.bat` - For all batch files to include in the package
 - `run_eskit.bat` - The main entry point
+
+### GitHub Actions Fixes in v1.2.5
+
+After the project restructuring in v1.2.4, some issues were found with the GitHub Actions workflow, primarily related to file paths in the NSIS installer script. Version 1.2.5 includes:
+
+1. **Fix Scripts**:
+   - `scripts\github\fix_all_github_issues.bat` - Comprehensive fix script
+   - `scripts\github\fix_github_workflow.ps1` - PowerShell script to fix the workflow file
+   - `scripts\github\fix_installer_paths.bat` - Script to fix paths in the NSIS installer script
+
+2. **Documentation**:
+   - `docs\github_actions_fix.md` - Detailed information about the fixes
+
+3. **Path Fixes**:
+   - Updated image paths in NSIS script: from `images\icon.ico` to `..\images\icon.ico`
+   - Updated LICENSE path: from `LICENSE` to `..\LICENSE`
+   - Fixed directory structure references in the installer script
+
+For more detailed information, refer to the [GitHub Actions Fix Documentation](docs/github_actions_fix.md).
 
 ## Reverting to Old Structure (If Needed)
 

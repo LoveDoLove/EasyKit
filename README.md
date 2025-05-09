@@ -3,7 +3,7 @@
 ![EasyKit Logo](images/icon.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
+[![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
 
 EasyKit is a powerful collection of batch scripts designed to simplify web development and system maintenance tasks on Windows systems. It provides a convenient menu-driven interface for common development workflows including npm, Laravel, Composer, and Git operations.
 
@@ -165,7 +165,7 @@ EasyKit uses GitHub Actions to automate building and releasing packages. The aut
 
 ### Working with GitHub Actions
 
-- **Release Creation**: Creating a tag (e.g., `v1.2.4`) automatically triggers the build and release process
+- **Release Creation**: Creating a tag (e.g., `v1.2.5`) automatically triggers the build and release process
 - **Manual Builds**: You can manually trigger builds from the Actions tab in GitHub
 
 ### Workflow Diagram
@@ -187,8 +187,8 @@ flowchart TD
 To create a new release:
 
 ```bash
-git tag v1.2.4
-git push origin v1.2.4
+git tag v1.2.5
+git push origin v1.2.5
 ```
 
 The GitHub Actions workflow will automatically build and publish the release.
@@ -199,6 +199,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔄 Version History
 
+- **v1.2.5** - Fixed GitHub Actions workflow after project restructuring
 - **v1.2.4** - Restructured project for better organization and maintainability
 - **v1.2.3** - Fixed issues with shortcut creation and added more logging
 - **v1.2.2** - Fixed issues with shortcut creation and added more logging

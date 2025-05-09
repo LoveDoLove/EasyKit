@@ -26,31 +26,42 @@ jobs:
         shell: pwsh
         run: |
           # Create a modified version of the NSIS script without EnVar plugin usage
-          $content = Get-Content -Path ./installer/EasyKit.nsi -Raw
-          $content = $content -replace 'OutFile "dist\\EasyKit_Setup.exe"', 'OutFile "build\EasyKit_Setup.exe"'
+          \ = Get-Content -Path ./installer/EasyKit.nsi -Raw
+          \ = \ -replace 'OutFile "dist\\\\EasyKit_Setup.exe"', 'OutFile "build\EasyKit_Setup.exe"'
+          
+          # Fix paths to image files (after restructuring)
+          \ = \ -replace '!define MUI_ICON "images\\\\icon.ico"', '!define MUI_ICON "..\images\icon.ico"'
+          \ = \ -replace '!define MUI_UNICON "images\\\\icon.ico"', '!define MUI_UNICON "..\images\icon.ico"'
+          \ = \ -replace '!define MUI_WELCOMEFINISHPAGE_BITMAP "images\\\\installer-welcome.bmp"', '!define MUI_WELCOMEFINISHPAGE_BITMAP "..\images\installer-welcome.bmp"'
+          \ = \ -replace '!define MUI_HEADERIMAGE_BITMAP "images\\\\installer-header.bmp"', '!define MUI_HEADERIMAGE_BITMAP "..\images\installer-header.bmp"'
+          
+          # Fix path to LICENSE file
+          \ = \ -replace '!insertmacro MUI_PAGE_LICENSE "LICENSE"', '!insertmacro MUI_PAGE_LICENSE "..\LICENSE"'
           
           # Comment out the EnVar plugin section
-          $pathSectionPattern = '(?s)Section "Add to PATH" SecPath.*?EndSection'
-          $content = $content -replace $pathSectionPattern, '; Section "Add to PATH" - Removed for CI compatibility'
+          \ = '(?s)Section "Add to PATH" SecPath.*?EndSection'
+          \ = \ -replace \, '; Section "Add to PATH" - Removed for CI compatibility'
           
           # Remove the PATH section description
-          $content = $content -replace '!insertmacro MUI_DESCRIPTION_TEXT \$\{SecPath\} ".*?"', '; PATH section description removed'
+          \ = \ -replace '!insertmacro MUI_DESCRIPTION_TEXT \\\$\{SecPath\} ".*?"', '; PATH section description removed'
           
           # Remove EnVar from uninstaller section
-          $content = $content -replace 'EnVar::DeleteValue "PATH" "\$INSTDIR"', '; EnVar::DeleteValue "PATH" "$INSTDIR" - Removed for CI compatibility'
+          \ = \ -replace 'EnVar::DeleteValue "PATH" "\\\"', '; EnVar::DeleteValue "PATH" "\" - Removed for CI compatibility'
           
-          Set-Content -Path ./installer/EasyKit.nsi -Value $content
+          Set-Content -Path ./installer/EasyKit.nsi -Value \
           
       - name: Setup NSIS
         uses: joncloud/makensis-action@v4
+        with:
+          script-file: ./installer/EasyKit.nsi
         
       - name: Build installer
         shell: pwsh
         run: |
           makensis -V4 ./installer/EasyKit.nsi
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "NSIS build failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
+          if (\ -ne 0) {
+            Write-Host "NSIS build failed with exit code \"
+            exit \
           }
           
       - name: Build ZIP package
