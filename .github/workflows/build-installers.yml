@@ -18,15 +18,56 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         
+      - name: Create Required Directories
+        run: |
+          mkdir -p build
+          mkdir -p images
+
+      - name: Create Required Image Files
+        shell: powershell
+        run: |
+          # Create required image files for NSIS if they don't exist
+          if (-not (Test-Path "images\installer-welcome.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 164, 314
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightBlue)
+            $font = New-Object System.Drawing.Font("Arial", 14)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit Installer", $font, $brush, 20, 150)
+            $bmp.Save("images\installer-welcome.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-welcome.bmp"
+          }
+
+          if (-not (Test-Path "images\installer-header.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 150, 57
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightGreen)
+            $font = New-Object System.Drawing.Font("Arial", 10)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit", $font, $brush, 50, 20)
+            $bmp.Save("images\installer-header.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-header.bmp"
+          }
+        
       - name: Setup NSIS
         uses: joncloud/makensis-action@v4
       
-      - name: Create Build Directory
-        run: mkdir build
-        
       - name: Build ZIP Package
         run: |
           powershell Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,.gitignore,images/* -DestinationPath build/EasyKit.zip -Force
+      
+      - name: Modify NSIS Script Output Path
+        shell: powershell
+        run: |
+          $content = Get-Content -Path .\EasyKit.nsi -Raw
+          $content = $content -replace 'OutFile "dist\\EasyKit_Setup.exe"', 'OutFile "EasyKit_Setup.exe"'
+          Set-Content -Path .\EasyKit.nsi -Value $content
       
       - name: Build NSIS Installer
         run: |
