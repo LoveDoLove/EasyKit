@@ -65,6 +65,8 @@ jobs:
 
       - name: Setup NSIS
         uses: joncloud/makensis-action@v4
+        with:
+          script-file: EasyKit.nsi
 
       - name: Prepare NSIS installation
         shell: pwsh
@@ -79,17 +81,38 @@ jobs:
           $content = $content -replace 'Section "Add to PATH" SecPath', '; Section "Add to PATH" SecPath - Disabled in CI'
           $content = $content -replace 'EnVar::AddValue "PATH" "\$INSTDIR"', '; EnVar::AddValue "PATH" "$INSTDIR"'
           
+          # Fix desktop shortcut section
+          $content = $content -replace '(CreateShortcut "\$DESKTOP\\EasyKit.lnk" "\$INSTDIR\\run_eskit.bat")(\s+)', '$1 "" $2'
+          $content = $content -replace '(CreateShortcut "\$SMPROGRAMS\\EasyKit\\EasyKit.lnk" "\$INSTDIR\\run_eskit.bat")(\s+)', '$1 "" $2'
+          $content = $content -replace '(CreateShortcut "\$SMPROGRAMS\\EasyKit\\Uninstall.lnk" "\$INSTDIR\\uninstall.exe")(\s+)', '$1 "" $2'
+          
+          # Create backup for debugging
+          Copy-Item -Path .\EasyKit.nsi -Destination .\EasyKit.nsi.bak
+          
           Set-Content -Path .\EasyKit.nsi -Value $content
           Write-Host "Modified NSIS script for GitHub Actions compatibility"
 
       - name: Build NSIS installer
         shell: pwsh
         run: |
-          & makensis -V4 EasyKit.nsi
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "NSIS build failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
+          try {
+            # Run the NSIS compiler with verbose output
+            & makensis -V4 .\EasyKit.nsi
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "NSIS build failed with exit code $LASTEXITCODE"
+              
+              # Display the NSIS script content for debugging
+              Write-Host "=== NSIS Script Content ==="
+              Get-Content -Path .\EasyKit.nsi
+              Write-Host "=== End of NSIS Script Content ==="
+              
+              exit $LASTEXITCODE
+            }
+          } catch {
+            Write-Host "Exception occurred: $_"
+            exit 1
           }
+          
           # Check if the installer was created in the build directory
           if (Test-Path "build\EasyKit_Setup.exe") {
             Write-Host "NSIS installer created successfully in build directory"
