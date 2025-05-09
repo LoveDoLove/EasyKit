@@ -3,7 +3,7 @@
 ![EasyKit Logo](images/icon.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
+[![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
 
 EasyKit is a powerful collection of batch scripts designed to simplify web development and system maintenance tasks on Windows systems. It provides a convenient menu-driven interface for common development workflows including npm, Laravel, Composer, and Git operations.
 
@@ -69,15 +69,27 @@ EasyKit is configured through the `config_eskit.bat` file, where you can modify:
 ```
 EasyKit/
 ├── run_eskit.bat             # Main entry point
-├── config_eskit.bat          # Configuration settings
-├── common_eskit.bat          # Shared functions
-├── npm_eskit.bat             # NPM tools
-├── laravel_eskit.bat         # Laravel tools
-├── composer_eskit.bat        # Composer tools
-├── git_eskit.bat             # Git tools
-├── update_eskit.bat          # Update management
-├── create_shortcuts_eskit.bat # Shortcut creation
-├── check_software_eskit.bat  # Software dependency check
+├── config/                   # Configuration files
+│   └── config_eskit.bat      # Configuration settings
+├── scripts/                  # Script files
+│   ├── core/                 # Core functionality
+│   │   ├── common_eskit.bat  # Shared functions
+│   │   ├── update_eskit.bat  # Update management
+│   │   ├── check_software_eskit.bat # Software dependency check
+│   │   └── create_shortcuts_eskit.bat # Shortcut creation
+│   ├── tools/                # Tool-specific scripts
+│   │   ├── npm_eskit.bat     # NPM tools
+│   │   ├── laravel_eskit.bat # Laravel tools
+│   │   ├── composer_eskit.bat # Composer tools
+│   │   └── git_eskit.bat     # Git tools
+│   ├── build/                # Build scripts
+│   │   ├── build_package.bat # Package builder
+│   │   ├── build_nsis_installer.bat # NSIS installer builder
+│   │   └── create_release.bat # Release management
+│   └── github/               # GitHub integration
+│       └── prepare_for_github_actions.bat # GitHub Actions setup
+├── installer/                # Installer files
+│   └── EasyKit.nsi           # NSIS installer script
 ├── images/                   # Icon resources
 └── logs/                     # Operation logs
 ```
@@ -153,7 +165,7 @@ EasyKit uses GitHub Actions to automate building and releasing packages. The aut
 
 ### Working with GitHub Actions
 
-- **Release Creation**: Creating a tag (e.g., `v1.2.3`) automatically triggers the build and release process
+- **Release Creation**: Creating a tag (e.g., `v1.2.4`) automatically triggers the build and release process
 - **Manual Builds**: You can manually trigger builds from the Actions tab in GitHub
 
 ### Workflow Diagram
@@ -175,8 +187,8 @@ flowchart TD
 To create a new release:
 
 ```bash
-git tag v1.2.3
-git push origin v1.2.3
+git tag v1.2.4
+git push origin v1.2.4
 ```
 
 The GitHub Actions workflow will automatically build and publish the release.
@@ -187,6 +199,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔄 Version History
 
+- **v1.2.4** - Restructured project for better organization and maintainability
 - **v1.2.3** - Fixed issues with shortcut creation and added more logging
 - **v1.2.2** - Fixed issues with shortcut creation and added more logging
 - **v1.2.1** - Bug fixes and minor improvements

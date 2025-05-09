@@ -4,17 +4,17 @@ REM Script to prepare the NSIS file for GitHub Actions by removing EnVar plugin 
 echo Preparing NSIS script for GitHub Actions...
 
 REM Make a backup of the original file if it doesn't exist
-if not exist EasyKit.nsi.original (
-  copy EasyKit.nsi EasyKit.nsi.original
+if not exist "%~dp0..\..\installer\EasyKit.nsi.original" (
+  copy "%~dp0..\..\installer\EasyKit.nsi" "%~dp0..\..\installer\EasyKit.nsi.original"
   echo Backup of original NSIS script created.
 )
 
 REM Ensure build directory exists
-if not exist build mkdir build
+if not exist "%~dp0..\..\build" mkdir "%~dp0..\..\build"
 
 REM Create a GitHub-compatible version without EnVar plugin usage
 powershell -Command "& {
-  $content = Get-Content -Path 'EasyKit.nsi' -Raw
+  $content = Get-Content -Path '%~dp0..\..\installer\EasyKit.nsi' -Raw
   
   # Update output path to build directory
   $content = $content -replace 'OutFile \"dist\\EasyKit_Setup.exe\"', 'OutFile \"build\EasyKit_Setup.exe\"'
@@ -30,12 +30,12 @@ powershell -Command "& {
   $content = $content -replace 'EnVar::DeleteValue \"PATH\" \"\$INSTDIR\"', '; EnVar::DeleteValue \"PATH\" \"$INSTDIR\" - Removed for CI compatibility'
   
   # Write to the GitHub version
-  Set-Content -Path 'EasyKit.nsi.github' -Value $content
+  Set-Content -Path '%~dp0..\..\installer\EasyKit.nsi.github' -Value $content
   Write-Host 'Created GitHub-compatible NSIS script in EasyKit.nsi.github'
 }"
 
 REM Copy the GitHub version to the main NSIS file for local testing
-copy EasyKit.nsi.github EasyKit.nsi
+copy "%~dp0..\..\installer\EasyKit.nsi.github" "%~dp0..\..\installer\EasyKit.nsi"
 echo NSIS script prepared for GitHub Actions
 
 echo.

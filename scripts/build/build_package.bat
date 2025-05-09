@@ -15,7 +15,7 @@ echo This script will create a distributable package of EasyKit.
 echo.
 
 :: Define output directory
-set "OUTPUT_DIR=%~dp0dist"
+set "OUTPUT_DIR=%~dp0..\..\build"
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 :: Define package name with date

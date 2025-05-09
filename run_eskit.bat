@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 REM Load configuration
-call "%~dp0config_eskit.bat"
+call "%~dp0config\config_eskit.bat"
 
 color %ESKIT_COLOR%
 title %ESKIT_TITLE_PREFIX% - Main Menu
@@ -51,13 +51,13 @@ if not defined choice (
 )
 
 if "%choice%"=="0" goto Exit
-if "%choice%"=="1" call "%~dp0npm_eskit.bat"
-if "%choice%"=="2" call "%~dp0laravel_eskit.bat"
-if "%choice%"=="3" call "%~dp0composer_eskit.bat"
-if "%choice%"=="4" call "%~dp0git_eskit.bat"
-if "%choice%"=="5" call "%~dp0create_shortcuts_eskit.bat"
+if "%choice%"=="1" call "%~dp0scripts\tools\npm_eskit.bat"
+if "%choice%"=="2" call "%~dp0scripts\tools\laravel_eskit.bat"
+if "%choice%"=="3" call "%~dp0scripts\tools\composer_eskit.bat"
+if "%choice%"=="4" call "%~dp0scripts\tools\git_eskit.bat"
+if "%choice%"=="5" call "%~dp0scripts\core\create_shortcuts_eskit.bat"
 if "%choice%"=="6" goto Settings
-if "%choice%"=="7" call "%~dp0update_eskit.bat"
+if "%choice%"=="7" call "%~dp0scripts\core\update_eskit.bat"
 if "%choice%"=="8" goto BuildReleaseMenu
 goto Menu
 
@@ -186,9 +186,9 @@ if not defined choice (
 )
 
 if "%choice%"=="0" goto Menu
-if "%choice%"=="1" call "%~dp0build_package.bat"
-if "%choice%"=="2" call "%~dp0build_nsis_installer.bat"
-if "%choice%"=="3" call "%~dp0create_release.bat"
+if "%choice%"=="1" call "%~dp0scripts\build\build_package.bat"
+if "%choice%"=="2" call "%~dp0scripts\build\build_nsis_installer.bat"
+if "%choice%"=="3" call "%~dp0scripts\build\create_release.bat"
 if "%choice%"=="4" goto GitHubActionsGuide
 goto BuildReleaseMenu
 

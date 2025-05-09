@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 REM Load configuration
-call "%~dp0config_eskit.bat"
+call "%~dp0..\..\config\config_eskit.bat"
 
 color %ESKIT_COLOR%
 title %ESKIT_TITLE_PREFIX% - Git Menu

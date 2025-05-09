@@ -10,7 +10,7 @@ echo for automatic package building via GitHub Actions.
 echo.
 
 REM Get the current version from config
-for /f "tokens=2 delims==" %%a in ('type "%~dp0config_eskit.bat" ^| find "ESKIT_VERSION"') do (
+for /f "tokens=2 delims==" %%a in ('type "%~dp0..\..\config\config_eskit.bat" ^| find "ESKIT_VERSION"') do (
     set "CURRENT_VERSION=%%a"
     set "CURRENT_VERSION=!CURRENT_VERSION:"=!"
 )

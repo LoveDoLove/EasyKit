@@ -21,12 +21,12 @@ jobs:
 
       - name: Create build directory
         run: mkdir -p build
-
+        
       - name: Fix NSIS script
         shell: pwsh
         run: |
           # Create a modified version of the NSIS script without EnVar plugin usage
-          $content = Get-Content -Path ./EasyKit.nsi -Raw
+          $content = Get-Content -Path ./installer/EasyKit.nsi -Raw
           $content = $content -replace 'OutFile "dist\\EasyKit_Setup.exe"', 'OutFile "build\EasyKit_Setup.exe"'
           
           # Comment out the EnVar plugin section
@@ -39,7 +39,7 @@ jobs:
           # Remove EnVar from uninstaller section
           $content = $content -replace 'EnVar::DeleteValue "PATH" "\$INSTDIR"', '; EnVar::DeleteValue "PATH" "$INSTDIR" - Removed for CI compatibility'
           
-          Set-Content -Path ./EasyKit.nsi -Value $content
+          Set-Content -Path ./installer/EasyKit.nsi -Value $content
           
       - name: Setup NSIS
         uses: joncloud/makensis-action@v4
@@ -47,7 +47,7 @@ jobs:
       - name: Build installer
         shell: pwsh
         run: |
-          makensis -V4 EasyKit.nsi
+          makensis -V4 ./installer/EasyKit.nsi
           if ($LASTEXITCODE -ne 0) {
             Write-Host "NSIS build failed with exit code $LASTEXITCODE"
             exit $LASTEXITCODE
@@ -56,7 +56,7 @@ jobs:
       - name: Build ZIP package
         shell: pwsh
         run: |
-          Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,images\* -DestinationPath build\EasyKit.zip -Force
+          Compress-Archive -Path scripts/**/*.bat,run_eskit.bat,README.md,LICENSE,images/* -DestinationPath build\EasyKit.zip -Force
           
       - name: Verify build artifacts
         shell: pwsh

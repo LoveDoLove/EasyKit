@@ -51,33 +51,33 @@ if %NSIS_FOUND%==0 (
 )
 
 :: Output directory
-set "OUTPUT_DIR=%~dp0dist"
+set "OUTPUT_DIR=%~dp0..\..\build"
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
 :: Check for required NSIS image files
 set "MISSING_FILES=0"
-if not exist "images\icon.ico" (
+if not exist "%~dp0..\..\images\icon.ico" (
     echo WARNING: images\icon.ico not found. The installer will use default icons.
     set "MISSING_FILES=1"
 )
 
-if not exist "images\installer-welcome.bmp" (
+if not exist "%~dp0..\..\images\installer-welcome.bmp" (
     echo Creating default welcome image...
     
     :: Create a simple welcome image using PowerShell
-    powershell -Command "Add-Type -AssemblyName System.Drawing; $bmp = New-Object System.Drawing.Bitmap 164, 314; $g = [System.Drawing.Graphics]::FromImage($bmp); $g.Clear([System.Drawing.Color]::LightBlue); $font = New-Object System.Drawing.Font('Arial', 14); $brush = [System.Drawing.Brushes]::Black; $g.DrawString('EasyKit Installer', $font, $brush, 20, 150); $bmp.Save('images\installer-welcome.bmp', [System.Drawing.Imaging.ImageFormat]::Bmp); $g.Dispose(); $bmp.Dispose();"
+    powershell -Command "Add-Type -AssemblyName System.Drawing; $bmp = New-Object System.Drawing.Bitmap 164, 314; $g = [System.Drawing.Graphics]::FromImage($bmp); $g.Clear([System.Drawing.Color]::LightBlue); $font = New-Object System.Drawing.Font('Arial', 14); $brush = [System.Drawing.Brushes]::Black; $g.DrawString('EasyKit Installer', $font, $brush, 20, 150); $bmp.Save('%~dp0..\..\images\installer-welcome.bmp', [System.Drawing.Imaging.ImageFormat]::Bmp); $g.Dispose(); $bmp.Dispose();"
 )
 
-if not exist "images\installer-header.bmp" (
+if not exist "%~dp0..\..\images\installer-header.bmp" (
     echo Creating default header image...
     
     :: Create a simple header image using PowerShell
-    powershell -Command "Add-Type -AssemblyName System.Drawing; $bmp = New-Object System.Drawing.Bitmap 150, 57; $g = [System.Drawing.Graphics]::FromImage($bmp); $g.Clear([System.Drawing.Color]::LightGreen); $font = New-Object System.Drawing.Font('Arial', 10); $brush = [System.Drawing.Brushes]::Black; $g.DrawString('EasyKit', $font, $brush, 50, 20); $bmp.Save('images\installer-header.bmp', [System.Drawing.Imaging.ImageFormat]::Bmp); $g.Dispose(); $bmp.Dispose();"
+    powershell -Command "Add-Type -AssemblyName System.Drawing; $bmp = New-Object System.Drawing.Bitmap 150, 57; $g = [System.Drawing.Graphics]::FromImage($bmp); $g.Clear([System.Drawing.Color]::LightGreen); $font = New-Object System.Drawing.Font('Arial', 10); $brush = [System.Drawing.Brushes]::Black; $g.DrawString('EasyKit', $font, $brush, 50, 20); $bmp.Save('%~dp0..\..\images\installer-header.bmp', [System.Drawing.Imaging.ImageFormat]::Bmp); $g.Dispose(); $bmp.Dispose();"
 )
 
 :: Build the installer
 echo Building NSIS installer...
-"%NSIS_PATH%" "EasyKit.nsi"
+"%NSIS_PATH%" "%~dp0..\..\installer\EasyKit.nsi"
 
 if %errorlevel% neq 0 (
     echo Failed to build the installer. Check for errors.
