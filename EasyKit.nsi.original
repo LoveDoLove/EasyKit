@@ -9,7 +9,7 @@
 
 ; General
 Name "EasyKit"
-OutFile "build\EasyKit_Setup.exe"
+OutFile "dist\EasyKit_Setup.exe"
 Unicode True
 
 ; Default installation folder
@@ -88,14 +88,17 @@ Section "Start Menu Shortcuts" SecStartMenu
   CreateShortcut "$SMPROGRAMS\EasyKit\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 SectionEnd
 
-; Section "Add to PATH" - Removed for CI compatibility
+Section "Add to PATH" SecPath
+  ; Add the installation directory to the system PATH variable
+  EnVar::AddValue "PATH" "$INSTDIR"
+SectionEnd
 
 ; Descriptions
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
   !insertmacro MUI_DESCRIPTION_TEXT ${SecCore} "The core files required to run EasyKit."
   !insertmacro MUI_DESCRIPTION_TEXT ${SecDesktop} "Create a shortcut to EasyKit on your desktop."
   !insertmacro MUI_DESCRIPTION_TEXT ${SecStartMenu} "Create shortcuts to EasyKit in your Start Menu."
-  ; PATH section description removed
+  !insertmacro MUI_DESCRIPTION_TEXT ${SecPath} "Add EasyKit to your system PATH variable."
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ; Uninstaller Section
@@ -128,6 +131,6 @@ Section "Uninstall"
   ; Remove installation directory
   RMDir "$INSTDIR"
   
-  ; Remove from PATH variable - Removed for CI compatibility
-  ; EnVar::DeleteValue "PATH" "$INSTDIR"
+  ; Remove from PATH variable
+  EnVar::DeleteValue "PATH" "$INSTDIR"
 SectionEnd

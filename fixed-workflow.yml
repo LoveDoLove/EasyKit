@@ -1,0 +1,42 @@
+        shell: pwsh 
+        run: | 
+          # Backup original NSIS script 
+          Copy-Item -Path .\EasyKit.nsi -Destination .\EasyKit.nsi.original -Force 
+ 
+          # Modify the NSIS script to remove EnVar plugin usage 
+          $content = Get-Content -Path .\EasyKit.nsi -Raw 
+ 
+          # Update output path to be directly in build folder 
+          $content = $content -replace 'OutFile "dist\\EasyKit_Setup.exe"', 'OutFile "build\EasyKit_Setup.exe"' 
+ 
+          # Remove EnVar plugin sections 
+          $content = $content -replace '(?s)Section "Add to PATH" SecPath.*?EndSection', '# Section "Add to PATH" removed for GitHub Actions' 
+          $content = $content -replace '!insertmacro MUI_DESCRIPTION_TEXT \$\{SecPath\} ".*?"', '# PATH description removed' 
+          $content = $content -replace 'EnVar::DeleteValue "PATH" "\$INSTDIR"', '# EnVar::DeleteValue removed' 
+ 
+          # Write modified script back to file 
+          Set-Content -Path .\EasyKit.nsi -Value $content 
+          Write-Host "Modified NSIS script for GitHub Actions compatibility" 
+ 
+      - name: Build NSIS installer 
+        shell: pwsh 
+        run: | 
+          makensis -V4 .\EasyKit.nsi 
+          if ($LASTEXITCODE -ne 0) { 
+            Write-Host "NSIS build failed with exit code $LASTEXITCODE" 
+            exit $LASTEXITCODE 
+          } 
+          Write-Host "NSIS installer built successfully" 
+ 
+      - name: Verify build artifacts  
+        shell: pwsh 
+        run: | 
+          Get-ChildItem -Path "build" 
+ 
+      - name: Upload artifacts 
+        uses: actions/upload-artifact@v4 
+        with: 
+          name: EasyKit-Packages 
+          path: | 
+            build/EasyKit_Setup.exe 
+          retention-days: 14 

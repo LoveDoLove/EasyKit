@@ -17,7 +17,7 @@ for /f "tokens=2 delims==" %%a in ('type "%~dp0config_eskit.bat" ^| find "ESKIT_
 
 echo Current version (from config): %CURRENT_VERSION%
 echo.
-echo Enter new version (e.g., 1.2.2) or press Enter to keep current:
+echo Enter new version (e.g., 1.2.3) or press Enter to keep current:
 set /p "NEW_VERSION="
 
 if "%NEW_VERSION%"=="" set "NEW_VERSION=%CURRENT_VERSION%"

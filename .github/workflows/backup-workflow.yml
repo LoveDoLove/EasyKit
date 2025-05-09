@@ -19,8 +19,46 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create build directory
-        run: mkdir -p build
+      - name: Create required directories
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "build")) { New-Item -Path "build" -ItemType Directory }
+          if (-not (Test-Path "images")) { New-Item -Path "images" -ItemType Directory }
+          
+          # Ensure images directory has necessary files for the installer
+          if (-not (Test-Path "images\installer-welcome.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 164, 314
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightBlue)
+            $font = New-Object System.Drawing.Font("Arial", 14)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit Installer", $font, $brush, 20, 150)
+            $bmp.Save("images\installer-welcome.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-welcome.bmp"
+          }
+
+          if (-not (Test-Path "images\installer-header.bmp")) {
+            Add-Type -AssemblyName System.Drawing
+            $bmp = New-Object System.Drawing.Bitmap 150, 57
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.Clear([System.Drawing.Color]::LightGreen)
+            $font = New-Object System.Drawing.Font("Arial", 10)
+            $brush = [System.Drawing.Brushes]::Black
+            $g.DrawString("EasyKit", $font, $brush, 50, 20)
+            $bmp.Save("images\installer-header.bmp", [System.Drawing.Imaging.ImageFormat]::Bmp)
+            $g.Dispose()
+            $bmp.Dispose()
+            Write-Host "Created installer-header.bmp"
+          }
+
+      - name: Build ZIP package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,images\* -DestinationPath build\EasyKit.zip -Force
+          Write-Host "Created EasyKit.zip package in build directory"
 
       - name: Fix NSIS script
         shell: pwsh
@@ -52,17 +90,22 @@ jobs:
             Write-Host "NSIS build failed with exit code $LASTEXITCODE"
             exit $LASTEXITCODE
           }
-          
-      - name: Build ZIP package
-        shell: pwsh
-        run: |
-          Compress-Archive -Path *.bat,*.nsi,README.md,LICENSE,images\* -DestinationPath build\EasyKit.zip -Force
-          
+          Write-Host "NSIS installer built successfully"
+        
       - name: Verify build artifacts
         shell: pwsh
         run: |
+          if (-not (Test-Path "build\EasyKit.zip")) {
+            Write-Host "ERROR: EasyKit.zip was not created!"
+            exit 1
+          }
+          if (-not (Test-Path "build\EasyKit_Setup.exe")) {
+            Write-Host "ERROR: EasyKit_Setup.exe was not created!"
+            exit 1
+          }
           Get-ChildItem -Path "build"
-          
+          Write-Host "Build artifacts verified successfully"
+        
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -88,10 +131,11 @@ jobs:
           path: release-artifacts
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             release-artifacts/EasyKit.zip
             release-artifacts/EasyKit_Setup.exe
           draft: false
+          fail_on_unmatched_files: true
           generate_release_notes: true
