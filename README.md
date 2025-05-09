@@ -3,7 +3,7 @@
 ![EasyKit Logo](images/icon.jpg)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
+[![Version](https://img.shields.io/badge/version-1.2.6-blue.svg)](https://github.com/LoveDoLove/EasyKit/releases)
 
 EasyKit is a powerful collection of batch scripts designed to simplify web development and system maintenance tasks on Windows systems. It provides a convenient menu-driven interface for common development workflows including npm, Laravel, Composer, and Git operations.
 
@@ -82,14 +82,8 @@ EasyKit/
 │   │   ├── laravel_eskit.bat # Laravel tools
 │   │   ├── composer_eskit.bat # Composer tools
 │   │   └── git_eskit.bat     # Git tools
-│   ├── build/                # Build scripts
-│   │   ├── build_package.bat # Package builder
-│   │   ├── build_nsis_installer.bat # NSIS installer builder
-│   │   └── create_release.bat # Release management
-│   └── github/               # GitHub integration
-│       └── prepare_for_github_actions.bat # GitHub Actions setup
-├── installer/                # Installer files
-│   └── EasyKit.nsi           # NSIS installer script
+│   ├── build/                # Build scripts (legacy, not needed for auto-build)
+│   └── EasyKit.wxs           # WiX installer script
 ├── images/                   # Icon resources
 └── logs/                     # Operation logs
 ```
@@ -161,11 +155,11 @@ EasyKit uses GitHub Actions to automate building and releasing packages. The aut
 
 1. Automatically builds packages when a version tag is pushed
 2. Creates installer packages for each release
-3. Publishes releases with both ZIP and NSIS installer options
+3. Publishes releases with both ZIP and MSI installer options
 
 ### Working with GitHub Actions
 
-- **Release Creation**: Creating a tag (e.g., `v1.2.5`) automatically triggers the build and release process
+- **Release Creation**: Creating a tag (e.g., `v1.2.6`) automatically triggers the build and release process
 - **Manual Builds**: You can manually trigger builds from the Actions tab in GitHub
 
 ### Workflow Diagram
@@ -176,7 +170,7 @@ flowchart TD
     A -->|"Manual Trigger"|B
     
     B --> C1[Create ZIP Package]
-    B --> C2[Build NSIS Installer]
+    B --> C2[Build MSI Installer]
     
     C1 --> D[Create GitHub Release]
     C2 --> D
@@ -187,8 +181,8 @@ flowchart TD
 To create a new release:
 
 ```bash
-git tag v1.2.5
-git push origin v1.2.5
+git tag v1.2.6
+git push origin v1.2.6
 ```
 
 The GitHub Actions workflow will automatically build and publish the release.
@@ -199,6 +193,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔄 Version History
 
+- **v1.2.6** - Switched installer technology from NSIS to WiX Toolset (MSI)
 - **v1.2.5** - Fixed GitHub Actions workflow after project restructuring
 - **v1.2.4** - Restructured project for better organization and maintainability
 - **v1.2.3** - Fixed issues with shortcut creation and added more logging

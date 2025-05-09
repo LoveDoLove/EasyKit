@@ -170,10 +170,8 @@ echo =====================================
 echo.
 
 echo  0. Back to Main Menu
-echo  1. Build Package (ZIP)
-echo  2. Build NSIS Installer
-echo  3. Create New Release
-echo  4. View GitHub Actions Guide
+echo  1. Build NSIS Installer
+echo  2. View GitHub Actions Guide
 echo.
 
 set choice=
@@ -186,10 +184,8 @@ if not defined choice (
 )
 
 if "%choice%"=="0" goto Menu
-if "%choice%"=="1" call "%~dp0scripts\build\build_package.bat"
-if "%choice%"=="2" call "%~dp0scripts\build\build_nsis_installer.bat"
-if "%choice%"=="3" call "%~dp0scripts\build\create_release.bat"
-if "%choice%"=="4" goto GitHubActionsGuide
+if "%choice%"=="1" call "%~dp0scripts\build\build_nsis_installer.bat"
+if "%choice%"=="2" goto GitHubActionsGuide
 goto BuildReleaseMenu
 
 :GitHubActionsGuide

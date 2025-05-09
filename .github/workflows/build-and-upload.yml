@@ -1,108 +1,90 @@
-name: Build and Upload EasyKit
-
-on:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    name: Build EasyKit Packages
-    runs-on: windows-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create build directory
-        run: mkdir -p build
-        
-      - name: Fix NSIS script
-        shell: pwsh
-        run: |
-          # Create a modified version of the NSIS script without EnVar plugin usage
-          \ = Get-Content -Path ./installer/EasyKit.nsi -Raw
-          \ = \ -replace 'OutFile "dist\\\\EasyKit_Setup.exe"', 'OutFile "build\EasyKit_Setup.exe"'
-          
-          # Fix paths to image files (after restructuring)
-          \ = \ -replace '!define MUI_ICON "images\\\\icon.ico"', '!define MUI_ICON "..\images\icon.ico"'
-          \ = \ -replace '!define MUI_UNICON "images\\\\icon.ico"', '!define MUI_UNICON "..\images\icon.ico"'
-          \ = \ -replace '!define MUI_WELCOMEFINISHPAGE_BITMAP "images\\\\installer-welcome.bmp"', '!define MUI_WELCOMEFINISHPAGE_BITMAP "..\images\installer-welcome.bmp"'
-          \ = \ -replace '!define MUI_HEADERIMAGE_BITMAP "images\\\\installer-header.bmp"', '!define MUI_HEADERIMAGE_BITMAP "..\images\installer-header.bmp"'
-          
-          # Fix path to LICENSE file
-          \ = \ -replace '!insertmacro MUI_PAGE_LICENSE "LICENSE"', '!insertmacro MUI_PAGE_LICENSE "..\LICENSE"'
-          
-          # Comment out the EnVar plugin section
-          \ = '(?s)Section "Add to PATH" SecPath.*?EndSection'
-          \ = \ -replace \, '; Section "Add to PATH" - Removed for CI compatibility'
-          
-          # Remove the PATH section description
-          \ = \ -replace '!insertmacro MUI_DESCRIPTION_TEXT \\\$\{SecPath\} ".*?"', '; PATH section description removed'
-          
-          # Remove EnVar from uninstaller section
-          \ = \ -replace 'EnVar::DeleteValue "PATH" "\\\"', '; EnVar::DeleteValue "PATH" "\" - Removed for CI compatibility'
-          
-          Set-Content -Path ./installer/EasyKit.nsi -Value \
-          
-      - name: Setup NSIS
-        uses: joncloud/makensis-action@v4
-        with:
-          script-file: ./installer/EasyKit.nsi
-        
-      - name: Build installer
-        shell: pwsh
-        run: |
-          makensis -V4 ./installer/EasyKit.nsi
-          if (\ -ne 0) {
-            Write-Host "NSIS build failed with exit code \"
-            exit \
-          }
-          
-      - name: Build ZIP package
-        shell: pwsh
-        run: |
-          Compress-Archive -Path scripts/**/*.bat,run_eskit.bat,README.md,LICENSE,images/* -DestinationPath build\EasyKit.zip -Force
-          
-      - name: Verify build artifacts
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path "build"
-          
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: EasyKit-Packages
-          path: |
-            build/EasyKit_Setup.exe
-            build/EasyKit.zip
-          retention-days: 14
-
-  release:
-    name: Create Release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    runs-on: windows-latest
-    permissions:
-      contents: write
-    
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: EasyKit-Packages
-          path: release-artifacts
-      
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            release-artifacts/EasyKit.zip
-            release-artifacts/EasyKit_Setup.exe
-          draft: false
-          generate_release_notes: true
+name: Build and Upload EasyKit 
+ 
+on: 
+  push: 
+    branches: [ main ] 
+    tags: [ 'v*' ] 
+  pull_request: 
+    branches: [ main ] 
+  workflow_dispatch: 
+ 
+jobs: 
+  build: 
+    name: Build EasyKit Packages 
+    runs-on: windows-latest 
+    permissions: 
+      contents: write 
+ 
+    steps: 
+      - name: Checkout code 
+        uses: actions/checkout@v4 
+ 
+      - name: Create build directory 
+        run: mkdir build 
+        shell: cmd 
+ 
+      - name: Setup build environment 
+        shell: cmd 
+        run: | 
+          IF NOT EXIST scripts\build mkdir scripts\build 
+          IF NOT EXIST scripts\build\release_v1.2.6.bat ( 
+            echo @echo off > scripts\build\release_v1.2.6.bat 
+            echo echo EasyKit Release v1.2.6 >> scripts\build\release_v1.2.6.bat 
+            echo echo Build date: %%date%% %%time%% >> scripts\build\release_v1.2.6.bat 
+            echo echo. >> scripts\build\release_v1.2.6.bat 
+            echo echo This script is part of the EasyKit installation package. >> scripts\build\release_v1.2.6.bat 
+            echo echo For more information, visit: https://github.com/LoveDoLove/EasyKit >> scripts\build\release_v1.2.6.bat 
+            echo echo. >> scripts\build\release_v1.2.6.bat 
+            echo pause >> scripts\build\release_v1.2.6.bat 
+          ) 
+ 
+      - name: Compile WiX source file 
+        shell: cmd 
+        run: candle.exe -dProjectDir="%CD%\\" -out build\EasyKit.wxs.obj installer\EasyKit.wxs -ext WixUIExtension 
+ 
+      - name: Link WiX object file to create MSI 
+        shell: cmd 
+        run: light.exe -out build\EasyKit_Setup.msi build\EasyKit.wxs.obj -ext WixUIExtension -cultures:en-us 
+ 
+      - name: Build ZIP package 
+        shell: pwsh 
+        run: | 
+          Compress-Archive -Path scripts/**/*.bat,run_eskit.bat,README.md,LICENSE,images/* -DestinationPath build\EasyKit.zip -Force 
+ 
+      - name: Verify build artifacts 
+        shell: pwsh 
+        run: | 
+          Get-ChildItem -Path "build" 
+ 
+      - name: Upload artifacts 
+        uses: actions/upload-artifact@v4 
+        with: 
+          name: EasyKit-Packages 
+          path: | 
+            build/EasyKit_Setup.msi 
+            build/EasyKit.zip 
+          retention-days: 14 
+ 
+  release: 
+    name: Create Release 
+    if: startsWith(github.ref, 'refs/tags/') 
+    needs: build 
+    runs-on: windows-latest 
+    permissions: 
+      contents: write 
+ 
+    steps: 
+      - name: Download artifacts 
+        uses: actions/download-artifact@v4 
+        with: 
+          name: EasyKit-Packages 
+          path: release-artifacts 
+ 
+      - name: Create GitHub Release 
+        uses: softprops/action-gh-release@v1 
+        with: 
+          files: | 
+            release-artifacts/EasyKit.zip 
+            release-artifacts/EasyKit_Setup.msi 
+          draft: false 
+          generate_release_notes: true 

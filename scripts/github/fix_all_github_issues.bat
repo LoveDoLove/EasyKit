@@ -1,42 +1,50 @@
 @echo off
-echo EasyKit GitHub Actions Workflow Fix Tool
-echo =======================================
-echo This script fixes all issues with the GitHub Actions workflow
+echo EasyKit GitHub Actions Workflow Fix Tool v1.2.6
+echo =============================================
+echo This script fixes all issues with the GitHub Actions workflow for WiX
 echo.
 
-REM Step 1: Fix the GitHub workflow file
-echo Step 1: Fixing GitHub workflow file...
-powershell -ExecutionPolicy Bypass -File scripts\github\fix_github_workflow.ps1
-echo.
-
-REM Step 2: Fix the NSIS installer script
-echo Step 2: Fixing NSIS installer script...
-call scripts\github\fix_installer_paths.bat
-echo.
-
-REM Step 3: Verify the changes
-echo Step 3: Verifying changes...
-echo Checking if workflow file exists...
-if exist .github\workflows\build-and-upload.yml (
-  echo [OK] GitHub workflow file exists
+REM Step 1: Create the scripts\build directory if it doesn't exist
+echo Step 1: Checking for required directories...
+if not exist scripts\build (
+  echo Creating scripts\build directory...
+  mkdir scripts\build
+  echo Directory created.
 ) else (
-  echo [ERROR] GitHub workflow file not found
+  echo scripts\build directory already exists.
 )
 
-echo Checking if NSIS script exists...
-if exist installer\EasyKit.nsi (
-  echo [OK] NSIS installer script exists
+REM Step 2: Create the release_v1.2.6.bat file if it doesn't exist
+echo Step 2: Checking for required files...
+if not exist scripts\build\release_v1.2.6.bat (
+  echo Creating release_v1.2.6.bat...
+  echo @echo off > scripts\build\release_v1.2.6.bat
+  echo echo EasyKit Release v1.2.6 >> scripts\build\release_v1.2.6.bat
+  echo echo Build date: %%date%% %%time%% >> scripts\build\release_v1.2.6.bat
+  echo echo. >> scripts\build\release_v1.2.6.bat
+  echo echo This script is part of the EasyKit installation package. >> scripts\build\release_v1.2.6.bat
+  echo echo For more information, visit: https://github.com/LoveDoLove/EasyKit >> scripts\build\release_v1.2.6.bat
+  echo echo. >> scripts\build\release_v1.2.6.bat
+  echo pause >> scripts\build\release_v1.2.6.bat
+  echo File created.
 ) else (
-  echo [ERROR] NSIS installer script not found
+  echo release_v1.2.6.bat already exists.
 )
 
+REM Step 3: Fix the GitHub workflow file for WiX
+echo Step 3: Fixing GitHub workflow file for WiX...
+call scripts\github\fix_wix_workflow.bat
 echo.
-echo All fixes have been applied.
+
+REM Step 4: Verify the changes
+echo Step 4: Verifying changes...
+call scripts\github\verify_github_actions_setup.bat
 echo.
-echo To test these changes:
-echo 1. Commit and push these changes to your repository
-echo 2. Go to GitHub Actions tab in your repository
-echo 3. Run the workflow manually using the "Run workflow" button
+
+echo All fixes have been applied successfully.
+echo Your GitHub Actions workflow should now be ready to build the WiX installer.
 echo.
-echo If you encounter any issues, check the logs in GitHub Actions
-echo to see what went wrong.
+echo If you encounter any issues, please check the documentation in docs\github_actions_fix.md
+echo.
+
+pause
