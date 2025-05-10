@@ -1,171 +1,129 @@
 # EasyKit 3.0.0
 
-**Your All-in-One Python Toolkit for Streamlined Cross-Platform Web Development**
+**Your All-in-One Python Toolkit for Streamlined Windows Web Development**
 
-EasyKit is a modern, cross-platform Python utility designed to simplify and accelerate common web development tasks. It provides a unified interface to manage various tools and project configurations, boosting your productivity and ensuring consistency across your development workflow.
-
-## Overview
-
-EasyKit 3.0.0 represents a complete transformation to a pure Python implementation, focusing on cross-platform compatibility, enhanced performance, and a modern command-line experience. Whether you're managing dependencies, version control, or project-specific commands, EasyKit provides a streamlined Python-based interface to get you up and running quickly.
+EasyKit is a modern Python utility designed to simplify and accelerate web development tasks on Windows. It provides a unified interface to manage tools and project configurations, boosting productivity and ensuring consistency across your workflow.
 
 ## Features
 
-*   **Cross-Platform Support:** Works seamlessly on Windows, macOS, and Linux.
-*   **Modern CLI Interface:** Rich text interface with colors, progress bars, and interactive prompts.
-*   **Python-Based Tools:** Native Python implementations of Git, Composer, NPM, and Laravel Artisan integrations.
-*   **Smart Configuration:** Automatic platform-specific configuration management using platformdirs.
-*   **Automated Updates:** Built-in update system with version checking and automatic downloads.
-*   **Enhanced Security:** Improved security with proper permission handling and validation.
-*   **Extensive Testing:** Comprehensive test suite ensuring reliability across platforms.
-
-## Additional Features
-
-- **User-Specific Configurations:** Customize settings with JSON files for personalized behavior.
-- **Enhanced Logging:** Logs stored in platform-specific directories for better organization.
+- **Windows Support:** Designed for Windows environments
+- **Modern CLI:** Rich text, colors, progress bars, and interactive prompts
+- **Python-Based Integrations:** Git, Composer, NPM, Laravel Artisan
+- **Smart Config:** Platform-specific configuration with platformdirs
+- **Auto Updates:** Built-in version checking and update system
+- **Enhanced Security:** Proper permission handling and validation
+- **User Configs:** JSON-based, user-specific settings
+- **Organized Logging:** Log directories for Windows
+- **Comprehensive Testing:** Reliable for Windows
 
 ## Getting Started
 
 ### Prerequisites
-
+- Windows 10 or higher
 - Python 3.8 or higher
 - pip (Python package installer)
 
 ### Installation
 
-1. Install from PyPI (recommended):
-   ```bash
-   pip install easykit
-   ```
+Install from PyPI (recommended):
+```cmd
+pip install easykit
+```
 
-2. Or install from source:
-   ```bash
-   git clone https://github.com/YourUsername/EasyKit.git
-   cd EasyKit
-   pip install -e . 
-   ```
+Or install from source:
+```cmd
+git clone https://github.com/YourUsername/EasyKit.git
+cd EasyKit
+pip install -e .
+```
 
-### Creating a Virtual Environment, Installing Dependencies, and Compiling
-
-It is recommended to use a virtual environment to avoid dependency conflicts and ensure a clean build.
+### Setup & Build
 
 1. **Create a virtual environment**
    ```cmd
    python -m venv venv
    ```
-
 2. **Activate the virtual environment**
    ```cmd
    venv\Scripts\activate
    ```
-
 3. **Install dependencies**
    ```cmd
    pip install --upgrade pip
    pip install -r requirements.txt
    pip install pyinstaller
    ```
-
 4. **(Optional) Clean previous build artifacts**
    ```cmd
    rmdir /s /q build
    rmdir /s /q dist
    del run_easykit.spec
    ```
+5. **Build the executable (console app):**
+   ```cmd
+   pyinstaller --onefile --icon=images/icon.ico --name=EasyKit_v3.0.0 run_easykit.py
+   ```
+   > Replace `3.0.0` with your version/tag. Output: `dist\EasyKit_v3.0.0.exe`
 
-5. **Compile to an executable with PyInstaller**
-   - For console applications (recommended if your tool uses input):
-     ```cmd
-     pyinstaller --onefile --icon=images/icon.ico run_easykit.py
-     ```
-   - For GUI applications (no console window, input() will NOT work):
-     ```cmd
-     pyinstaller --onefile --windowed --icon=images/icon.ico run_easykit.py
-     ```
-
-> **Note:** If your tool uses `input()` or interactive prompts, do NOT use the `--windowed` flag, as it will cause errors like `RuntimeError: input(): lost sys.stdin`.
+> **Note:** Do NOT use `--windowed` if your tool uses `input()` or interactive prompts.
 
 ### Usage
 
 Run EasyKit from the command line:
-```bash
+```cmd
 easykit
 ```
 
-This will start the interactive interface where you can:
+Features include:
 - Manage development tools and dependencies
-- Configure your development environment
-- Create and manage projects
+- Configure your environment
+- Create/manage projects
 - Update EasyKit and its components
 
 ## Configuration
 
-EasyKit's behavior can be customized through its configuration system:
-
-*   **Global Configuration:** Located in the platform-specific config directory
-    - Windows: `%APPDATA%\EasyKit\config\settings.json`
-    - macOS: `~/Library/Application Support/EasyKit/config/settings.json`
-    - Linux: `~/.config/EasyKit/config/settings.json`
-*   **User Configuration:** For personal settings and overrides
-    - Windows: `%LOCALAPPDATA%\EasyKit\config\user_settings.json`
-    - macOS: `~/Library/Application Support/EasyKit/config/user_settings.json`
-    - Linux: `~/.local/share/EasyKit/config/user_settings.json`
+EasyKit uses Windows config directories:
+- **Global:** `%APPDATA%\EasyKit\config\settings.json`
+- **User:** `%LOCALAPPDATA%\EasyKit\config\user_settings.json`
 
 ## Logging
 
-EasyKit maintains logs in platform-specific locations:
-- Windows: `%LOCALAPPDATA%\EasyKit\logs\easykit.log`
-- macOS: `~/Library/Logs/EasyKit/easykit.log`
-- Linux: `~/.local/state/EasyKit/logs/EasyKit.log`
+Logs are stored in Windows locations:
+- `%LOCALAPPDATA%\EasyKit\logs\easykit.log`
 
 ## Removed Features
+- Batch file dependencies (all Python now)
+- Legacy config methods (now JSON-based)
 
-- Batch file dependencies: All functionality has been migrated to Python.
-- Legacy configuration methods: Replaced with JSON-based user-specific configurations.
-
-### Updates
-
-- Removed references to batch files and older configuration methods in the documentation.
-
-## Development and Testing
-
-### Setting Up Development Environment
+## Development & Testing
 
 1. Clone the repository:
-   ```bash
+   ```cmd
    git clone https://github.com/yourusername/EasyKit.git
    cd EasyKit
    ```
-
 2. Create and activate a virtual environment:
-   ```bash
+   ```cmd
    python -m venv venv
-   # On Windows:
    venv\Scripts\activate
-   # On Unix/Linux:
-   source venv/bin/activate
    ```
-
 3. Install dependencies:
-   ```bash
+   ```cmd
    pip install -r requirements.txt
    ```
 
 ### Running Tests
 
-The project no longer uses pytest for testing. Please refer to the updated testing documentation for alternative methods.
-
-### Code Coverage
-
-The code coverage section has been removed as pytest-cov is no longer used.
+Pytest is no longer used. See updated docs for testing methods.
 
 ## Contributing
 
 1. Fork the repository
-2. Create a new branch for your feature (`git checkout -b feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run the tests to ensure nothing is broken
-5. Commit your changes (`git commit -m 'Add some amazing feature'`)
-6. Push to your branch (`git push origin feature/amazing-feature`)
+4. Run tests
+5. Commit (`git commit -m 'Add some amazing feature'`)
+6. Push (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
 ## License
@@ -174,4 +132,4 @@ EasyKit is released under the [MIT License](LICENSE).
 
 ---
 
-Thank you for using EasyKit! We hope it makes your development process smoother and more efficient.
+Thank you for using EasyKit! We hope it makes your Windows development process smoother and more efficient.

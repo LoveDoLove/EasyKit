@@ -1,4 +1,4 @@
-name: Build EasyKit on All Platforms
+name: Build EasyKit for Windows Only
 
 on:
   push:
@@ -10,24 +10,14 @@ permissions:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: List files for debug (Linux/macOS)
-        if: runner.os != 'Windows'
-        run: |
-          pwd
-          ls -al
-
-      - name: List files for debug (Windows)
-        if: runner.os == 'Windows'
+      - name: List files for debug
         shell: pwsh
         run: |
           pwd
@@ -45,26 +35,30 @@ jobs:
           pip install pyinstaller
 
       - name: Build with PyInstaller
-        run: pyinstaller --onefile --icon=images/icon.ico run_easykit.py
+        run: |
+          $tag = echo ${{ github.ref }} | % { $_ -replace 'refs/tags/v', '' }
+          pyinstaller --onefile --icon=images/icon.ico --name=EasyKit_v$tag run_easykit.py
 
-      - name: Upload build artifacts
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: easykit-build-${{ matrix.os }}
-          path: build/
+          name: easykit-exe
+          path: dist/EasyKit_v*.exe
 
   release:
     name: Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Set tag name
         id: tagname
-        run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+        run: echo "tag=${GITHUB_REF##*/}" >> $env:GITHUB_OUTPUT
+        shell: pwsh
 
-      - name: Download all build artifacts
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
+          name: easykit-exe
           path: dist/
 
       - name: Create GitHub Release
@@ -78,78 +72,12 @@ jobs:
           draft: false
           prerelease: false
 
-    #   - name: Upload Linux artifact
-    #     uses: actions/upload-release-asset@v1
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     with:
-    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #       asset_path: dist/easykit-build-ubuntu-latest/run_easykit/run_easykit
-    #       asset_name: easykit-linux
-    #       asset_content_type: application/octet-stream
-
-    #   - name: Upload Windows artifact
-    #     uses: actions/upload-release-asset@v1
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     with:
-    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #       asset_path: dist/easykit-build-windows-latest/run_easykit/run_easykit.exe
-    #       asset_name: easykit-windows.exe
-    #       asset_content_type: application/octet-stream
-
-    #   - name: Upload macOS artifact
-    #     uses: actions/upload-release-asset@v1
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     with:
-    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #       asset_path: dist/easykit-build-macos-latest/run_easykit/run_easykit
-    #       asset_name: easykit-macos
-    #       asset_content_type: application/octet-stream
-
-    #   - name: Upload all build artifacts as zip
-    #     uses: actions/upload-release-asset@v1
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     with:
-    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #       asset_path: dist/easykit-build-ubuntu-latest.zip
-    #       asset_name: easykit-build-ubuntu-latest.zip
-    #       asset_content_type: application/zip
-
-    #   - name: Upload all build artifacts as zip (Windows)
-    #     uses: actions/upload-release-asset@v1
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     with:
-    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #       asset_path: dist/easykit-build-windows-latest.zip
-    #       asset_name: easykit-build-windows-latest.zip
-    #       asset_content_type: application/zip
-
-    #   - name: Upload all build artifacts as zip (macOS)
-    #     uses: actions/upload-release-asset@v1
-    #     env:
-    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     with:
-    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #       asset_path: dist/easykit-build-macos-latest.zip
-    #       asset_name: easykit-build-macos-latest.zip
-    #       asset_content_type: application/zip
-
-      - name: Zip dist folder
-        run: |
-          cd dist
-          zip -r ../dist.zip .
-        shell: bash
-
-      - name: Upload dist folder as zip
+      - name: Upload Windows executable
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist.zip
-          asset_name: dist.zip
-          asset_content_type: application/zip
+          asset_path: dist/EasyKit_v${{ steps.tagname.outputs.tag }}.exe
+          asset_name: EasyKit_v${{ steps.tagname.outputs.tag }}.exe
+          asset_content_type: application/octet-stream
