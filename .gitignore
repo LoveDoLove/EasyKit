@@ -1,5 +1,21 @@
 # EasyKit .gitignore file
 
+# Python virtual environments
+venv/
+.env/
+
+# PyInstaller spec files
+*.spec
+
+# Test and coverage output
+.pytest_cache/
+.mypy_cache/
+coverage.xml
+
+# Environment variable files
+.env
+.env.*
+
 # Log files
 logs/
 *.log

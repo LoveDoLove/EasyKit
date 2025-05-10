@@ -172,24 +172,36 @@ class UpdateManager:
     def show_release_notes(self):
         """Show release notes for current and available versions"""
         docs_dir = Path(__file__).parent.parent.parent / "docs"
-        
-        # Get all release note files
+
+        # Get all release note files (support both release_notes_*.md and *release-notes.md)
+        release_notes = list(docs_dir.glob("release_notes_*.md"))
+        release_notes += list(docs_dir.glob("*release-notes.md"))
+        # Remove duplicates (if any)
+        release_notes = list({str(p): p for p in release_notes}.values())
+        # Sort by version if possible, else by name
+        def extract_version(p):
+            stem = p.stem
+            # Try to extract version from both patterns
+            if stem.startswith("release_notes_"):
+                return stem.replace("release_notes_", "")
+            elif "-release-notes" in stem:
+                return stem.replace("-release-notes", "")
+            return stem
         release_notes = sorted(
-            docs_dir.glob("release_notes_*.md"),
-            key=lambda p: version.parse(p.stem.split('_')[-1]),
+            release_notes,
+            key=lambda p: extract_version(p),
             reverse=True
         )
-        
+
         if not release_notes:
             console.print("[yellow]No release notes found[/yellow]")
             return
-        
+
         for note_file in release_notes:
             try:
                 with open(note_file, 'r', encoding='utf-8') as f:
                     content = f.read()
-                
-                ver = note_file.stem.split('_')[-1]
+                ver = extract_version(note_file)
                 console.print(f"\n[bold cyan]Version {ver}:[/bold cyan]")
                 console.print(Markdown(content))
             except Exception as e:

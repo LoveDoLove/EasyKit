@@ -41,8 +41,48 @@ EasyKit 3.0.0 represents a complete transformation to a pure Python implementati
    ```bash
    git clone https://github.com/YourUsername/EasyKit.git
    cd EasyKit
-   pip install -e .
+   pip install -e . 
    ```
+
+### Creating a Virtual Environment, Installing Dependencies, and Compiling
+
+It is recommended to use a virtual environment to avoid dependency conflicts and ensure a clean build.
+
+1. **Create a virtual environment**
+   ```cmd
+   python -m venv venv
+   ```
+
+2. **Activate the virtual environment**
+   ```cmd
+   venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```cmd
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   pip install pyinstaller
+   ```
+
+4. **(Optional) Clean previous build artifacts**
+   ```cmd
+   rmdir /s /q build
+   rmdir /s /q dist
+   del run_easykit.spec
+   ```
+
+5. **Compile to an executable with PyInstaller**
+   - For console applications (recommended if your tool uses input):
+     ```cmd
+     pyinstaller --onefile --icon=images/icon.ico run_easykit.py
+     ```
+   - For GUI applications (no console window, input() will NOT work):
+     ```cmd
+     pyinstaller --onefile --windowed --icon=images/icon.ico run_easykit.py
+     ```
+
+> **Note:** If your tool uses `input()` or interactive prompts, do NOT use the `--windowed` flag, as it will cause errors like `RuntimeError: input(): lost sys.stdin`.
 
 ### Usage
 
@@ -75,7 +115,7 @@ EasyKit's behavior can be customized through its configuration system:
 EasyKit maintains logs in platform-specific locations:
 - Windows: `%LOCALAPPDATA%\EasyKit\logs\easykit.log`
 - macOS: `~/Library/Logs/EasyKit/easykit.log`
-- Linux: `~/.local/state/EasyKit/logs/easykit.log`
+- Linux: `~/.local/state/EasyKit/logs/EasyKit.log`
 
 ## Removed Features
 
