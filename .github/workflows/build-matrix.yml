@@ -78,32 +78,62 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Linux artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/easykit-build-ubuntu-latest/run_easykit/run_easykit
-          asset_name: easykit-linux
-          asset_content_type: application/octet-stream
+    #   - name: Upload Linux artifact
+    #     uses: actions/upload-release-asset@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #       asset_path: dist/easykit-build-ubuntu-latest/run_easykit/run_easykit
+    #       asset_name: easykit-linux
+    #       asset_content_type: application/octet-stream
 
-      - name: Upload Windows artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/easykit-build-windows-latest/run_easykit/run_easykit.exe
-          asset_name: easykit-windows.exe
-          asset_content_type: application/octet-stream
+    #   - name: Upload Windows artifact
+    #     uses: actions/upload-release-asset@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #       asset_path: dist/easykit-build-windows-latest/run_easykit/run_easykit.exe
+    #       asset_name: easykit-windows.exe
+    #       asset_content_type: application/octet-stream
 
-      - name: Upload macOS artifact
+    #   - name: Upload macOS artifact
+    #     uses: actions/upload-release-asset@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #       asset_path: dist/easykit-build-macos-latest/run_easykit/run_easykit
+    #       asset_name: easykit-macos
+    #       asset_content_type: application/octet-stream
+
+      - name: Upload all build artifacts as zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/easykit-build-macos-latest/run_easykit/run_easykit
-          asset_name: easykit-macos
-          asset_content_type: application/octet-stream
+          asset_path: dist/easykit-build-ubuntu-latest.zip
+          asset_name: easykit-build-ubuntu-latest.zip
+          asset_content_type: application/zip
+
+      - name: Upload all build artifacts as zip (Windows)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/easykit-build-windows-latest.zip
+          asset_name: easykit-build-windows-latest.zip
+          asset_content_type: application/zip
+
+      - name: Upload all build artifacts as zip (macOS)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/easykit-build-macos-latest.zip
+          asset_name: easykit-build-macos-latest.zip
+          asset_content_type: application/zip
