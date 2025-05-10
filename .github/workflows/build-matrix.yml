@@ -45,7 +45,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build with PyInstaller
-        run: pyinstaller run_easykit.spec
+        run: pyinstaller --onefile --icon=images/icon.ico run_easykit.py
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
