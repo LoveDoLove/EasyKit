@@ -461,13 +461,15 @@ def create_shortcuts():
         table.add_row("[red]4[/red]", "[red]Remove Desktop Shortcut[/red]")
         table.add_row("[red]5[/red]", "[red]Remove Start Menu Shortcut[/red]")
         table.add_row("[red]6[/red]", "[red]Remove All Shortcuts[/red]")
+        table.add_row("7", "Add Context Menu Entry (Right-Click)")
+        table.add_row("8", "Remove Context Menu Entry")
         
         get_console().print("\n")
         get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
-            choices=["0", "1", "2", "3", "4", "5", "6"]
+            choices=["0", "1", "2", "3", "4", "5", "6", "7", "8"]
         )
         
         try:
@@ -490,6 +492,12 @@ def create_shortcuts():
                 if confirm_action("Remove all shortcuts? [Y/n]", default=False):
                     shortcut_manager.remove_desktop_shortcut()
                     shortcut_manager.remove_start_menu_shortcut()
+            elif choice == "7":
+                if confirm_action("Add EasyKit to right-click context menu? [Y/n]", default=True):
+                    shortcut_manager.add_context_menu_entry()
+            elif choice == "8":
+                if confirm_action("Remove EasyKit from right-click context menu? [Y/n]", default=True):
+                    shortcut_manager.remove_context_menu_entry()
         except Exception as e:
             logger.exception("Error in shortcut manager")
             get_console().print(f"[red]Error: {str(e)}[/red]")

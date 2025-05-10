@@ -15,6 +15,7 @@ from rich.prompt import Prompt, Confirm
 from rich import box
 from ..utils import draw_header, get_logger, confirm_action
 from ..core.config import Config
+import ctypes
 
 console = Console()
 logger = get_logger(__name__)
@@ -30,6 +31,30 @@ class ShortcutManager:
         # Ensure we have python path
         self.python_path = self._get_python_path()
     
+    @staticmethod
+    def is_admin() -> bool:
+        """Check if the current process has admin rights (Windows only)"""
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
+
+    @staticmethod
+    def run_as_admin():
+        """Rerun the current script as admin using ShellExecuteEx"""
+        import sys
+        import os
+        if sys.platform != 'win32':
+            return False
+        params = ' '.join([f'"{arg}"' for arg in sys.argv])
+        try:
+            ctypes.windll.shell32.ShellExecuteW(
+                None, "runas", sys.executable, params, os.getcwd(), 1
+            )
+            return True
+        except Exception:
+            return False
+
     def _get_python_path(self) -> str:
         """Get the path to the Python interpreter"""
         if getattr(sys, 'frozen', False):
@@ -165,3 +190,60 @@ class ShortcutManager:
         console.print(f"Script: {self.script_path}")
         console.print(f"Working Directory: {self.working_dir}")
         console.print(f"Icon: {self.icon_path} ({'exists' if self.icon_path.exists() else 'not found'})")
+
+    def add_context_menu_entry(self) -> bool:
+        """Add EasyKit to the Windows right-click context menu for folders"""
+        if not self.is_admin():
+            console.print("[yellow]Administrator privileges required. Relaunching as admin...[/yellow]")
+            if self.run_as_admin():
+                sys.exit(0)
+            else:
+                console.print("[red]Failed to relaunch as administrator.[/red]")
+                return False
+        try:
+            key_path = r"Directory\\shell\\EasyKit"
+            command_path = key_path + r"\\command"
+            icon_path = str(self.icon_path)
+            script_path = str(self.script_path)
+            python_path = self.python_path
+
+            # Create the main key
+            with winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, key_path) as key:
+                winreg.SetValueEx(key, None, 0, winreg.REG_SZ, "Open with EasyKit")
+                if self.icon_path.exists():
+                    winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, icon_path)
+
+            # Create the command subkey
+            with winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, command_path) as cmd_key:
+                command = f'"{python_path}" "{script_path}" "%1"'
+                winreg.SetValueEx(cmd_key, None, 0, winreg.REG_SZ, command)
+
+            console.print("[green]✓[/green] Context menu entry added!")
+            return True
+        except Exception as e:
+            logger.error(f"Error adding context menu entry: {e}")
+            console.print(f"[red]✗[/red] Failed to add context menu entry: {e}")
+            return False
+
+    def remove_context_menu_entry(self) -> bool:
+        """Remove EasyKit from the Windows right-click context menu for folders"""
+        if not self.is_admin():
+            console.print("[yellow]Administrator privileges required. Relaunching as admin...[/yellow]")
+            if self.run_as_admin():
+                sys.exit(0)
+            else:
+                console.print("[red]Failed to relaunch as administrator.[/red]")
+                return False
+        try:
+            key_path = r"Directory\\shell\\EasyKit"
+            winreg.DeleteKey(winreg.HKEY_CLASSES_ROOT, key_path + r"\\command")
+            winreg.DeleteKey(winreg.HKEY_CLASSES_ROOT, key_path)
+            console.print("[green]✓[/green] Context menu entry removed!")
+            return True
+        except FileNotFoundError:
+            console.print("[yellow]Context menu entry not found.[/yellow]")
+            return False
+        except Exception as e:
+            logger.error(f"Error removing context menu entry: {e}")
+            console.print(f"[red]✗[/red] Failed to remove context menu entry: {e}")
+            return False
