@@ -489,7 +489,7 @@ def create_shortcuts():
                 shortcut_manager.create_desktop_shortcut()
                 shortcut_manager.create_start_menu_shortcut()
             elif choice == "4":
-                if confirm_action("Add EasyKit to right-click context menu? [Y/n]", default=True):
+                if confirm_action("Add EasyKit to right-click context menu?", default=True):
                     shortcut_manager.add_context_menu_entry()
             elif choice == "5":
                 if confirm_action("Remove desktop shortcut? [Y/n]", default=False):

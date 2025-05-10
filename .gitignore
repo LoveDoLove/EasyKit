@@ -7,6 +7,10 @@ venv/
 # PyInstaller spec files
 # *.spec
 
+# Nuitka build artifacts
+*.build/
+*.dist/
+
 # Test and coverage output
 .pytest_cache/
 .mypy_cache/

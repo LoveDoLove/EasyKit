@@ -51,21 +51,26 @@ pip install -e .
    ```cmd
    pip install --upgrade pip
    pip install -r requirements.txt
-   pip install pyinstaller
+   pip install nuitka
    ```
 4. **(Optional) Clean previous build artifacts**
    ```cmd
    rmdir /s /q build
    rmdir /s /q dist
-   del run_easykit.spec
+   del run_easykit.build
+   del run_easykit.dist
    ```
-5. **Build the executable (console app):**
+5. **Build the executable (console app) with Nuitka:**
    ```cmd
-   pyinstaller --onefile --icon=images/icon.ico --name=EasyKit_v3.0.0 run_easykit.py
+   python -m nuitka --onefile --windows-icon-from-ico=images/icon.ico --output-filename=EasyKit_v3.0.0.exe \
+   --include-data-dir=docs=docs \
+   --include-data-dir=images=images \
+   --include-data-dir=windows=windows \
+   run_easykit.py
    ```
-   > Replace `3.0.0` with your version/tag. Output: `dist\EasyKit_v3.0.0.exe`
+   > Replace `3.0.0` with your version/tag. Output: `EasyKit_v3.0.0.exe`
 
-> **Note:** Do NOT use `--windowed` if your tool uses `input()` or interactive prompts.
+> **Note:** Nuitka produces a true native executable. You do not need a .spec file. If you use interactive prompts, no special flags are needed.
 
 ### Usage
 

@@ -32,12 +32,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install nuitka
 
-      - name: Build with PyInstaller
+      - name: Build with Nuitka
         run: |
           $tag = echo ${{ github.ref }} | % { $_ -replace 'refs/tags/v', '' }
-          pyinstaller --onefile --icon=images/icon.ico --name=EasyKit_v$tag run_easykit.py
+          python -m nuitka --onefile --windows-icon-from-ico=images/icon.ico --output-filename=EasyKit_v$tag.exe \
+          --include-data-dir=docs=docs \
+          --include-data-dir=images=images \
+          --include-data-dir=windows=windows \
+          run_easykit.py
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

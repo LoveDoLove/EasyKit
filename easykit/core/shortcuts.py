@@ -24,11 +24,14 @@ config = Config()
 class ShortcutManager:
     def __init__(self):
         self.app_name = "EasyKit"
-        self.script_path = Path(__file__).parent.parent.parent / "run_easykit.py"
-        self.icon_path = Path(__file__).parent.parent.parent / "images" / "icon.ico"
+        # Use sys.frozen for Nuitka, else use project root
+        if getattr(sys, 'frozen', False):
+            base_path = Path(os.path.dirname(sys.executable))  # Nuitka
+        else:
+            base_path = Path(__file__).parent.parent.parent
+        self.script_path = base_path / "run_easykit.py"
+        self.icon_path = base_path / "images" / "icon.ico"
         self.working_dir = self.script_path.parent
-        
-        # Ensure we have python path
         self.python_path = self._get_python_path()
     
     @staticmethod
@@ -223,12 +226,20 @@ class ShortcutManager:
             # Create the main key
             with winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, key_path) as key:
                 winreg.SetValueEx(key, None, 0, winreg.REG_SZ, "Open with EasyKit")
-                if self.icon_path.exists():
+                # Always set icon to EXE if running as bundle, else use icon.ico
+                if getattr(sys, 'frozen', False):
+                    exe_path = sys.executable
+                    winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, exe_path)
+                elif self.icon_path.exists():
                     winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, icon_path)
 
             # Create the command subkey
             with winreg.CreateKey(winreg.HKEY_CLASSES_ROOT, command_path) as cmd_key:
-                command = f'"{python_path}" "{script_path}" "%1"'
+                # If running as bundle, just use the EXE; else use python + script
+                if getattr(sys, 'frozen', False):
+                    command = f'"{sys.executable}" "%1"'
+                else:
+                    command = f'"{python_path}" "{script_path}" "%1"'
                 winreg.SetValueEx(cmd_key, None, 0, winreg.REG_SZ, command)
 
             console.print("[green]✓[/green] Context menu entry added!")
