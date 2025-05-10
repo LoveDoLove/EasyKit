@@ -37,10 +37,10 @@ jobs:
       - name: Build with Nuitka
         run: |
           $tag = echo ${{ github.ref }} | % { $_ -replace 'refs/tags/v', '' }
-          python -m nuitka --onefile --windows-icon-from-ico=images/icon.ico --output-filename=EasyKit_v$tag.exe \
-          --include-data-dir=docs=docs \
-          --include-data-dir=images=images \
-          --include-data-dir=windows=windows \
+          python -m nuitka --onefile --windows-icon-from-ico=images/icon.ico --output-filename=EasyKit_v$($tag).exe `
+          --include-data-dir=docs=docs `
+          --include-data-dir=images=images `
+          --include-data-dir=windows=windows `
           run_easykit.py
 
       - name: Upload build artifact
