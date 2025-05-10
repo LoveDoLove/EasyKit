@@ -14,6 +14,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List files for debug
+        run: |
+          pwd
+          ls -al
+
+      - name: List files in workspace root
+        run: ls -al $GITHUB_WORKSPACE
+
+      - name: List files in runner root
+        run: ls -al /
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,7 +41,11 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller run_easykit.spec
+          echo "Current directory: $(pwd)"
+          ls -al
+          ls -al $GITHUB_WORKSPACE
+          pyinstaller $GITHUB_WORKSPACE/run_easykit.spec
+        working-directory: $GITHUB_WORKSPACE
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
