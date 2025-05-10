@@ -1,29 +1,12 @@
 name: Build EasyKit on All Platforms
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., v1.2.3)'
-        required: true
-        type: string
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  create_tag:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Create tag
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag ${{ github.event.inputs.version }}
-          git push origin ${{ github.event.inputs.version }}
-
   build:
-    needs: [create_tag]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -57,16 +40,10 @@ jobs:
     name: Release
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
     steps:
-      - name: Set tag name for manual or automatic
+      - name: Set tag name
         id: tagname
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "::set-output name=tag::${{ github.event.inputs.version }}"
-          else
-            echo "::set-output name=tag::${GITHUB_REF##*/}"
-          fi
+        run: echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
