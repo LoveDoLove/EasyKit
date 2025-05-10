@@ -174,6 +174,7 @@ def npm_menu():
         clear_screen()
         draw_header("NPM Tools")
         console = get_console()
+        console.print(f"[bold yellow]Current Path:[/bold yellow] {os.getcwd()}")
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -232,6 +233,7 @@ def laravel_menu():
         clear_screen()
         draw_header("Laravel Tools")
         console = get_console()
+        console.print(f"[bold yellow]Current Path:[/bold yellow] {os.getcwd()}")
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -307,6 +309,7 @@ def composer_menu():
         clear_screen()
         draw_header("Composer Tools")
         console = get_console()
+        console.print(f"[bold yellow]Current Path:[/bold yellow] {os.getcwd()}")
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -365,6 +368,7 @@ def git_menu():
         clear_screen()
         draw_header("Git Tools")
         console = get_console()
+        console.print(f"[bold yellow]Current Path:[/bold yellow] {os.getcwd()}")
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")

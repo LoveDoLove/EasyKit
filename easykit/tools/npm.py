@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
 from rich import box
+from rich.panel import Panel
 import json
 from ..utils import draw_header, get_logger, confirm_action
 from ..core.software import SoftwareChecker
@@ -33,21 +34,20 @@ class NpmTools:
         """Run an npm command and handle its output"""
         if not self.ensure_npm_installed():
             return False
-            
         try:
+            # Use shell=True for Windows compatibility
             process = subprocess.run(
-                ['npm'] + command,
+                ' '.join(['npm'] + command),
                 capture_output=True,
                 text=True,
-                check=False
+                check=False,
+                shell=True
             )
-            
             if show_output:
                 if process.stdout:
                     console.print(process.stdout)
                 if process.stderr:
                     console.print("[red]" + process.stderr + "[/red]")
-                    
             return process.returncode == 0
         except Exception as e:
             logger.error(f"Error running npm command: {e}")
@@ -55,9 +55,8 @@ class NpmTools:
     
     def install_packages(self):
         """Install npm packages"""
-        with console.status("[bold green]Installing npm packages..."):
-            success = self.run_npm_command(['install', '--no-fund', '--loglevel=error'])
-        
+        console.print("[bold green]Installing npm packages...[/bold green]")
+        success = self.run_npm_command(['install', '--no-fund', '--loglevel=error'])
         if success:
             console.print("[green]✓[/green] Packages installed successfully!")
         else:
@@ -67,13 +66,12 @@ class NpmTools:
         """Update npm packages using npm-check-updates"""
         # First, ensure ncu is installed
         try:
-            subprocess.run(['ncu', '--version'], capture_output=True, check=True)
+            subprocess.run('ncu --version', capture_output=True, check=True, shell=True)
         except (subprocess.CalledProcessError, FileNotFoundError):
             console.print("[yellow]Installing npm-check-updates...[/yellow]")
             if not self.run_npm_command(['install', '-g', 'npm-check-updates']):
                 console.print("[red]Failed to install npm-check-updates[/red]")
                 return
-        
         with console.status("[bold green]Checking for updates..."):
             if self.run_npm_command(['exec', 'ncu', '-u']):
                 console.print("[green]✓[/green] Package file updated!")
@@ -90,12 +88,19 @@ class NpmTools:
                 console.print("[red]✗[/red] Build failed.")
     
     def build_development(self):
-        """Run development build"""
-        with console.status("[bold green]Building for development..."):
-            if self.run_npm_command(['run', 'dev']):
-                console.print("[green]✓[/green] Development build completed!")
-            else:
-                console.print("[red]✗[/red] Build failed.")
+        """Run development build (non-blocking for dev servers)"""
+        console.print("[bold green]Starting development server...[/bold green]")
+        try:
+            # Use start to open a new terminal window on Windows
+            subprocess.Popen(
+                'start cmd /k "npm run dev"',
+                shell=True,
+                cwd=Path().absolute()
+            )
+            console.print("[green]✓[/green] Development server started in a new terminal window.")
+        except Exception as e:
+            logger.error(f"Error starting dev server: {e}")
+            console.print("[red]✗[/red] Failed to start development server.")
     
     def security_audit(self):
         """Run npm security audit"""
