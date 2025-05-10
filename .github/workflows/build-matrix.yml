@@ -25,15 +25,10 @@ jobs:
 
       - name: List files for debug (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          echo %cd%
-          dir
-
-      - name: List files in workspace root
-        run: ls -al $GITHUB_WORKSPACE
-
-      - name: List files in runner root
-        run: ls -al /
+          pwd
+          ls
 
       - name: Set up Python
         uses: actions/setup-python@v5
