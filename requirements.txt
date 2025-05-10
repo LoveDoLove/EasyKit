@@ -1,0 +1,15 @@
+# Core dependencies
+rich>=13.0.0
+packaging>=23.0
+colorama>=0.4.6
+requests>=2.31.0
+python-dotenv>=1.0.0
+platformdirs>=4.0.0
+click>=8.0.0
+pywin32>=310; sys_platform == 'win32'
+
+# Project management dependencies
+setuptools>=65.0.0
+wheel>=0.38.0
+build>=0.10.0
+twine>=4.0.0

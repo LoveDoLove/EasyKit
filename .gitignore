@@ -1,5 +1,21 @@
 # EasyKit .gitignore file
 
+# Python virtual environments
+venv/
+.env/
+
+# PyInstaller spec files
+*.spec
+
+# Test and coverage output
+.pytest_cache/
+.mypy_cache/
+coverage.xml
+
+# Environment variable files
+.env
+.env.*
+
 # Log files
 logs/
 *.log
@@ -51,3 +67,22 @@ backups/
 # Build artifacts
 build/
 dist/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Compiled files
+*.pyo
+
+# Additional temporary files
+*.DS_Store
+*.coverage
+*.egg-info/
+*.eggs/
+
+# Exclude images folder if not needed
+images/
+
+# Exclude docs pycache if exists
+docs/**/__pycache__/

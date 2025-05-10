@@ -1,64 +1,172 @@
-# EasyKit 2.0.0
+# EasyKit 3.0.0
 
-**Your All-in-One Toolkit for Streamlined Web Development**
+**Your All-in-One Python Toolkit for Streamlined Cross-Platform Web Development**
 
-EasyKit is a comprehensive command-line utility designed to simplify and accelerate common web development tasks. It provides a unified interface to manage various tools and project configurations, boosting your productivity and ensuring consistency across your development workflow.
+EasyKit is a modern, cross-platform Python utility designed to simplify and accelerate common web development tasks. It provides a unified interface to manage various tools and project configurations, boosting your productivity and ensuring consistency across your development workflow.
 
 ## Overview
 
-EasyKit 2.0.0 marks a significant update, focusing on enhanced performance, broader tool integration, and a more intuitive user experience. Whether you're managing dependencies, version control, or project-specific commands, EasyKit provides the necessary scripts and configurations to get you up and running quickly.
+EasyKit 3.0.0 represents a complete transformation to a pure Python implementation, focusing on cross-platform compatibility, enhanced performance, and a modern command-line experience. Whether you're managing dependencies, version control, or project-specific commands, EasyKit provides a streamlined Python-based interface to get you up and running quickly.
 
 ## Features
 
-*   **Simplified Tool Access:** Quickly access and run tools like Git, Composer, NPM, and Laravel Artisan commands through dedicated EasyKit scripts.
-*   **Centralized Configuration:** Manage global and user-specific settings via `config/config_eskit.bat` and `config/user_config_eskit.bat`.
-*   **Automated Setup:** Easy installation process using `scripts/core/install_eskit.bat`.
-*   **Update Management:** Keep EasyKit up-to-date with `scripts/core/update_eskit.bat`.
-*   **Project Initialization:** Streamlined project setup with `run_eskit.bat`.
-*   **Customizable:** Extend EasyKit with your own scripts and configurations.
+*   **Cross-Platform Support:** Works seamlessly on Windows, macOS, and Linux.
+*   **Modern CLI Interface:** Rich text interface with colors, progress bars, and interactive prompts.
+*   **Python-Based Tools:** Native Python implementations of Git, Composer, NPM, and Laravel Artisan integrations.
+*   **Smart Configuration:** Automatic platform-specific configuration management using platformdirs.
+*   **Automated Updates:** Built-in update system with version checking and automatic downloads.
+*   **Enhanced Security:** Improved security with proper permission handling and validation.
+*   **Extensive Testing:** Comprehensive test suite ensuring reliability across platforms.
+
+## Additional Features
+
+- **User-Specific Configurations:** Customize settings with JSON files for personalized behavior.
+- **Enhanced Logging:** Logs stored in platform-specific directories for better organization.
 
 ## Getting Started
 
 ### Prerequisites
 
-Ensure you have the necessary underlying software installed (e.g., PHP, Node.js, Git) that EasyKit helps manage. The `scripts/core/check_software_eskit.bat` script can help verify your environment.
+- Python 3.8 or higher
+- pip (Python package installer)
 
 ### Installation
 
-1.  Clone or download the EasyKit repository to your desired location.
-2.  Navigate to the `scripts/core` directory.
-3.  Run `install_eskit.bat` to set up EasyKit and create necessary environment configurations or shortcuts.
+1. Install from PyPI (recommended):
+   ```bash
+   pip install easykit
+   ```
 
-## Usage
+2. Or install from source:
+   ```bash
+   git clone https://github.com/YourUsername/EasyKit.git
+   cd EasyKit
+   pip install -e . 
+   ```
 
-Once installed, you can primarily interact with EasyKit using `run_eskit.bat` from your project's root directory or by directly invoking the scripts in the `scripts/tools` directory.
+### Creating a Virtual Environment, Installing Dependencies, and Compiling
 
-*   **Main Interface:**
-    ```batch
-    run_eskit.bat
-    ```
-    This will typically present you with a menu or options based on your project type and EasyKit configuration.
+It is recommended to use a virtual environment to avoid dependency conflicts and ensure a clean build.
 
-*   **Tool-Specific Scripts:**
-    *   `scripts/tools/git_eskit.bat [git commands]`
-    *   `scripts/tools/composer_eskit.bat [composer commands]`
-    *   `scripts/tools/npm_eskit.bat [npm commands]`
-    *   `scripts/tools/laravel_eskit.bat [artisan commands]`
+1. **Create a virtual environment**
+   ```cmd
+   python -m venv venv
+   ```
+
+2. **Activate the virtual environment**
+   ```cmd
+   venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```cmd
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   pip install pyinstaller
+   ```
+
+4. **(Optional) Clean previous build artifacts**
+   ```cmd
+   rmdir /s /q build
+   rmdir /s /q dist
+   del run_easykit.spec
+   ```
+
+5. **Compile to an executable with PyInstaller**
+   - For console applications (recommended if your tool uses input):
+     ```cmd
+     pyinstaller --onefile --icon=images/icon.ico run_easykit.py
+     ```
+   - For GUI applications (no console window, input() will NOT work):
+     ```cmd
+     pyinstaller --onefile --windowed --icon=images/icon.ico run_easykit.py
+     ```
+
+> **Note:** If your tool uses `input()` or interactive prompts, do NOT use the `--windowed` flag, as it will cause errors like `RuntimeError: input(): lost sys.stdin`.
+
+### Usage
+
+Run EasyKit from the command line:
+```bash
+easykit
+```
+
+This will start the interactive interface where you can:
+- Manage development tools and dependencies
+- Configure your development environment
+- Create and manage projects
+- Update EasyKit and its components
 
 ## Configuration
 
-EasyKit's behavior can be customized through configuration files located in the `config` directory:
+EasyKit's behavior can be customized through its configuration system:
 
-*   `config_eskit.bat`: Contains the main configuration for EasyKit, including the current version (`ESKIT_VERSION=2.0.0`).
-*   `user_config_eskit.bat`: For user-specific overrides and custom settings. This file is typically not version-controlled.
+*   **Global Configuration:** Located in the platform-specific config directory
+    - Windows: `%APPDATA%\EasyKit\config\settings.json`
+    - macOS: `~/Library/Application Support/EasyKit/config/settings.json`
+    - Linux: `~/.config/EasyKit/config/settings.json`
+*   **User Configuration:** For personal settings and overrides
+    - Windows: `%LOCALAPPDATA%\EasyKit\config\user_settings.json`
+    - macOS: `~/Library/Application Support/EasyKit/config/user_settings.json`
+    - Linux: `~/.local/share/EasyKit/config/user_settings.json`
 
 ## Logging
 
-EasyKit maintains logs in the `logs/eskit.log` file (or `config/logs/eskit.log`), which can be helpful for troubleshooting.
+EasyKit maintains logs in platform-specific locations:
+- Windows: `%LOCALAPPDATA%\EasyKit\logs\easykit.log`
+- macOS: `~/Library/Logs/EasyKit/easykit.log`
+- Linux: `~/.local/state/EasyKit/logs/EasyKit.log`
+
+## Removed Features
+
+- Batch file dependencies: All functionality has been migrated to Python.
+- Legacy configuration methods: Replaced with JSON-based user-specific configurations.
+
+### Updates
+
+- Removed references to batch files and older configuration methods in the documentation.
+
+## Development and Testing
+
+### Setting Up Development Environment
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/EasyKit.git
+   cd EasyKit
+   ```
+
+2. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On Unix/Linux:
+   source venv/bin/activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Running Tests
+
+The project no longer uses pytest for testing. Please refer to the updated testing documentation for alternative methods.
+
+### Code Coverage
+
+The code coverage section has been removed as pytest-cov is no longer used.
 
 ## Contributing
 
-(Details on how to contribute can be added here if the project is open to contributions.)
+1. Fork the repository
+2. Create a new branch for your feature (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run the tests to ensure nothing is broken
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to your branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## License
 
