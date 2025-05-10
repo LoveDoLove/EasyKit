@@ -27,7 +27,7 @@ def main_menu():
     """Display the main menu and handle user input"""
     while True:
         clear_screen()
-        draw_header(f"EasyKit Main Menu v{config.get('version', '3.0.0')}")
+        draw_header(f"EasyKit Main Menu v{config.get('version', '3.1.9')}")
         console = get_console()
         
         # Create menu table

@@ -2,7 +2,7 @@ Windows Registry Editor Version 5.00
 
 [HKEY_CLASSES_ROOT\Directory\shell\EasyKit]
 @="Open with EasyKit"
-"Icon"="EasyKit_v3.0.0.exe"
+"Icon"="C:\\Program Files (x86)\\EasyKit\\icon.ico"
 
 [HKEY_CLASSES_ROOT\Directory\shell\EasyKit\command]
-@="EasyKit_v3.0.0.exe \"%1\""
+@="\"C:\\Program Files (x86)\\EasyKit\\EasyKit_v3.1.9.exe\" \"%1\""

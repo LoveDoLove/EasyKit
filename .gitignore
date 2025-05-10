@@ -90,3 +90,7 @@ images/
 
 # Exclude docs pycache if exists
 docs/**/__pycache__/
+
+# Exclude Inno Output folder
+InnoOutput/
+Output/

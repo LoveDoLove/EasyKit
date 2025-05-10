@@ -26,7 +26,7 @@ config = Config()
 
 class UpdateManager:
     def __init__(self):
-        self.current_version = "3.0.0"
+        self.current_version = "3.1.9"
         self.repo_owner = "LoveDoLove"
         self.repo_name = "EasyKit"
         self.base_url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}"
