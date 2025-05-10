@@ -190,6 +190,7 @@ def npm_menu():
         table.add_row("")
         table.add_row("[red]9[/red]", "[red]Reset All Cache[/red]")
         
+        get_console().print()  # Print a newline
         get_console().print(table)
         
         choice = Prompt.ask(
@@ -253,6 +254,7 @@ def laravel_menu():
         table.add_row("")
         table.add_row("[red]44[/red]", "[red]Reset All Cache[/red]")
         
+        get_console().print()  # Print a newline
         get_console().print(table)
         
         choice = Prompt.ask(
@@ -321,6 +323,7 @@ def composer_menu():
         table.add_row("")
         table.add_row("[red]44[/red]", "[red]Clear Composer Cache[/red]")
         
+        get_console().print()  # Print a newline
         get_console().print(table)
         
         choice = Prompt.ask(
@@ -385,6 +388,7 @@ def git_menu():
         table.add_row("13", "Create Pull Request")
         table.add_row("14", "List Pull Requests")
         
+        get_console().print()  # Print a newline
         get_console().print(table)
         
         choice = Prompt.ask(
@@ -458,7 +462,8 @@ def create_shortcuts():
         table.add_row("[red]5[/red]", "[red]Remove Start Menu Shortcut[/red]")
         table.add_row("[red]6[/red]", "[red]Remove All Shortcuts[/red]")
         
-        get_console().print("\n" + table)
+        get_console().print("\n")
+        get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -476,13 +481,13 @@ def create_shortcuts():
                 shortcut_manager.create_desktop_shortcut()
                 shortcut_manager.create_start_menu_shortcut()
             elif choice == "4":
-                if confirm_action("Remove desktop shortcut?", default=False):
+                if confirm_action("Remove desktop shortcut? [Y/n]", default=False):
                     shortcut_manager.remove_desktop_shortcut()
             elif choice == "5":
-                if confirm_action("Remove Start Menu shortcut?", default=False):
+                if confirm_action("Remove Start Menu shortcut? [Y/n]", default=False):
                     shortcut_manager.remove_start_menu_shortcut()
             elif choice == "6":
-                if confirm_action("Remove all shortcuts?", default=False):
+                if confirm_action("Remove all shortcuts? [Y/n]", default=False):
                     shortcut_manager.remove_desktop_shortcut()
                     shortcut_manager.remove_start_menu_shortcut()
         except Exception as e:
