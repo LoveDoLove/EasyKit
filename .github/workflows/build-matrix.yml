@@ -108,32 +108,48 @@ jobs:
     #       asset_name: easykit-macos
     #       asset_content_type: application/octet-stream
 
-      - name: Upload all build artifacts as zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/easykit-build-ubuntu-latest.zip
-          asset_name: easykit-build-ubuntu-latest.zip
-          asset_content_type: application/zip
+    #   - name: Upload all build artifacts as zip
+    #     uses: actions/upload-release-asset@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #       asset_path: dist/easykit-build-ubuntu-latest.zip
+    #       asset_name: easykit-build-ubuntu-latest.zip
+    #       asset_content_type: application/zip
 
-      - name: Upload all build artifacts as zip (Windows)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/easykit-build-windows-latest.zip
-          asset_name: easykit-build-windows-latest.zip
-          asset_content_type: application/zip
+    #   - name: Upload all build artifacts as zip (Windows)
+    #     uses: actions/upload-release-asset@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #       asset_path: dist/easykit-build-windows-latest.zip
+    #       asset_name: easykit-build-windows-latest.zip
+    #       asset_content_type: application/zip
 
-      - name: Upload all build artifacts as zip (macOS)
+    #   - name: Upload all build artifacts as zip (macOS)
+    #     uses: actions/upload-release-asset@v1
+    #     env:
+    #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     with:
+    #       upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #       asset_path: dist/easykit-build-macos-latest.zip
+    #       asset_name: easykit-build-macos-latest.zip
+    #       asset_content_type: application/zip
+
+      - name: Zip dist folder
+        run: |
+          cd dist
+          zip -r ../dist.zip .
+        shell: bash
+
+      - name: Upload dist folder as zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/easykit-build-macos-latest.zip
-          asset_name: easykit-build-macos-latest.zip
+          asset_path: dist.zip
+          asset_name: dist.zip
           asset_content_type: application/zip
