@@ -27,7 +27,7 @@ class Config:
             "menu_width": 50
         }
 
-        # Load from config file
+        # Load from config file, or create it if missing
         config_file = self._get_config_file()
         if config_file.exists():
             try:
@@ -36,6 +36,9 @@ class Config:
                 self.config.update(user_config)
             except Exception as e:
                 print(f"Error loading config file: {e}")
+        else:
+            # Save defaults to config file if it doesn't exist
+            self._save_config()
 
         # Load from environment variables
         load_dotenv()

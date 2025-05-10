@@ -7,17 +7,15 @@ from pathlib import Path
 import webbrowser
 from typing import Optional
 import click
-from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.table import Table
 from rich import box
 from .core.config import Config
 from .core.software import SoftwareChecker
-from .utils import draw_header, get_logger, confirm_action
+from .utils import draw_header, get_logger, confirm_action, get_console
 from packaging import version
 
-console = Console()
 logger = get_logger(__name__)
 config = Config()
 
@@ -30,6 +28,7 @@ def main_menu():
     while True:
         clear_screen()
         draw_header(f"EasyKit Main Menu v{config.get('version', '2.0.0')}")
+        console = get_console()
         
         # Create menu table
         table = Table(show_header=False, box=box.ROUNDED)
@@ -45,10 +44,10 @@ def main_menu():
         table.add_row("6", "Settings")
         table.add_row("7", "Update Manager")
         
-        console.print(table)
+        get_console().print(table)
         
         if config.get('show_tips', True):
-            console.print("\n[yellow]TIP:[/yellow] You can customize EasyKit through the Settings menu.")
+            get_console().print("\n[yellow]TIP:[/yellow] You can customize EasyKit through the Settings menu.")
         
         choice = Prompt.ask("\nChoose an option", choices=["0", "1", "2", "3", "4", "5", "6", "7"])
         
@@ -75,6 +74,7 @@ def settings_menu():
     while True:
         clear_screen()
         draw_header("EasyKit Settings")
+        console = get_console()
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -88,7 +88,7 @@ def settings_menu():
         table.add_row("4", "Change Color Theme", config.get('color_scheme', 'dark'))
         table.add_row("5", "View Logs", "")
         
-        console.print(table)
+        get_console().print(table)
         
         choice = Prompt.ask("\nChoose an option", choices=["0", "1", "2", "3", "4", "5"])
         
@@ -109,6 +109,7 @@ def change_color_theme():
     """Change the color theme settings"""
     clear_screen()
     draw_header("Change Color Theme")
+    console = get_console()
     
     themes = ["dark", "light", "system"]
     current_theme = config.get('color_scheme', 'dark')
@@ -121,8 +122,8 @@ def change_color_theme():
     table.add_row("light", "Light mode (high contrast)")
     table.add_row("system", "Follow system settings")
     
-    console.print(table)
-    console.print(f"\nCurrent theme: [green]{current_theme}[/green]")
+    get_console().print(table)
+    get_console().print(f"\nCurrent theme: [green]{current_theme}[/green]")
     
     new_theme = Prompt.ask(
         "\nChoose a theme",
@@ -132,11 +133,12 @@ def change_color_theme():
     
     if new_theme != current_theme:
         config.set('color_scheme', new_theme)
-        console.print(f"\n[green]Theme changed to {new_theme}[/green]")
+        get_console().print(f"\n[green]Theme changed to {new_theme}[/green]")
 
 def view_logs():
     """View the application logs"""
     log_path = Path(config.get('log_path')) / 'eskit.log'
+    console = get_console()
     if log_path.exists():
         if sys.platform == 'win32':
             os.startfile(str(log_path))
@@ -147,7 +149,7 @@ def view_logs():
             else:  # Linux and others
                 os.system(f'xdg-open "{log_path}"')
     else:
-        console.print("[yellow]No logs found.[/yellow]")
+        get_console().print("[yellow]No logs found.[/yellow]")
         Prompt.ask("Press Enter to continue")
 
 def exit_program() -> bool:
@@ -159,7 +161,8 @@ def exit_program() -> bool:
         if not confirm_action("Are you sure you want to exit?"):
             return False
     
-    console.print("[green]Thank you for using EasyKit![/green]")
+    console = get_console()
+    get_console().print("[green]Thank you for using EasyKit![green]")
     return True
 
 def npm_menu():
@@ -170,6 +173,7 @@ def npm_menu():
     while True:
         clear_screen()
         draw_header("NPM Tools")
+        console = get_console()
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -186,7 +190,7 @@ def npm_menu():
         table.add_row("")
         table.add_row("[red]9[/red]", "[red]Reset All Cache[/red]")
         
-        console.print(table)
+        get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -214,7 +218,7 @@ def npm_menu():
                 npm_tools.reset_cache()
         except Exception as e:
             logger.exception("Error in NPM tools")
-            console.print(f"[red]Error: {str(e)}[/red]")
+            get_console().print(f"[red]Error: {str(e)}[/red]")
         
         Prompt.ask("\nPress Enter to continue")
 
@@ -226,6 +230,7 @@ def laravel_menu():
     while True:
         clear_screen()
         draw_header("Laravel Tools")
+        console = get_console()
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -248,7 +253,7 @@ def laravel_menu():
         table.add_row("")
         table.add_row("[red]44[/red]", "[red]Reset All Cache[/red]")
         
-        console.print(table)
+        get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -286,7 +291,7 @@ def laravel_menu():
                 laravel_tools.reset_cache()
         except Exception as e:
             logger.exception("Error in Laravel tools")
-            console.print(f"[red]Error: {str(e)}[/red]")
+            get_console().print(f"[red]Error: {str(e)}[/red]")
         
         if choice != "6":  # Don't prompt if running dev server (it has its own exit mechanism)
             Prompt.ask("\nPress Enter to continue")
@@ -299,6 +304,7 @@ def composer_menu():
     while True:
         clear_screen()
         draw_header("Composer Tools")
+        console = get_console()
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -315,7 +321,7 @@ def composer_menu():
         table.add_row("")
         table.add_row("[red]44[/red]", "[red]Clear Composer Cache[/red]")
         
-        console.print(table)
+        get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -343,7 +349,7 @@ def composer_menu():
                 composer_tools.clear_cache()
         except Exception as e:
             logger.exception("Error in Composer tools")
-            console.print(f"[red]Error: {str(e)}[/red]")
+            get_console().print(f"[red]Error: {str(e)}[/red]")
         
         Prompt.ask("\nPress Enter to continue")
 
@@ -355,6 +361,7 @@ def git_menu():
     while True:
         clear_screen()
         draw_header("Git Tools")
+        console = get_console()
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -378,7 +385,7 @@ def git_menu():
         table.add_row("13", "Create Pull Request")
         table.add_row("14", "List Pull Requests")
         
-        console.print(table)
+        get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -419,7 +426,7 @@ def git_menu():
                 git_tools.list_pull_requests()
         except Exception as e:
             logger.exception("Error in Git tools")
-            console.print(f"[red]Error: {str(e)}[/red]")
+            get_console().print(f"[red]Error: {str(e)}[/red]")
         
         if choice not in ["6"]:  # Don't prompt if running long operations
             Prompt.ask("\nPress Enter to continue")
@@ -432,6 +439,7 @@ def create_shortcuts():
     while True:
         clear_screen()
         draw_header("Shortcut Manager")
+        console = get_console()
         
         # Show current status
         shortcut_manager.show_shortcut_info()
@@ -450,7 +458,7 @@ def create_shortcuts():
         table.add_row("[red]5[/red]", "[red]Remove Start Menu Shortcut[/red]")
         table.add_row("[red]6[/red]", "[red]Remove All Shortcuts[/red]")
         
-        console.print("\n" + table)
+        get_console().print("\n" + table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -479,7 +487,7 @@ def create_shortcuts():
                     shortcut_manager.remove_start_menu_shortcut()
         except Exception as e:
             logger.exception("Error in shortcut manager")
-            console.print(f"[red]Error: {str(e)}[/red]")
+            get_console().print(f"[red]Error: {str(e)}[/red]")
         
         Prompt.ask("\nPress Enter to continue")
 
@@ -491,6 +499,7 @@ def update_manager():
     while True:
         clear_screen()
         draw_header("Update Manager")
+        console = get_console()
         
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
@@ -502,7 +511,7 @@ def update_manager():
         table.add_row("3", "View/Restore Backups")
         table.add_row("4", "View Release Notes")
         
-        console.print(table)
+        get_console().print(table)
         
         choice = Prompt.ask(
             "\nChoose an option",
@@ -514,14 +523,14 @@ def update_manager():
                 break
             elif choice == "1":
                 # Check for updates
-                console.print(f"\nCurrent version: [cyan]{update_manager.current_version}[/cyan]")
+                get_console().print(f"\nCurrent version: [cyan]{update_manager.current_version}[cyan]")
                 update_info = update_manager.check_for_updates()
                 latest_version = update_info['version']
                 
                 if version.parse(latest_version) > version.parse(update_manager.current_version):
-                    console.print(f"[green]New version available: {latest_version}[/green]")
-                    console.print("\n[bold]Release Notes:[/bold]")
-                    console.print(Markdown(update_info['notes']))
+                    get_console().print(f"[green]New version available: {latest_version}[/green]")
+                    get_console().print("\n[bold]Release Notes:[/bold]")
+                    get_console().print(Markdown(update_info['notes']))
                     
                     if confirm_action("Would you like to download and install the update?"):
                         # Create temp directory for download
@@ -539,11 +548,11 @@ def update_manager():
                                 
                                 # Install update
                                 update_manager.install_update(temp_path)
-                                console.print("\n[yellow]Please restart EasyKit after installation.[/yellow]")
+                                get_console().print("\n[yellow]Please restart EasyKit after installation.[/yellow]")
                                 if confirm_action("Exit EasyKit now?", default=True):
                                     sys.exit(0)
                 else:
-                    console.print("[green]You have the latest version![/green]")
+                    get_console().print("[green]You have the latest version![/green]")
             
             elif choice == "2":
                 update_manager.backup_scripts()
@@ -562,8 +571,8 @@ def update_manager():
                     backup_menu.add_row("0", "Back")
                     backup_menu.add_row("1", "Restore Backup")
                     
-                    console.print("\n")
-                    console.print(backup_menu)
+                    get_console().print("\n")
+                    get_console().print(backup_menu)
                     
                     backup_choice = Prompt.ask(
                         "\nChoose an option",
@@ -592,7 +601,7 @@ def update_manager():
         
         except Exception as e:
             logger.exception("Error in update manager")
-            console.print(f"[red]Error: {str(e)}[/red]")
+            get_console().print(f"[red]Error: {str(e)}[/red]")
         
         Prompt.ask("\nPress Enter to continue")
 
@@ -600,9 +609,11 @@ if __name__ == '__main__':
     try:
         main_menu()
     except KeyboardInterrupt:
-        console.print("\n[yellow]Interrupted by user[/yellow]")
+        console = get_console()
+        get_console().print("\n[yellow]Interrupted by user[/yellow]")
         sys.exit(0)
     except Exception as e:
         logger.exception("An unexpected error occurred")
-        console.print(f"[red]An error occurred: {e}[/red]")
+        console = get_console()
+        get_console().print(f"[red]An error occurred: {e}[/red]")
         sys.exit(1)
