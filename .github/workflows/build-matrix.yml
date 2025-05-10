@@ -17,10 +17,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: List files for debug
+      - name: List files for debug (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
           pwd
           ls -al
+
+      - name: List files for debug (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo %cd%
+          dir
 
       - name: List files in workspace root
         run: ls -al $GITHUB_WORKSPACE
@@ -40,12 +47,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build with PyInstaller
-        run: |
-          echo "Current directory: $(pwd)"
-          ls -al
-          ls -al $GITHUB_WORKSPACE
-          pyinstaller $GITHUB_WORKSPACE/run_easykit.spec
-        working-directory: $GITHUB_WORKSPACE
+        run: pyinstaller run_easykit.spec
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
