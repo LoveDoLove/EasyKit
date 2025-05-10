@@ -80,6 +80,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/EasyKit_v${{ steps.tagname.outputs.tag }}.exe
-          asset_name: EasyKit_v${{ steps.tagname.outputs.tag }}.exe
+          asset_path: dist/EasyKit_${{ steps.tagname.outputs.tag }}.exe
+          asset_name: EasyKit_${{ steps.tagname.outputs.tag }}.exe
           asset_content_type: application/octet-stream
