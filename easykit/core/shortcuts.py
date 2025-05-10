@@ -166,14 +166,25 @@ class ShortcutManager:
             "start_menu": start_menu_path.exists()
         }
     
+    def check_context_menu(self) -> bool:
+        """Check if the context menu entry exists"""
+        key_path = r"Directory\\shell\\EasyKit"
+        try:
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, key_path):
+                return True
+        except FileNotFoundError:
+            return False
+        except Exception as e:
+            logger.error(f"Error checking context menu entry: {e}")
+            return False
+
     def show_shortcut_info(self):
         """Show information about shortcuts"""
         info = self.check_shortcuts()
-        
+        context_menu = self.check_context_menu()
         table = Table(title="Shortcut Status", box=box.ROUNDED)
         table.add_column("Location", style="cyan")
         table.add_column("Status", style="green")
-        
         table.add_row(
             "Desktop",
             "[green]✓ Exists[/green]" if info['desktop'] else "[red]✗ Not found[/red]"
@@ -182,9 +193,11 @@ class ShortcutManager:
             "Start Menu",
             "[green]✓ Exists[/green]" if info['start_menu'] else "[red]✗ Not found[/red]"
         )
-        
+        table.add_row(
+            "Context Menu",
+            "[green]✓ Exists[/green]" if context_menu else "[red]✗ Not found[/red]"
+        )
         console.print(table)
-        
         console.print("\n[bold]Configuration:[/bold]")
         console.print(f"Python: {self.python_path}")
         console.print(f"Script: {self.script_path}")

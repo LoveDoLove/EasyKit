@@ -443,39 +443,41 @@ def create_shortcuts():
     """Create desktop/start menu shortcuts"""
     from .core.shortcuts import ShortcutManager
     shortcut_manager = ShortcutManager()
-    
+
     while True:
         clear_screen()
         draw_header("Shortcut Manager")
         console = get_console()
-        
+
         # Show current status
         shortcut_manager.show_shortcut_info()
-        
-        # Show menu
+
+        # Show menu (grouped: Add/Create, then Remove)
         table = Table(show_header=False, box=box.ROUNDED)
         table.add_column("Option", style="cyan")
         table.add_column("Description")
-        
+
         table.add_row("0", "Back to Main Menu")
+        # --- Add/Create Section ---
         table.add_row("1", "Create Desktop Shortcut")
         table.add_row("2", "Create Start Menu Shortcut")
         table.add_row("3", "Create Both Shortcuts")
+        table.add_row("4", "Add Context Menu Entry (Right-Click)")
         table.add_row("")
-        table.add_row("[red]4[/red]", "[red]Remove Desktop Shortcut[/red]")
-        table.add_row("[red]5[/red]", "[red]Remove Start Menu Shortcut[/red]")
-        table.add_row("[red]6[/red]", "[red]Remove All Shortcuts[/red]")
-        table.add_row("7", "Add Context Menu Entry (Right-Click)")
-        table.add_row("8", "Remove Context Menu Entry")
-        
+        # --- Remove Section ---
+        table.add_row("5", "Remove Desktop Shortcut")
+        table.add_row("6", "Remove Start Menu Shortcut")
+        table.add_row("7", "Remove Context Menu Entry")
+        table.add_row("8", "Remove All Shortcuts")
+
         get_console().print("\n")
         get_console().print(table)
-        
+
         choice = Prompt.ask(
             "\nChoose an option",
             choices=["0", "1", "2", "3", "4", "5", "6", "7", "8"]
         )
-        
+
         try:
             if choice == "0":
                 break
@@ -487,25 +489,26 @@ def create_shortcuts():
                 shortcut_manager.create_desktop_shortcut()
                 shortcut_manager.create_start_menu_shortcut()
             elif choice == "4":
+                if confirm_action("Add EasyKit to right-click context menu? [Y/n]", default=True):
+                    shortcut_manager.add_context_menu_entry()
+            elif choice == "5":
                 if confirm_action("Remove desktop shortcut? [Y/n]", default=False):
                     shortcut_manager.remove_desktop_shortcut()
-            elif choice == "5":
+            elif choice == "6":
                 if confirm_action("Remove Start Menu shortcut? [Y/n]", default=False):
                     shortcut_manager.remove_start_menu_shortcut()
-            elif choice == "6":
+            elif choice == "7":
+                if confirm_action("Remove context menu entry? [Y/n]", default=False):
+                    shortcut_manager.remove_context_menu_entry()
+            elif choice == "8":
                 if confirm_action("Remove all shortcuts? [Y/n]", default=False):
                     shortcut_manager.remove_desktop_shortcut()
                     shortcut_manager.remove_start_menu_shortcut()
-            elif choice == "7":
-                if confirm_action("Add EasyKit to right-click context menu? [Y/n]", default=True):
-                    shortcut_manager.add_context_menu_entry()
-            elif choice == "8":
-                if confirm_action("Remove EasyKit from right-click context menu? [Y/n]", default=True):
                     shortcut_manager.remove_context_menu_entry()
         except Exception as e:
             logger.exception("Error in shortcut manager")
             get_console().print(f"[red]Error: {str(e)}[/red]")
-        
+
         Prompt.ask("\nPress Enter to continue")
 
 def update_manager():
