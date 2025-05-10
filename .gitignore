@@ -5,7 +5,7 @@ venv/
 .env/
 
 # PyInstaller spec files
-*.spec
+# *.spec
 
 # Test and coverage output
 .pytest_cache/
