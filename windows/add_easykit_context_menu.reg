@@ -2,7 +2,7 @@ Windows Registry Editor Version 5.00
 
 [HKEY_CLASSES_ROOT\Directory\shell\EasyKit]
 @="Open with EasyKit"
-"Icon"="d:\\Projects\\WebProjects\\EasyKit\\images\\icon.ico"
+"Icon"="C:\\Program Files (x86)\\EasyKit\\icon.ico"
 
 [HKEY_CLASSES_ROOT\Directory\shell\EasyKit\command]
-@="python d:\\Projects\\WebProjects\\EasyKit\\run_easykit.py \"%1\""
+@="\"C:\\Program Files (x86)\\EasyKit\\EasyKit_v3.1.9.exe\" \"%1\""

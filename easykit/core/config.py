@@ -11,7 +11,7 @@ import platformdirs
 class Config:
     def __init__(self):
         self.app_name = "EasyKit"
-        self.app_author = "EasyKit"
+        self.app_author = "LoveDoLove"
         self._load_config()
 
     def _load_config(self):

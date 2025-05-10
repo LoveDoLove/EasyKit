@@ -27,7 +27,7 @@ def main_menu():
     """Display the main menu and handle user input"""
     while True:
         clear_screen()
-        draw_header(f"EasyKit Main Menu v{config.get('version', '3.0.0')}")
+        draw_header(f"EasyKit Main Menu v{config.get('version', '3.1.9')}")
         console = get_console()
         
         # Create menu table
@@ -489,7 +489,7 @@ def create_shortcuts():
                 shortcut_manager.create_desktop_shortcut()
                 shortcut_manager.create_start_menu_shortcut()
             elif choice == "4":
-                if confirm_action("Add EasyKit to right-click context menu? [Y/n]", default=True):
+                if confirm_action("Add EasyKit to right-click context menu?", default=True):
                     shortcut_manager.add_context_menu_entry()
             elif choice == "5":
                 if confirm_action("Remove desktop shortcut? [Y/n]", default=False):
