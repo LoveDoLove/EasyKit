@@ -34,6 +34,10 @@ jobs:
           pip install -r requirements.txt
           pip install nuitka
 
+      - name: Install Dependency Walker
+        shell: pwsh
+        run: choco install dependencywalker -y
+
       - name: Build with Nuitka
         run: |
           $tag = echo ${{ github.ref }} | % { $_ -replace 'refs/tags/v', '' }
