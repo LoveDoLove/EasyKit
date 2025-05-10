@@ -52,7 +52,9 @@ jobs:
     steps:
       - name: Set tag name
         id: tagname
-        run: echo "tag=${GITHUB_REF##*/}" >> $env:GITHUB_OUTPUT
+        run: |
+          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
         shell: pwsh
 
       - name: Download build artifact
