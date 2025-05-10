@@ -30,26 +30,44 @@ class ComposerTools:
             console.print("Please install Composer from https://getcomposer.org/")
             return False
         return True
-    
+
+    def _find_composer_command(self) -> list:
+        """Find the correct Composer command for the current OS."""
+        candidates = [
+            ['composer'],
+            ['composer.bat'],
+            ['composer.exe']
+        ]
+        # Check for composer.phar in current directory
+        if Path('composer.phar').exists():
+            candidates.append(['php', 'composer.phar'])
+        for cmd in candidates:
+            try:
+                result = subprocess.run(cmd + ['--version'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    return cmd
+            except Exception:
+                continue
+        return None
+
     def run_composer_command(self, command: List[str], show_output: bool = True) -> bool:
-        """Run a composer command"""
-        if not self.ensure_composer_installed():
+        """Run a composer command (robust for Windows)."""
+        composer_cmd = self._find_composer_command()
+        if not composer_cmd:
+            console.print("[red]Composer executable not found. Please ensure Composer is installed and in your PATH.[/red]")
             return False
-            
         try:
             process = subprocess.run(
-                ['composer'] + command,
+                composer_cmd + command,
                 capture_output=True,
                 text=True,
                 check=False
             )
-            
             if show_output:
                 if process.stdout:
                     console.print(process.stdout)
                 if process.stderr:
                     console.print("[red]" + process.stderr + "[/red]")
-                    
             return process.returncode == 0
         except Exception as e:
             logger.error(f"Error running composer command: {e}")

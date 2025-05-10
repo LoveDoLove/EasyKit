@@ -35,26 +35,52 @@ class LaravelTools:
             console.print("[red]PHP is not installed or not in PATH[/red]")
             console.print("Please install PHP from https://www.php.net/")
             return False
-            
+
+    def _find_composer_command(self) -> list:
+        """Find the correct Composer command for the current OS."""
+        candidates = [
+            ['composer'],
+            ['composer.bat'],
+            ['composer.exe']
+        ]
+        # Check for composer.phar in current directory
+        if Path('composer.phar').exists():
+            candidates.append(['php', 'composer.phar'])
+        for cmd in candidates:
+            try:
+                result = subprocess.run(cmd + ['--version'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    return cmd
+            except Exception:
+                continue
+        return None
+
     def run_composer_command(self, command: List[str], show_output: bool = True) -> bool:
-        """Run a composer command"""
+        """Run a composer command (robust for Windows)."""
         if not self.ensure_php_installed():
             return False
-            
+        composer_cmd = self._find_composer_command()
+        if not composer_cmd:
+            console.print("[red]Composer executable not found. Please ensure Composer is installed and in your PATH.[/red]")
+            return False
         try:
             process = subprocess.run(
-                ['composer'] + command,
+                composer_cmd + command,
                 capture_output=True,
                 text=True,
                 check=False
             )
-            
             if show_output:
                 if process.stdout:
-                    console.print(process.stdout)
+                    if process.returncode == 0:
+                        console.print(f"[green]{process.stdout}[/green]")
+                    else:
+                        console.print(f"[red]{process.stdout}[/red]")
                 if process.stderr:
-                    console.print("[red]" + process.stderr + "[/red]")
-                    
+                    if process.returncode == 0:
+                        console.print(f"[green]{process.stderr}[/green]")
+                    else:
+                        console.print(f"[red]{process.stderr}[/red]")
             return process.returncode == 0
         except Exception as e:
             logger.error(f"Error running composer command: {e}")
@@ -64,12 +90,10 @@ class LaravelTools:
         """Run an artisan command"""
         if not self.ensure_php_installed():
             return False
-            
         if not Path('artisan').exists():
             console.print("[red]This doesn't appear to be a Laravel project directory.[/red]")
             console.print("Make sure you're in the root directory of a Laravel project.")
             return False
-            
         try:
             process = subprocess.run(
                 ['php', 'artisan'] + command,
@@ -77,13 +101,17 @@ class LaravelTools:
                 text=True,
                 check=False
             )
-            
             if show_output:
                 if process.stdout:
-                    console.print(process.stdout)
+                    if process.returncode == 0:
+                        console.print(f"[green]{process.stdout}[/green]")
+                    else:
+                        console.print(f"[red]{process.stdout}[/red]")
                 if process.stderr:
-                    console.print("[red]" + process.stderr + "[/red]")
-                    
+                    if process.returncode == 0:
+                        console.print(f"[green]{process.stderr}[/green]")
+                    else:
+                        console.print(f"[red]{process.stderr}[/red]")
             return process.returncode == 0
         except Exception as e:
             logger.error(f"Error running artisan command: {e}")
