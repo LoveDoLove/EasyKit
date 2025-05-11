@@ -1,7 +1,7 @@
 ; Inno Setup Script for EasyKit
 
 #define MyAppName "EasyKit"
-#define MyAppVersion "3.1.9"
+#define MyAppVersion "3.2.0"
 
 [Setup]
 AppName={#MyAppName}
@@ -26,6 +26,16 @@ Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\EasyKit_v{#MyAppVersion}.ex
 
 [Registry]
 Root: HKCU; SubKey: "Software\Microsoft\Windows\CurrentVersion\Uninstall\{#MyAppName}"; ValueType: string; ValueName: "DisplayName"; ValueData: "{#MyAppName}"; Flags: uninsdeletekey
+
+; Add context menu for folders
+Root: HKCR; Subkey: "Directory\shell\EasyKit"; ValueType: string; ValueName: ""; ValueData: "Open with EasyKit"; Flags: uninsdeletekey
+Root: HKCR; SubKey: "Directory\shell\EasyKit"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\images\icon.ico"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "Directory\shell\EasyKit\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EasyKit_v{#MyAppVersion}.exe"" ""%1"""; Flags: uninsdeletekey
+
+; Add context menu for all files
+Root: HKCR; Subkey: "*\shell\EasyKit"; ValueType: string; ValueName: ""; ValueData: "Open with EasyKit"; Flags: uninsdeletekey
+Root: HKCR; SubKey: "*\shell\EasyKit"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\images\icon.ico"; Flags: uninsdeletekey
+Root: HKCR; Subkey: "*\shell\EasyKit\command"; ValueType: string; ValueName: ""; ValueData: """{app}\EasyKit_v{#MyAppVersion}.exe"" ""%1"""; Flags: uninsdeletekey
 
 [Run]
 Filename: "{app}\EasyKit_v{#MyAppVersion}.exe"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent

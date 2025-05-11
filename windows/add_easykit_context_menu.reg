@@ -1,8 +1,0 @@
-Windows Registry Editor Version 5.00
-
-[HKEY_CLASSES_ROOT\Directory\shell\EasyKit]
-@="Open with EasyKit"
-"Icon"="C:\\Program Files (x86)\\EasyKit\\icon.ico"
-
-[HKEY_CLASSES_ROOT\Directory\shell\EasyKit\command]
-@="\"C:\\Program Files (x86)\\EasyKit\\EasyKit_v3.1.9.exe\" \"%1\""

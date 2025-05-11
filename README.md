@@ -1,4 +1,4 @@
-# EasyKit 3.1.9
+# EasyKit 3.2.0
 
 **Your All-in-One Python Toolkit for Streamlined Windows Web Development**
 
@@ -15,6 +15,12 @@ EasyKit is a modern Python utility designed to simplify and accelerate web devel
 - **User Configs:** JSON-based, user-specific settings
 - **Organized Logging:** Log directories for Windows
 - **Comprehensive Testing:** Reliable for Windows
+
+## What's New in 3.2.0
+
+- All version references updated to 3.2.0 across the codebase, installer, and documentation.
+- New release notes for 3.2.0 in `docs/3.2.0-release-notes.md`.
+- No breaking changes or new features; this is a version synchronization release.
 
 ## Getting Started
 
@@ -68,9 +74,9 @@ del run_easykit.dist
 
 ### 5. Build the Executable with Nuitka (Windows standalone mode)
 ```cmd
-python -m nuitka --standalone --windows-icon-from-ico=images/icon.ico --output-dir=dist --output-filename=EasyKit_v3.1.9.exe --include-data-dir=docs=docs --include-data-dir=images=images --include-data-dir=windows=windows run_easykit.py
+python -m nuitka --standalone --windows-icon-from-ico=images/icon.ico --output-dir=dist --output-filename=EasyKit_v3.2.0.exe --include-data-dir=docs=docs --include-data-dir=images=images run_easykit.py
 ```
-> In Windows cmd.exe, run this as a single line (no backslashes). Replace `3.1.9` with your version/tag. Nuitka will create all files (EXE, DLLs, etc.) directly in the `dist` folder. **You must include all files from `dist` in your installer, not just the EXE.**
+> In Windows cmd.exe, run this as a single line (no backslashes). Replace `3.2.0` with your version/tag. Nuitka will create all files (EXE, DLLs, etc.) directly in the `dist` folder. **You must include all files from `dist` in your installer, not just the EXE.**
 
 **Important:**
 - Do **not** use `--onefile`! Only use `--standalone`.
@@ -91,10 +97,10 @@ choco install innosetup -y
 ```cmd
 "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" EasyKitInstaller.iss
 ```
-This will generate `EasyKitSetup_3.1.9.exe` in your project directory.
+This will generate `EasyKitSetup_3.2.0.exe` in your project directory.
 
 #### c. Distribute the Installer
-Share `EasyKitSetup_3.1.9.exe` with users. They can double-click to install EasyKit on their Windows system, including all required files and shortcuts.
+Share `EasyKitSetup_3.2.0.exe` with users. They can double-click to install EasyKit on their Windows system, including all required files and shortcuts.
 
 ---
 
