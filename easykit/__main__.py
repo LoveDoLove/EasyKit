@@ -27,7 +27,7 @@ def main_menu():
     """Display the main menu and handle user input"""
     while True:
         clear_screen()
-        draw_header(f"EasyKit Main Menu v{config.get('version', '3.1.9')}")
+        draw_header(f"EasyKit Main Menu v{config.get('version', '3.2.0')}")
         console = get_console()
         
         # Create menu table
@@ -40,16 +40,15 @@ def main_menu():
         table.add_row("2", "Laravel Tools")
         table.add_row("3", "Composer Tools")
         table.add_row("4", "Git Tools")
-        table.add_row("5", "Create Shortcuts")
-        table.add_row("6", "Settings")
-        table.add_row("7", "Update Manager")
+        table.add_row("5", "Settings")
+        table.add_row("6", "Update Manager")
         
         get_console().print(table)
         
         if config.get('show_tips', True):
             get_console().print("\n[yellow]TIP:[/yellow] You can customize EasyKit through the Settings menu.")
         
-        choice = Prompt.ask("\nChoose an option", choices=["0", "1", "2", "3", "4", "5", "6", "7"])
+        choice = Prompt.ask("\nChoose an option", choices=["0", "1", "2", "3", "4", "5", "6"])
         
         if choice == "0":
             if exit_program():
@@ -63,10 +62,8 @@ def main_menu():
         elif choice == "4":
             git_menu()
         elif choice == "5":
-            create_shortcuts()
-        elif choice == "6":
             settings_menu()
-        elif choice == "7":
+        elif choice == "6":
             update_manager()
 
 def settings_menu():
@@ -438,78 +435,6 @@ def git_menu():
         
         if choice not in ["6"]:  # Don't prompt if running long operations
             Prompt.ask("\nPress Enter to continue")
-
-def create_shortcuts():
-    """Create desktop/start menu shortcuts"""
-    from .core.shortcuts import ShortcutManager
-    shortcut_manager = ShortcutManager()
-
-    while True:
-        clear_screen()
-        draw_header("Shortcut Manager")
-        console = get_console()
-
-        # Show current status
-        shortcut_manager.show_shortcut_info()
-
-        # Show menu (grouped: Add/Create, then Remove)
-        table = Table(show_header=False, box=box.ROUNDED)
-        table.add_column("Option", style="cyan")
-        table.add_column("Description")
-
-        table.add_row("0", "Back to Main Menu")
-        # --- Add/Create Section ---
-        table.add_row("1", "Create Desktop Shortcut")
-        table.add_row("2", "Create Start Menu Shortcut")
-        table.add_row("3", "Create Both Shortcuts")
-        table.add_row("4", "Add Context Menu Entry (Right-Click)")
-        table.add_row("")
-        # --- Remove Section ---
-        table.add_row("5", "Remove Desktop Shortcut")
-        table.add_row("6", "Remove Start Menu Shortcut")
-        table.add_row("7", "Remove Context Menu Entry")
-        table.add_row("8", "Remove All Shortcuts")
-
-        get_console().print("\n")
-        get_console().print(table)
-
-        choice = Prompt.ask(
-            "\nChoose an option",
-            choices=["0", "1", "2", "3", "4", "5", "6", "7", "8"]
-        )
-
-        try:
-            if choice == "0":
-                break
-            elif choice == "1":
-                shortcut_manager.create_desktop_shortcut()
-            elif choice == "2":
-                shortcut_manager.create_start_menu_shortcut()
-            elif choice == "3":
-                shortcut_manager.create_desktop_shortcut()
-                shortcut_manager.create_start_menu_shortcut()
-            elif choice == "4":
-                if confirm_action("Add EasyKit to right-click context menu?", default=True):
-                    shortcut_manager.add_context_menu_entry()
-            elif choice == "5":
-                if confirm_action("Remove desktop shortcut? [Y/n]", default=False):
-                    shortcut_manager.remove_desktop_shortcut()
-            elif choice == "6":
-                if confirm_action("Remove Start Menu shortcut? [Y/n]", default=False):
-                    shortcut_manager.remove_start_menu_shortcut()
-            elif choice == "7":
-                if confirm_action("Remove context menu entry? [Y/n]", default=False):
-                    shortcut_manager.remove_context_menu_entry()
-            elif choice == "8":
-                if confirm_action("Remove all shortcuts? [Y/n]", default=False):
-                    shortcut_manager.remove_desktop_shortcut()
-                    shortcut_manager.remove_start_menu_shortcut()
-                    shortcut_manager.remove_context_menu_entry()
-        except Exception as e:
-            logger.exception("Error in shortcut manager")
-            get_console().print(f"[red]Error: {str(e)}[/red]")
-
-        Prompt.ask("\nPress Enter to continue")
 
 def update_manager():
     """Handle updates and backups"""
