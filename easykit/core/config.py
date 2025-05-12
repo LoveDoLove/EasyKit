@@ -8,6 +8,8 @@ import json
 from dotenv import load_dotenv
 import platformdirs
 
+APP_VERSION = "3.2.1"
+
 class Config:
     def __init__(self):
         self.app_name = "EasyKit"
@@ -24,7 +26,8 @@ class Config:
             "check_updates": True,
             "show_tips": True,
             "confirm_exit": True,
-            "menu_width": 50
+            "menu_width": 50,
+            "version": APP_VERSION
         }
 
         # Load from config file, or create it if missing

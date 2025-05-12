@@ -19,6 +19,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich import box
 from ..utils import draw_header, get_logger, confirm_action
 from ..core.config import Config
+from .config import APP_VERSION
 
 console = Console()
 logger = get_logger(__name__)
@@ -26,7 +27,7 @@ config = Config()
 
 class UpdateManager:
     def __init__(self):
-        self.current_version = "3.2.0"
+        self.current_version = config.get('version', APP_VERSION)
         self.repo_owner = "LoveDoLove"
         self.repo_name = "EasyKit"
         self.base_url = f"https://api.github.com/repos/{self.repo_owner}/{self.repo_name}"
@@ -190,7 +191,7 @@ class UpdateManager:
         release_notes = sorted(
             release_notes,
             key=lambda p: extract_version(p),
-            reverse=True
+            reverse=False
         )
 
         if not release_notes:
