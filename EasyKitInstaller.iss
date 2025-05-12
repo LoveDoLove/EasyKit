@@ -1,7 +1,7 @@
 ; Inno Setup Script for EasyKit
 
 #define MyAppName "EasyKit"
-#define MyAppVersion "3.2.0"
+#define MyAppVersion "3.2.1"
 
 [Setup]
 AppName={#MyAppName}
@@ -14,8 +14,8 @@ SolidCompression=yes
 WizardStyle=modern
 
 [Files]
-; Include all Nuitka output files from dist\run_easykit.dist/ (EXE, DLLs, etc.)
-Source: "dist\run_easykit.dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+; Include all Nuitka output files from dist\main.dist/ (EXE, DLLs, etc.)
+Source: "dist\main.dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 ; Include docs and images
 Source: "docs\*"; DestDir: "{app}\docs"; Flags: recursesubdirs createallsubdirs
 Source: "images\*"; DestDir: "{app}\images"; Flags: recursesubdirs createallsubdirs

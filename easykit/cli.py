@@ -4,14 +4,14 @@ Main entry point for EasyKit CLI
 import click
 from rich.console import Console
 from .core.software import SoftwareChecker
-from .core.config import Config
+from .core.config import Config, APP_VERSION
 from .utils import draw_header, get_logger
 
 console = Console()
 logger = get_logger(__name__)
 
 @click.group()
-@click.version_option()
+@click.version_option(version=APP_VERSION, prog_name="EasyKit")
 def cli():
     """EasyKit - Cross-platform Development Environment Setup Tool"""
     pass

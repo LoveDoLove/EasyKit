@@ -2,4 +2,4 @@
 EasyKit - Cross-platform Development Environment Setup Tool
 """
 
-__version__ = "3.2.0"
+from .core.config import APP_VERSION as __version__
