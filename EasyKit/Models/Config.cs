@@ -67,10 +67,20 @@ public class Config
         var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_configFilePath, json);
     }
-
     public object? Get(string key, object? defaultValue = null)
     {
         return Settings.ContainsKey(key) ? Settings[key] : defaultValue;
+    }
+
+    /// <summary>
+    /// Sets a configuration value and saves the configuration to disk.
+    /// </summary>
+    /// <param name="key">The configuration key to set</param>
+    /// <param name="value">The value to store</param>
+    public void Set(string key, object value)
+    {
+        Settings[key] = value;
+        SaveConfig();
     }
 
     private string GetLogPath()
