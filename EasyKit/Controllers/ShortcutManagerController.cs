@@ -85,17 +85,47 @@ internal class ShortcutManagerController
     {
         try
         {
-            string menuName = "Open with EasyKit";
             string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "EasyKit.exe";
-            using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\*\shell\" + menuName))
+            var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
+            string[] registryPaths = scope == "system"
+                ? new[] {
+                    @"*\shell\EasyKit",
+                    @"Directory\shell\EasyKit",
+                    @"Directory\Background\shell\EasyKit"
+                  }
+                : new[] {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                  };
+            var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
+            foreach (var registryPath in registryPaths)
             {
-                if (key != null)
+                try
                 {
-                    key.SetValue("", menuName);
-                    using (var commandKey = key.CreateSubKey("command"))
+                    using (var key = root.CreateSubKey(registryPath))
                     {
-                        if (commandKey != null) commandKey.SetValue("", $"\"{exePath}\" \"%1\"");
+                        if (key != null)
+                        {
+                            key.SetValue("", "EasyKit", RegistryValueKind.String);
+                            using (var commandKey = key.CreateSubKey("command"))
+                            {
+                                if (commandKey != null)
+                                {
+                                    commandKey.SetValue("", $"\"{exePath}\" \"%1\"", RegistryValueKind.String);
+                                    commandKey.SetValue("IsolatedCommand", $"\"{exePath}\" \"%1\"", RegistryValueKind.String);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            _console.WriteInfo($"Failed to create registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}");
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    _console.WriteInfo($"Exception creating registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}: {ex.Message}");
                 }
             }
         }
@@ -109,8 +139,27 @@ internal class ShortcutManagerController
     {
         try
         {
-            string menuName = "Open with EasyKit";
-            Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\*\shell\" + menuName, false);
+            var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
+            var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
+            string[] delRegistryPaths = scope == "system"
+                ? new[] {
+                    @"*\shell\EasyKit",
+                    @"Directory\shell\EasyKit",
+                    @"Directory\Background\shell\EasyKit"
+                  }
+                : new[] {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                  };
+            foreach (var delRegistryPath in delRegistryPaths)
+            {
+                try
+                {
+                    root.DeleteSubKeyTree(delRegistryPath, false);
+                }
+                catch { /* Ignore if not present */ }
+            }
         }
         catch (Exception ex)
         {

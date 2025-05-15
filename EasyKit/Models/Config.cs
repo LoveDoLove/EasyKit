@@ -32,7 +32,14 @@ public class Config
             { "confirm_exit", true },
             { "confirm_destructive_actions", true },
             { "menu_width", 50 },
-            { "version", AppVersion }
+            { "version", AppVersion },
+            { "context_menu_name", "EasyKit" },
+            { "context_menu_registry_paths", new[] {
+                @"Software\Classes\*\shell\EasyKit",
+                @"Software\Classes\Directory\shell\EasyKit",
+                @"Software\Classes\Directory\Background\shell\EasyKit"
+            }},
+            { "context_menu_scope", "user" } // "user" for HKCU, "system" for HKCR
         };
 
         // Load from config file if exists
@@ -89,7 +96,14 @@ public class Config
             { "confirm_exit", true },
             { "confirm_destructive_actions", true },
             { "menu_width", 50 },
-            { "version", AppVersion }
+            { "version", AppVersion },
+            { "context_menu_name", "EasyKit" },
+            { "context_menu_registry_paths", new[] {
+                @"Software\Classes\*\shell\EasyKit",
+                @"Software\Classes\Directory\shell\EasyKit",
+                @"Software\Classes\Directory\Background\shell\EasyKit"
+            }},
+            { "context_menu_scope", "user" } // "user" for HKCU, "system" for HKCR
         };
         SaveConfig();
     }
