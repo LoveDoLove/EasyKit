@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 
@@ -10,12 +11,14 @@ public class ComposerController
     private readonly LoggerService _logger;
     private readonly PromptView _prompt = new();
     private readonly Software _software;
+    private readonly ProcessService _processService;
 
     public ComposerController(Software software, LoggerService logger, ConsoleService console)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _processService = new ProcessService(logger, console, console.Config);
     }
 
     public void ShowMenu()
@@ -56,9 +59,7 @@ public class ComposerController
             .WithColors(border, highlight, title, text, help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .Show();
-    }
-
-    private string? FindComposerCommand()
+    }    private string? FindComposerCommand()
     {
         if (File.Exists("composer.phar"))
             return "php composer.phar";
@@ -66,6 +67,12 @@ public class ComposerController
             return "composer.bat";
         if (File.Exists("composer.exe"))
             return "composer.exe";
+        
+        // Try to find composer in PATH
+        string? composerPath = _processService.FindExecutablePath("composer");
+        if (!string.IsNullOrEmpty(composerPath))
+            return composerPath;
+            
         return "composer";
     }
 
@@ -78,41 +85,15 @@ public class ComposerController
             return false;
         }
 
-        try
+        // If the command is "php composer.phar", we need to handle it differently
+        if (composerCmd.StartsWith("php "))
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = composerCmd.Split(' ')[0],
-                Arguments = string.Join(' ', composerCmd.Split(' ').Skip(1)) +
-                            (string.IsNullOrWhiteSpace(args) ? "" : " " + args),
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            var process = Process.Start(psi);
-            if (process == null)
-            {
-                _console.WriteError("Failed to start composer process.");
-                return false;
-            }
-
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (showOutput)
-            {
-                if (!string.IsNullOrWhiteSpace(output)) _console.WriteInfo(output);
-                if (!string.IsNullOrWhiteSpace(error)) _console.WriteError(error);
-            }
-
-            return process.ExitCode == 0;
+            string phpArgs = composerCmd.Substring(4) + " " + args;
+            return _processService.RunProcess("php", phpArgs, showOutput, Environment.CurrentDirectory);
         }
-        catch (Exception ex)
+        else
         {
-            _logger.Error($"Error running composer command: {ex.Message}");
-            if (showOutput) _console.WriteError(ex.Message);
-            return false;
+            return _processService.RunProcess(composerCmd, args, showOutput, Environment.CurrentDirectory);
         }
     }
 

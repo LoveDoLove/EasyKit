@@ -238,6 +238,72 @@ public class ProcessService
         }
 
         return paths.ToArray();
+    }    /// <summary>
+    /// Runs a process and captures its output, error, and exit code.
+    /// </summary>
+    /// <param name="file">The executable file to run.</param>
+    /// <param name="args">The arguments to pass to the executable.</param>
+    /// <param name="workingDirectory">The working directory for the process. Defaults to the current directory if not specified.</param>
+    /// <returns>A tuple containing the process output, error, and exit code.</returns>
+    public (string output, string error, int exitCode) RunProcessWithOutput(string file, string args, string? workingDirectory = null)
+    {
+        try
+        {
+            // Try to get explicit path for common tools if direct call fails
+            string executablePath = file;
+            if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
+                file.Equals("node", StringComparison.OrdinalIgnoreCase) ||
+                file.Equals("ncu", StringComparison.OrdinalIgnoreCase) ||
+                file.Equals("php", StringComparison.OrdinalIgnoreCase) ||
+                file.Equals("composer", StringComparison.OrdinalIgnoreCase) ||
+                file.Equals("git", StringComparison.OrdinalIgnoreCase))
+            {
+                var explicitPath = FindExecutablePath(file);
+                if (!string.IsNullOrEmpty(explicitPath))
+                {
+                    executablePath = explicitPath;
+                    _logger.Info($"Using explicit path for {file}: {explicitPath}");
+                }
+            }
+
+            var process = new Process();
+            process.StartInfo.FileName = executablePath;
+            process.StartInfo.Arguments = args;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+            
+            // On Windows, load user profile to ensure PATH is available
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            {
+#pragma warning disable CA1416 // Validate platform compatibility
+                process.StartInfo.LoadUserProfile = true;
+#pragma warning restore CA1416 // Validate platform compatibility
+            }
+
+            if (!string.IsNullOrEmpty(workingDirectory))
+                process.StartInfo.WorkingDirectory = workingDirectory;
+            else
+                process.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            return (output, error, process.ExitCode);
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
+        {
+            _logger.Error($"Command not found: {file}. {ex.Message}");
+            return ("", $"Command not found: {file}. Ensure it is properly installed and in your PATH.", 1);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error running process: {ex.Message}");
+            return ("", ex.Message, 1);
+        }
     }
 
     /// <summary>

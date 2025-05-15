@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 
@@ -9,12 +10,14 @@ public class GitController
     private readonly LoggerService _logger;
     private readonly PromptView _prompt = new();
     private readonly Software _software;
+    private readonly ProcessService _processService;
 
     public GitController(Software software, LoggerService logger, ConsoleService console)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _processService = new ProcessService(logger, console, console.Config);
     }
 
     /// <summary>
@@ -72,85 +75,23 @@ public class GitController
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .WithRoundedBorder()
             .Show();
-    }
-
-    private bool RunGitCommand(string args, bool showOutput = true)
+    }    private bool RunGitCommand(string args, bool showOutput = true)
     {
-        if (!File.Exists(".git/config"))
+        if (!File.Exists(".git/config") && args != "init")
         {
-            if (showOutput && args != "init")
+            if (showOutput)
                 _console.WriteError("This doesn't appear to be a git repository. Run 'git init' first.");
             return false;
         }
 
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            var process = Process.Start(psi);
-            if (process == null)
-            {
-                _console.WriteError("Failed to start git process.");
-                return false;
-            }
-
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (showOutput)
-            {
-                if (!string.IsNullOrWhiteSpace(output)) _console.WriteInfo(output);
-                if (!string.IsNullOrWhiteSpace(error)) _console.WriteError(error);
-            }
-
-            return process.ExitCode == 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"Error running git command: {ex.Message}");
-            if (showOutput) _console.WriteError(ex.Message);
-            return false;
-        }
-    }
-
-    // New helper to get output and error from git command
+        return _processService.RunProcess("git", args, showOutput, Environment.CurrentDirectory);
+    }    // New helper to get output and error from git command
     private (string output, string error, int exitCode) RunGitCommandWithOutput(string args)
     {
-        if (!File.Exists(".git/config"))
+        if (!File.Exists(".git/config") && args != "init")
             return ("", "This doesn't appear to be a git repository. Run 'git init' first.", 1);
 
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            var process = Process.Start(psi);
-            if (process == null) return ("", "Failed to start git process.", 1);
-
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            return (output, error, process.ExitCode);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"Error running git command: {ex.Message}");
-            return ("", ex.Message, 1);
-        }
+        return _processService.RunProcessWithOutput("git", args, Environment.CurrentDirectory);
     }
 
     private void InitRepo()
@@ -188,14 +129,13 @@ public class GitController
             _console.WriteSuccess("✓ Working tree clean. Nothing to commit.");
         }
         else
-        {
-            // Prevent invisible output: check for black-on-black
-            var textColorObj = _console.Config.Get("text_color", "");
-            var bgColorObj = _console.Config.Get("background_color", "");
-            if (textColorObj?.ToString().ToLower() == "black" && bgColorObj?.ToString().ToLower() == "black")
+        {            // Prevent invisible output: check for black-on-black
+            var textColorObj = _console.Config?.Get("text_color", "");
+            var bgColorObj = _console.Config?.Get("background_color", "");
+            if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")
                 _console.WriteInfo(
                     "[Warning] Both text and background color are set to black. Please adjust your settings for visibility.");
-            _console.WriteInfo(output.Trim());
+            _console.WriteInfo(output?.Trim() ?? "");
         }
 
         WaitForUser();
