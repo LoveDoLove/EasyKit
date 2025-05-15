@@ -66,11 +66,11 @@ public static class AdminService
     ///     Restarts the application with administrator/root privileges based on the platform
     /// </summary>
     /// <returns>True if the restart was requested, false if there was an error</returns>
-    public static bool RestartAsAdmin()
+    public static bool RestartAsAdmin(string? argument = null)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return RestartAsWindowsAdmin();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return RestartAsWindowsAdmin(argument);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return RestartAsLinuxRoot();
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) return RestartAsLinuxRoot(argument);
         // Default to false for unsupported platforms
         return false;
     }
@@ -79,7 +79,7 @@ public static class AdminService
     ///     Restarts the application with Windows administrator privileges
     /// </summary>
     [SupportedOSPlatform("windows")]
-    private static bool RestartAsWindowsAdmin()
+    private static bool RestartAsWindowsAdmin(string? argument = null)
     {
         try
         {
@@ -95,6 +95,10 @@ public static class AdminService
                 FileName = exePath,
                 Verb = "runas" // This is what requests elevation
             };
+            if (!string.IsNullOrEmpty(argument))
+            {
+                startInfo.Arguments = $"\"{argument}\"";
+            }
 
             // Start the new process with admin rights
             Process.Start(startInfo);
@@ -114,7 +118,7 @@ public static class AdminService
     ///     Restarts the application with Linux root privileges using sudo
     /// </summary>
     [SupportedOSPlatform("linux")]
-    private static bool RestartAsLinuxRoot()
+    private static bool RestartAsLinuxRoot(string? argument = null)
     {
         try
         {
@@ -128,7 +132,7 @@ public static class AdminService
                 UseShellExecute = false,
                 WorkingDirectory = Environment.CurrentDirectory,
                 FileName = "sudo",
-                Arguments = $"\"{exePath}\"",
+                Arguments = !string.IsNullOrEmpty(argument) ? $"\"{exePath}\" \"{argument}\"" : $"\"{exePath}\"",
                 CreateNoWindow = false
             };
 

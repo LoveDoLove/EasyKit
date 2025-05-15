@@ -19,28 +19,97 @@ internal class Program
 
     private static void Main(string[] args)
     {
-        // Check if the application is running as administrator
-        if (!AdminService.IsRunningAsAdmin())
+        try
         {
-            if (ConfirmationService.ConfirmAdminElevation())
-            {
-                Console.WriteLine("Restarting with administrator privileges...");
-                if (AdminService.RestartAsAdmin())
-                    // The application will exit in the RestartAsAdmin method
-                    return;
+            // If launched from context menu, always use absolute path argument
+            string originalArg = args.Length > 0 ? args[0] : null;
 
-                Console.WriteLine();
-                NotificationView.Show("Failed to restart with admin rights. Some features may be limited.",
-                    NotificationView.NotificationType.Warning, requireKeyPress: true);
-            }
-            else
+            // Check if the application is running as administrator
+            if (!AdminService.IsRunningAsAdmin())
             {
-                NotificationView.Show("Continuing without admin rights. Some features may be limited.",
-                    NotificationView.NotificationType.Warning, requireKeyPress: true);
+                if (ConfirmationService.ConfirmAdminElevation())
+                {
+                    Console.WriteLine("Restarting with administrator privileges...");
+                    // Relaunch with original argument if present
+                    if (AdminService.RestartAsAdmin(originalArg))
+                        return;
+
+                    Console.WriteLine();
+                    NotificationView.Show("Failed to restart with admin rights. Some features may be limited.",
+                        NotificationView.NotificationType.Warning, requireKeyPress: true);
+                }
+                else
+                {
+                    NotificationView.Show("Continuing without admin rights. Some features may be limited.",
+                        NotificationView.NotificationType.Warning, requireKeyPress: true);
+                }
             }
+
+            // If an argument is provided, open the folder or file directly
+            if (!string.IsNullOrEmpty(originalArg))
+            {                try
+                {
+                    // Handle the file or directory passed from context menu
+                    if (Directory.Exists(originalArg))
+                    {
+                        // Change current directory to the selected directory
+                        Environment.CurrentDirectory = originalArg;
+                        Console.WriteLine($"Directory set to: {originalArg}");
+                        NotificationView.Show($"Working directory set to: {originalArg}",
+                            NotificationView.NotificationType.Success, requireKeyPress: false);
+                        
+                        // After setting directory, continue to the main menu
+                        MainMenu();
+                    }
+                    else if (File.Exists(originalArg))
+                    {
+                        // Handle file operations based on file type
+                        string extension = Path.GetExtension(originalArg).ToLower();
+                        string directory = Path.GetDirectoryName(originalArg) ?? Environment.CurrentDirectory;
+                        
+                        // Set current directory to the file's directory
+                        Environment.CurrentDirectory = directory;
+                        Console.WriteLine($"File selected: {originalArg}");
+                        NotificationView.Show($"File selected: {Path.GetFileName(originalArg)}",
+                            NotificationView.NotificationType.Success, requireKeyPress: false);
+                            
+                        // After handling file, continue to the main menu
+                        MainMenu();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Path not found: {originalArg}");
+                        NotificationView.Show($"Path not found: {originalArg}",
+                            NotificationView.NotificationType.Warning, requireKeyPress: true);
+                        // Continue to main menu if path not found
+                        MainMenu();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Error opening path: {originalArg}");
+                    Console.WriteLine(ex.ToString());
+                    Console.ResetColor();
+                    NotificationView.Show("Failed to open the selected path. See console for details.",
+                        NotificationView.NotificationType.Error, requireKeyPress: true);
+                    // Continue to main menu even after error
+                    MainMenu();
+                }
+                return;
+            }
+
+            MainMenu();
         }
-
-        MainMenu();
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("A fatal error occurred:");
+            Console.WriteLine(ex.ToString());
+            Console.ResetColor();
+            NotificationView.Show("A fatal error occurred. See console for details.",
+                NotificationView.NotificationType.Error, requireKeyPress: true);
+        }
     }
 
     public static void MainMenu()
