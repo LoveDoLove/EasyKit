@@ -6,7 +6,7 @@ public class Config
 {
     private const string AppName = "EasyKit";
     private const string AppAuthor = "LoveDoLove";
-    private const string AppVersion = "3.2.1";
+    private const string AppVersion = "4.0.1";
     private readonly string _configFilePath;
 
     public Config()

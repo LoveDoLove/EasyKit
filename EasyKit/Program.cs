@@ -125,8 +125,8 @@ internal class Program
             else if (menuWidthObj is JsonElement je && je.ValueKind == JsonValueKind.Number &&
                      je.TryGetInt32(out int jeInt)) menuWidth = jeInt;
 
-            var versionObj = Config.Get("version", "3.2.1");
-            string version = versionObj?.ToString() ?? "3.2.1";
+            var versionObj = Config.Get("version", "4.0.1");
+            string version = versionObj?.ToString() ?? "4.0.1";
 
             string colorSchemeStr = "dark";
             var colorSchemeObj = Config.Get("color_scheme", "dark");
