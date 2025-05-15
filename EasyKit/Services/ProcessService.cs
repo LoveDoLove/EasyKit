@@ -115,14 +115,37 @@ public class ProcessService
                 }
                 return false;
             }
-        }
-        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
+        }        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
         {
             _logger.Error($"Command not found: {file}. {ex.Message}");
             if (showOutput)
             {
                 _console.WriteError($"[ERROR] Unable to execute the selected option:");
                 _console.WriteError($"`{file}` is not found in the current environment. Ensure {file} is properly installed and added to your system's PATH.");
+                
+                // Special handling for npm on Windows
+                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) && 
+                    Environment.OSVersion.Platform == PlatformID.Win32NT)
+                {
+                    // Try to find npm.cmd in common locations
+                    string[] npmLocations = {
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "nodejs", "npm.cmd"),
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "nodejs", "npm.cmd"),
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm", "npm.cmd"),
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Roaming", "npm", "npm.cmd")
+                    };
+                    
+                    foreach (string npmPath in npmLocations)
+                    {
+                        if (File.Exists(npmPath))
+                        {
+                            _console.WriteInfo($"\nFound npm.cmd at: {npmPath}");
+                            _console.WriteInfo("You can use the 'Configure npm path' option to set this path explicitly.");
+                            break;
+                        }
+                    }
+                }
+                
                 // Display diagnostic information to help troubleshoot
                 DisplayPathDiagnostics(file);
             }
@@ -149,6 +172,17 @@ public class ProcessService
         if (configPath != null && !string.IsNullOrWhiteSpace(configPath.ToString()) && File.Exists(configPath.ToString()))
         {
             return configPath.ToString();
+        }
+        
+        // For npm and node, try to find them directly in PATH first
+        if (executableName.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
+            executableName.Equals("node", StringComparison.OrdinalIgnoreCase))
+        {
+            var pathExecutable = FindExecutableInPath(executableName);
+            if (!string.IsNullOrEmpty(pathExecutable))
+            {
+                return pathExecutable;
+            }
         }
 
         // Common paths for executables depending on OS
@@ -181,9 +215,7 @@ public class ProcessService
             string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-            switch (executableName.ToLower())
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);            switch (executableName.ToLower())
             {
                 case "npm":
                 case "node":
@@ -191,6 +223,16 @@ public class ProcessService
                     paths.Add(Path.Combine(programFilesX86, "nodejs", $"{executableName}{extension}"));
                     paths.Add(Path.Combine(appData, "npm", $"{executableName}{extension}"));
                     paths.Add(Path.Combine(appData, "nvm", "current", $"{executableName}{extension}"));
+                    
+                    // Add .cmd versions for npm on Windows
+                    if (executableName.ToLower() == "npm")
+                    {
+                        paths.Add(Path.Combine(programFiles, "nodejs", "npm.cmd"));
+                        paths.Add(Path.Combine(programFilesX86, "nodejs", "npm.cmd"));
+                        paths.Add(Path.Combine(appData, "npm", "npm.cmd"));
+                        paths.Add(Path.Combine(appData, "nvm", "current", "npm.cmd"));
+                        paths.Add(Path.Combine(appData, "Roaming", "npm", "npm.cmd"));
+                    }
                     break;
                 case "ncu":
                     paths.Add(Path.Combine(appData, "npm", "ncu.cmd"));
@@ -248,8 +290,7 @@ public class ProcessService
     public (string output, string error, int exitCode) RunProcessWithOutput(string file, string args, string? workingDirectory = null)
     {
         try
-        {
-            // Try to get explicit path for common tools if direct call fails
+        {            // Try to get explicit path for common tools if direct call fails
             string executablePath = file;
             if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
                 file.Equals("node", StringComparison.OrdinalIgnoreCase) ||
@@ -263,6 +304,19 @@ public class ProcessService
                 {
                     executablePath = explicitPath;
                     _logger.Info($"Using explicit path for {file}: {explicitPath}");
+                }
+                
+                // Special handling for npm which might need .cmd extension on Windows
+                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) && 
+                    Environment.OSVersion.Platform == PlatformID.Win32NT &&
+                    !executablePath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
+                {
+                    string npmCmd = executablePath + ".cmd";
+                    if (File.Exists(npmCmd))
+                    {
+                        executablePath = npmCmd;
+                        _logger.Info($"Using npm.cmd instead of npm: {npmCmd}");
+                    }
                 }
             }
 
@@ -337,8 +391,7 @@ public class ProcessService
                         _console.WriteInfo($"    ✓ {command}.exe found in this location!");
                 }
             }
-            
-            // Provide installation guidance based on the command
+              // Provide installation guidance based on the command
             if (command.Equals("npm", StringComparison.OrdinalIgnoreCase) || 
                 command.Equals("node", StringComparison.OrdinalIgnoreCase))
             {
@@ -346,6 +399,40 @@ public class ProcessService
                 _console.WriteInfo("- Windows: Download installer from https://nodejs.org/");
                 _console.WriteInfo("- macOS: Use Homebrew `brew install node` or download from https://nodejs.org/");
                 _console.WriteInfo("- Linux: Use your package manager or NVM (https://github.com/nvm-sh/nvm)");
+                
+                // On Windows, npm is usually a .cmd file, so try to detect that
+                if (Environment.OSVersion.Platform == PlatformID.Win32NT && command.Equals("npm", StringComparison.OrdinalIgnoreCase))
+                {
+                    string pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
+                    bool npmCmdFound = false;
+                    bool npmFound = false;
+                    
+                    foreach (var dir in pathEnv.Split(Path.PathSeparator))
+                    {
+                        if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+                            continue;
+                            
+                        if (File.Exists(Path.Combine(dir, "npm.cmd")))
+                        {
+                            npmCmdFound = true;
+                            _console.WriteInfo($"\nFound npm.cmd in: {dir}");
+                        }
+                        
+                        if (File.Exists(Path.Combine(dir, "npm")))
+                        {
+                            npmFound = true;
+                            _console.WriteInfo($"\nFound npm in: {dir}");
+                        }
+                    }
+                    
+                    if (npmCmdFound || npmFound)
+                    {
+                        _console.WriteInfo("\nIt appears npm is installed but not accessible. Try these steps:");
+                        _console.WriteInfo("1. Close and reopen your command prompt to refresh environment variables");
+                        _console.WriteInfo("2. Use the 'Configure npm path' option in this tool to explicitly set the path to npm.cmd");
+                        _console.WriteInfo("3. Check that the Node.js installation directory is in your PATH environment variable");
+                    }
+                }
             }
             else if (command.Equals("php", StringComparison.OrdinalIgnoreCase))
             {
@@ -364,5 +451,67 @@ public class ProcessService
         {
             _logger.Error($"Error displaying PATH diagnostics: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Searches the PATH environment variable for a specific executable.
+    /// </summary>
+    /// <param name="executableName">The name of the executable to find.</param>
+    /// <returns>The path to the executable if found, otherwise null.</returns>
+    private string? FindExecutableInPath(string executableName)
+    {
+        try
+        {
+            string extensions = Environment.OSVersion.Platform == PlatformID.Win32NT 
+                ? ".exe;.cmd;.bat;" 
+                : string.Empty;
+                
+            string path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            
+            foreach (string directory in path.Split(Path.PathSeparator))
+            {
+                if (string.IsNullOrWhiteSpace(directory))
+                    continue;
+                    
+                if (!Directory.Exists(directory))
+                    continue;
+                    
+                // Check for the executable with various extensions
+                if (string.IsNullOrEmpty(extensions))
+                {
+                    string filePath = Path.Combine(directory, executableName);
+                    if (File.Exists(filePath))
+                        return filePath;
+                }
+                else
+                {
+                    foreach (string ext in extensions.Split(';'))
+                    {
+                        if (string.IsNullOrEmpty(ext))
+                            continue;
+                            
+                        // Check with the extension
+                        string filePathWithExt = Path.Combine(directory, executableName + ext);
+                        if (File.Exists(filePathWithExt))
+                            return filePathWithExt;
+                            
+                        // Also check without the extension for npm/node
+                        if (executableName.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
+                            executableName.Equals("node", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string filePathNoExt = Path.Combine(directory, executableName);
+                            if (File.Exists(filePathNoExt))
+                                return filePathNoExt;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error searching PATH for {executableName}: {ex.Message}");
+        }
+        
+        return null;
     }
 }
