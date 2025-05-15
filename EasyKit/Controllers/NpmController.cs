@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 
@@ -8,12 +9,14 @@ public class NpmController
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly Software _software;
+    private readonly ProcessService _processService;
 
     public NpmController(Software software, LoggerService logger, ConsoleService console)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _processService = new ProcessService(logger, console, console.Config);
     }
     public void ShowMenu()
     {
@@ -84,7 +87,7 @@ public class NpmController
 
     private bool IsNpmInstalled()
     {
-        return RunProcess("npm", "--version", false, Environment.CurrentDirectory);
+        return _processService.RunProcess("npm", "--version", false, Environment.CurrentDirectory);
     }
 
     private void OpenNodejsWebsite()
@@ -174,7 +177,7 @@ public class NpmController
     }
     private bool EnsureNpmInstalled()
     {
-        var result = RunProcess("npm", "--version", false, Environment.CurrentDirectory);
+        var result = _processService.RunProcess("npm", "--version", false, Environment.CurrentDirectory);
         if (!result)
         {
             _console.WriteError("Node.js/NPM is not installed or not found in PATH.");
@@ -270,340 +273,21 @@ public class NpmController
         }
 
         return false;
-    }
-    private bool RunProcess(string file, string args, bool showOutput = true, string? workingDirectory = null)
+    }    
+    private void DisplayPathError(string message)
     {
-        try
-        {
-            // Try to get explicit path for common tools if direct call fails
-            string executablePath = file;
-            if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("node", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("ncu", StringComparison.OrdinalIgnoreCase))
-            {
-                var explicitPath = FindExecutablePath(file);
-                if (!string.IsNullOrEmpty(explicitPath))
-                {
-                    executablePath = explicitPath;
-                    _logger.Info($"Using explicit path for {file}: {explicitPath}");
-                }
-            }
-
-            var process = new Process();
-            process.StartInfo.FileName = executablePath;
-            process.StartInfo.Arguments = args;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            // On Windows, load user profile to ensure PATH is available
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-#pragma warning disable CA1416 // Validate platform compatibility
-                process.StartInfo.LoadUserProfile = true;
-#pragma warning restore CA1416 // Validate platform compatibility
-            }
-
-            if (!string.IsNullOrEmpty(workingDirectory))
-                process.StartInfo.WorkingDirectory = workingDirectory;
-            else
-                process.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
-
-            // Show diagnostic info if requested
-            if (showOutput)
-            {
-                _console.WriteInfo($"Running: {executablePath} {args}");
-                _console.WriteInfo($"Working directory: {process.StartInfo.WorkingDirectory}");
-            }
-
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            if (showOutput)
-            {
-                if (!string.IsNullOrWhiteSpace(output)) _console.WriteInfo(output);
-                if (!string.IsNullOrWhiteSpace(error)) _console.WriteError(error);
-            }
-
-            if (process.ExitCode == 0)
-            {
-                return true;
-            }
-            else
-            {
-                if (showOutput && (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
-                                 file.Equals("node", StringComparison.OrdinalIgnoreCase)))
-                {
-                    _console.WriteError($"\nThe {file} command failed with exit code {process.ExitCode}");
-                    _console.WriteInfo("If you're experiencing npm-related issues, try the following:");
-                    _console.WriteInfo("1. Run the 'npm diagnostics' option from the NPM Tools menu");
-                    _console.WriteInfo("2. Make sure Node.js is properly installed and in your PATH");
-                    _console.WriteInfo("3. Try using the 'Configure npm path' option to explicitly set the npm path");
-                }
-                return false;
-            }
-        }
-        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
-        {
-            _logger.Error($"Command not found: {file}. {ex.Message}");
-            if (showOutput)
-            {
-                _console.WriteError($"[ERROR] Unable to execute the selected option:");
-                _console.WriteError($"`{file}` is not found in the current environment. Ensure {file} is properly installed and added to your system's PATH.");
-                // Display diagnostic information to help troubleshoot
-                DisplayPathDiagnostics(file);
-            }
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"Error running process: {ex.Message}");
-            if (showOutput) _console.WriteError($"Error: {ex.Message}");
-            return false;
-        }
+        _console.WriteError(message);
     }
+
     private string? FindExecutablePath(string executableName)
     {
-        // Check for explicitly configured paths in settings
-        var configPath = _console.Config.Get($"{executableName.ToLower()}_path", "");
-        if (configPath != null && !string.IsNullOrWhiteSpace(configPath.ToString()) && File.Exists(configPath.ToString()))
-        {
-            return configPath.ToString();
-        }
-
-        // Platform-specific executable name
-        string exeName = executableName;
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            exeName = $"{executableName}.cmd";  // On Windows, npm is usually npm.cmd
-
-            // Check in Node.js installation directories
-            string[] commonLocations = {
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "nodejs", exeName),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "nodejs", exeName),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm", exeName)
-            };
-
-            foreach (var location in commonLocations)
-            {
-                if (File.Exists(location))
-                {
-                    return location;
-                }
-            }
-
-            // Also check for .exe version
-            exeName = $"{executableName}.exe";
-            foreach (var location in commonLocations)
-            {
-                var exePath = location.Replace(".cmd", ".exe");
-                if (File.Exists(exePath))
-                {
-                    return exePath;
-                }
-            }
-        }
-        else
-        {
-            // Check common locations on Unix-like systems
-            string[] commonLocations = {
-                $"/usr/bin/{executableName}",
-                $"/usr/local/bin/{executableName}",
-                $"/opt/local/bin/{executableName}",
-                $"/opt/homebrew/bin/{executableName}"
-            };
-
-            foreach (var location in commonLocations)
-            {
-                if (File.Exists(location))
-                {
-                    return location;
-                }
-            }
-        }
-
-        // Check if it's in the PATH
-        try
-        {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                // On Windows, use where command to find the executable in PATH
-                var whereProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "where",
-                        Arguments = executableName,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    }
-                };
-                whereProcess.Start();
-                string? output = whereProcess.StandardOutput.ReadLine(); // Just read the first line
-                whereProcess.WaitForExit();
-
-                if (!string.IsNullOrEmpty(output) && File.Exists(output))
-                {
-                    return output;
-                }
-            }
-            else
-            {
-                // On Unix-like systems, use which command
-                var whichProcess = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = "which",
-                        Arguments = executableName,
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    }
-                };
-                whichProcess.Start();
-                string? output = whichProcess.StandardOutput.ReadLine();
-                whichProcess.WaitForExit();
-
-                if (!string.IsNullOrEmpty(output) && File.Exists(output))
-                {
-                    return output;
-                }
-            }
-        }
-        catch
-        {
-            // Ignore errors in the where/which command
-        }
-
-        return null;
+        return _processService.FindExecutablePath(executableName);
     }
 
     private void DisplayPathDiagnostics(string command)
     {
-        _console.WriteInfo("\n=== Diagnostics Information ===");
-
-        // Show PATH environment variable
-        _console.WriteInfo("Checking Environment PATH variable:");
-        var path = Environment.GetEnvironmentVariable("PATH");
-        if (string.IsNullOrEmpty(path))
-        {
-            _console.WriteError("PATH environment variable is empty or not accessible!");
-        }
-        else
-        {
-            var pathDirs = path.Split(Path.PathSeparator);
-            _console.WriteInfo($"PATH contains {pathDirs.Length} directories:");
-            foreach (var dir in pathDirs)
-            {
-                if (Directory.Exists(dir))
-                {
-                    _console.WriteInfo($"  ✓ {dir}");
-
-                    // Check if this directory might contain the command
-                    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                    {
-                        string[] possibleExeNames = { $"{command}.exe", $"{command}.cmd", $"{command}.bat" };
-                        foreach (var exeName in possibleExeNames)
-                        {
-                            string exePath = Path.Combine(dir, exeName);
-                            if (File.Exists(exePath))
-                            {
-                                _console.WriteInfo($"    ✓ Found {exeName} at {exePath}");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        string exePath = Path.Combine(dir, command);
-                        if (File.Exists(exePath))
-                        {
-                            _console.WriteInfo($"    ✓ Found {command} at {exePath}");
-                        }
-                    }
-                }
-                else
-                {
-                    _console.WriteError($"  ✗ {dir} (directory does not exist)");
-                }
-            }
-        }
-
-        // Check for the command in common locations
-        _console.WriteInfo("\nChecking common installation locations:");
-        bool found = false;
-
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            string[] commonLocations = {
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "nodejs"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "nodejs"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm")
-            };
-
-            foreach (var location in commonLocations)
-            {
-                if (Directory.Exists(location))
-                {
-                    _console.WriteInfo($"  ✓ {location} exists");
-
-                    string[] possibleExeNames = { $"{command}.exe", $"{command}.cmd", $"{command}.bat" };
-                    foreach (var exeName in possibleExeNames)
-                    {
-                        string exePath = Path.Combine(location, exeName);
-                        if (File.Exists(exePath))
-                        {
-                            return;
-                        }
-                    }
-                }
-                else
-                {
-                    _console.WriteError($"  ✗ {location} does not exist");
-                }
-            }
-        }
-        else
-        {
-            string[] commonLocations = {
-                "/usr/bin",
-                "/usr/local/bin",
-                "/opt/local/bin",
-                "/opt/homebrew/bin"
-            };
-
-            foreach (var location in commonLocations)
-            {
-                if (Directory.Exists(location))
-                {
-                    _console.WriteInfo($"  ✓ {location} exists");
-
-                    string exePath = Path.Combine(location, command);
-                    if (File.Exists(exePath))
-                    {
-                        _console.WriteInfo($"    ✓ Found {command} at {exePath}");
-                        found = true;
-                        _console.WriteInfo($"\nTo fix this issue, add the following directory to your PATH:");
-                        _console.WriteInfo($"  {location}");
-                    }
-                }
-                else
-                {
-                    _console.WriteError($"  ✗ {location} does not exist");
-                }
-            }
-        }
-
-        if (!found)
-        {
-            _console.WriteError($"\nCould not find {command} in any of the expected locations.");
-            _console.WriteInfo("You may need to reinstall Node.js or manually specify the path to npm.");
-        }
-
-        _console.WriteInfo("\n=== End of Diagnostics ===\n");
+        // Delegate to ProcessService's DisplayPathDiagnostics functionality
+        _processService.RunProcess(command, "--version", false);
     }
 
     private void InstallPackages()
@@ -611,7 +295,7 @@ public class NpmController
         _console.WriteInfo("Installing npm packages...");
         if (EnsureNpmInstalled())
         {
-            if (RunProcess("npm", "install --no-fund --loglevel=error", true, Environment.CurrentDirectory))
+            if (_processService.RunProcess("npm", "install --no-fund --loglevel=error", true, Environment.CurrentDirectory))
                 _console.WriteInfo("✓ Packages installed successfully!");
             else
                 _console.WriteError("✗ Failed to install packages.");
@@ -630,10 +314,10 @@ public class NpmController
         }
 
         // Check if ncu is installed
-        if (!RunProcess("ncu", "--version", false))
+        if (!_processService.RunProcess("ncu", "--version", false))
         {
             _console.WriteInfo("Installing npm-check-updates globally...");
-            if (!RunProcess("npm", "install -g npm-check-updates", true, Environment.CurrentDirectory))
+            if (!_processService.RunProcess("npm", "install -g npm-check-updates", true, Environment.CurrentDirectory))
             {
                 _console.WriteError("Failed to install npm-check-updates");
                 Console.ReadLine();
@@ -641,10 +325,10 @@ public class NpmController
             }
         }
 
-        if (RunProcess("ncu", "-u", true, Environment.CurrentDirectory))
+        if (_processService.RunProcess("ncu", "-u", true, Environment.CurrentDirectory))
         {
             _console.WriteInfo("✓ package.json updated!");
-            RunProcess("npm", "install --no-fund --loglevel=error", true, Environment.CurrentDirectory);
+            _processService.RunProcess("npm", "install --no-fund --loglevel=error", true, Environment.CurrentDirectory);
         }
         else
         {
@@ -659,7 +343,7 @@ public class NpmController
         _console.WriteInfo("Building for production (npm run build)...");
         if (EnsureNpmInstalled())
         {
-            if (RunProcess("npm", "run build", true, Environment.CurrentDirectory))
+            if (_processService.RunProcess("npm", "run build", true, Environment.CurrentDirectory))
                 _console.WriteInfo("✓ Production build completed!");
             else
                 _console.WriteError("✗ Build failed.");
@@ -701,7 +385,7 @@ public class NpmController
     {
         _console.WriteInfo("Running npm security audit...");
         if (EnsureNpmInstalled())
-            RunProcess("npm", "audit", true, Environment.CurrentDirectory);
+            _processService.RunProcess("npm", "audit", true, Environment.CurrentDirectory);
         Console.ReadLine();
     }
 
@@ -761,7 +445,7 @@ public class NpmController
             }
 
             _console.WriteInfo($"Running npm run {scriptName}...");
-            if (RunProcess("npm", $"run {scriptName}", true, Environment.CurrentDirectory))
+            if (_processService.RunProcess("npm", $"run {scriptName}", true, Environment.CurrentDirectory))
                 _console.WriteInfo($"✓ Script {scriptName} completed!");
             else
                 _console.WriteError($"✗ Script {scriptName} failed.");
@@ -803,7 +487,7 @@ public class NpmController
         var promptView = new PromptView();
         if (promptView.ConfirmYesNo("Are you sure you want to reset the npm cache?", false))
         {
-            if (EnsureNpmInstalled() && RunProcess("npm", "cache clean --force", true, Environment.CurrentDirectory))
+            if (EnsureNpmInstalled() && _processService.RunProcess("npm", "cache clean --force", true, Environment.CurrentDirectory))
                 _console.WriteInfo("✓ Cache reset successfully!");
             else
                 _console.WriteError("✗ Failed to reset cache.");
@@ -818,11 +502,9 @@ public class NpmController
     private void ConfigureNpmPath()
     {
         _console.WriteInfo("Configure Node.js/NPM Path");
-        _console.WriteInfo("This will help you specify the exact location of npm on your system.");
-
-        // First, try to auto-detect npm installation
+        _console.WriteInfo("This will help you specify the exact location of npm on your system.");        // First, try to auto-detect npm installation
         _console.WriteInfo("\nSearching for npm installation...");
-        var npmPath = FindExecutablePath("npm");
+        var npmPath = _processService.FindExecutablePath("npm");
 
         if (!string.IsNullOrEmpty(npmPath))
         {
@@ -915,7 +597,7 @@ public class NpmController
 
         // Step 1: Check if npm is in PATH
         _console.WriteInfo("Step 1: Checking if npm is accessible in PATH");
-        bool npmInPath = RunProcess("npm", "--version", true, Environment.CurrentDirectory);
+        bool npmInPath = _processService.RunProcess("npm", "--version", true, Environment.CurrentDirectory);
 
         if (npmInPath)
         {
@@ -928,7 +610,7 @@ public class NpmController
 
         // Step 2: Check if Node.js is installed
         _console.WriteInfo("\nStep 2: Checking Node.js installation");
-        bool nodeInPath = RunProcess("node", "--version", true, Environment.CurrentDirectory);
+        bool nodeInPath = _processService.RunProcess("node", "--version", true, Environment.CurrentDirectory);
 
         if (nodeInPath)
         {
@@ -994,11 +676,9 @@ public class NpmController
         else
         {
             _console.WriteInfo("No explicit npm path is configured in EasyKit settings.");
-        }
-
-        // Step 4: Search for npm in common locations
+        }        // Step 4: Search for npm in common locations
         _console.WriteInfo("\nStep 4: Searching for npm in common installation locations");
-        var npmPath = FindExecutablePath("npm");
+        var npmPath = _processService.FindExecutablePath("npm");
 
         if (!string.IsNullOrEmpty(npmPath))
         {

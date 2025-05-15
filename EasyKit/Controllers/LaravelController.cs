@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 
@@ -8,12 +9,14 @@ public class LaravelController
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly Software _software;
+    private readonly ProcessService _processService;
 
     public LaravelController(Software software, LoggerService logger, ConsoleService console)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _processService = new ProcessService(logger, console, console.Config);
     }
     public void ShowMenu()
     {
@@ -67,7 +70,7 @@ public class LaravelController
 
     private bool EnsurePhpInstalled()
     {
-        var result = RunProcess("php", "--version", false);
+        var result = _processService.RunProcess("php", "--version", false);
         if (!result)
         {
             _console.WriteError("PHP is not installed or not in PATH. Please install PHP from https://www.php.net/");
@@ -98,7 +101,7 @@ public class LaravelController
             return false;
         }
 
-        return RunProcess(composerCmd, args, showOutput);
+        return _processService.RunProcess(composerCmd, args, showOutput);
     }
     private bool RunArtisanCommand(string args, bool showOutput = true)
     {
@@ -113,7 +116,7 @@ public class LaravelController
         try
         {
             // Add timeout handling for long-running commands
-            var result = RunProcess("php", $"artisan {args}", showOutput);
+            var result = _processService.RunProcess("php", $"artisan {args}", showOutput);
 
             // Check for common error patterns in output even when exit code is 0
             if (!result && showOutput)
@@ -139,49 +142,7 @@ public class LaravelController
             if (showOutput) _console.WriteError($"Error: {ex.Message}");
             return false;
         }
-    }
-
-    private bool RunProcess(string file, string args, bool showOutput = true)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = file.Split(' ')[0],
-                Arguments = string.Join(' ', file.Split(' ').Skip(1)) +
-                            (string.IsNullOrWhiteSpace(args) ? "" : " " + args),
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            var process = Process.Start(psi);
-            if (process == null)
-            {
-                _console.WriteError($"Failed to start process: {file}");
-                return false;
-            }
-
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            if (showOutput)
-            {
-                if (!string.IsNullOrWhiteSpace(output)) _console.WriteInfo(output);
-                if (!string.IsNullOrWhiteSpace(error)) _console.WriteError(error);
-            }
-
-            return process.ExitCode == 0;
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"Error running process: {ex.Message}");
-            if (showOutput) _console.WriteError(ex.Message);
-            return false;
-        }
-    }
-
-    private void QuickSetup()
+    }    private void QuickSetup()
     {
         if (!File.Exists("artisan"))
         {
@@ -427,7 +388,7 @@ public class LaravelController
     private void CheckPhpVersion()
     {
         _console.WriteInfo("Checking PHP version...");
-        RunProcess("php", "--version");
+        _processService.RunProcess("php", "--version");
         Console.ReadLine();
     }
     private void CheckConfiguration()
@@ -444,7 +405,7 @@ public class LaravelController
         foreach (var (name, cmd) in checks)
         {
             _console.WriteInfo($"\n{name}:");
-            RunProcess(cmd.Split(' ')[0], string.Join(' ', cmd.Split(' ').Skip(1)));
+            _processService.RunProcess(cmd.Split(' ')[0], string.Join(' ', cmd.Split(' ').Skip(1)));
         }
 
         // Handle cache status with error handling
