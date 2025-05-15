@@ -12,19 +12,19 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <h3 align="center">EasyKit-CS</h3>
+  <h3 align="center">EasyKit</h3>
 
   <p align="center">
     A C# console toolkit for developers with powerful management tools for NPM, Laravel, Composer, and Git
     <br />
-    <a href="https://github.com/LoveDoLove/EasyKit-CS"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/LoveDoLove/EasyKit"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/LoveDoLove/EasyKit-CS">View Demo</a>
+    <a href="https://github.com/LoveDoLove/EasyKit">View Demo</a>
     ·
-    <a href="https://github.com/LoveDoLove/EasyKit-CS/issues">Report Bug</a>
+    <a href="https://github.com/LoveDoLove/EasyKit/issues">Report Bug</a>
     ·
-    <a href="https://github.com/LoveDoLove/EasyKit-CS/issues">Request Feature</a>
+    <a href="https://github.com/LoveDoLove/EasyKit/issues">Request Feature</a>
   </p>
 </div>
 
@@ -57,7 +57,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-EasyKit-CS is a powerful C# console-based toolkit designed to streamline development workflows. It provides a suite of tools for managing various aspects of web development projects including NPM, Laravel, Composer, and Git operations through an intuitive menu interface.
+EasyKit is a powerful C# console-based toolkit designed to streamline development workflows. It provides a suite of tools for managing various aspects of web development projects including NPM, Laravel, Composer, and Git operations through an intuitive menu interface.
 
 Key features:
 * Easy-to-use console menu system with customizable themes
@@ -68,13 +68,13 @@ Key features:
 * Customizable settings and configuration
 * Built-in logging and console management
 
-Whether you're setting up a new project, managing dependencies, or handling version control, EasyKit-CS provides a unified interface to handle these tasks efficiently.
+Whether you're setting up a new project, managing dependencies, or handling version control, EasyKit provides a unified interface to handle these tasks efficiently.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Built With
 
-EasyKit-CS is built with modern .NET technologies to provide a reliable and efficient development experience.
+EasyKit is built with modern .NET technologies to provide a reliable and efficient development experience.
 
 * [![.NET][DotNet-badge]][DotNet-url]
 * [![C#][CSharp-badge]][CSharp-url]
@@ -84,7 +84,7 @@ EasyKit-CS is built with modern .NET technologies to provide a reliable and effi
 <!-- GETTING STARTED -->
 ## Getting Started
 
-To get EasyKit-CS up and running on your local machine, follow these simple steps.
+To get EasyKit up and running on your local machine, follow these simple steps.
 
 ### Prerequisites
 
@@ -98,11 +98,11 @@ Make sure you have the following installed:
 
 1. Clone the repository
    ```sh
-   git clone https://github.com/LoveDoLove/EasyKit-CS.git
+   git clone https://github.com/LoveDoLove/EasyKit.git
    ```
 2. Navigate to the project directory
    ```sh
-   cd EasyKit-CS
+   cd EasyKit
    ```
 3. Build the application
    ```sh
@@ -110,17 +110,17 @@ Make sure you have the following installed:
    ```
 4. Run the application
    ```sh
-   dotnet run --project EasyKit-CS
+   dotnet run --project EasyKit
    ```
 
-Alternatively, you can download the latest release from the [releases page](https://github.com/LoveDoLove/EasyKit-CS/releases).
+Alternatively, you can download the latest release from the [releases page](https://github.com/LoveDoLove/EasyKit/releases).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-EasyKit-CS provides a menu-driven interface for various development tools:
+EasyKit provides a menu-driven interface for various development tools:
 
 ### NPM Tools
 * Install/update npm packages
@@ -151,7 +151,7 @@ EasyKit-CS provides a menu-driven interface for various development tools:
 * Set up default paths and behaviors
 * Toggle between light and dark themes
 
-_For more examples, please refer to the [Documentation](https://github.com/LoveDoLove/EasyKit-CS/wiki)_
+_For more examples, please refer to the [Documentation](https://github.com/LoveDoLove/EasyKit/wiki)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -171,7 +171,7 @@ _For more examples, please refer to the [Documentation](https://github.com/LoveD
     - [ ] Spanish
     - [ ] Chinese
 
-See the [open issues](https://github.com/LoveDoLove/EasyKit-CS/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/LoveDoLove/EasyKit/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -203,7 +203,7 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 LoveDoLove - [GitHub Profile](https://github.com/LoveDoLove)
 
-Project Link: [https://github.com/LoveDoLove/EasyKit-CS](https://github.com/LoveDoLove/EasyKit-CS)
+Project Link: [https://github.com/LoveDoLove/EasyKit](https://github.com/LoveDoLove/EasyKit)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -219,16 +219,16 @@ Project Link: [https://github.com/LoveDoLove/EasyKit-CS](https://github.com/Love
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/LoveDoLove/EasyKit-CS.svg?style=for-the-badge
-[contributors-url]: https://github.com/LoveDoLove/EasyKit-CS/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/LoveDoLove/EasyKit-CS.svg?style=for-the-badge
-[forks-url]: https://github.com/LoveDoLove/EasyKit-CS/network/members
-[stars-shield]: https://img.shields.io/github/stars/LoveDoLove/EasyKit-CS.svg?style=for-the-badge
-[stars-url]: https://github.com/LoveDoLove/EasyKit-CS/stargazers
-[issues-shield]: https://img.shields.io/github/issues/LoveDoLove/EasyKit-CS.svg?style=for-the-badge
-[issues-url]: https://github.com/LoveDoLove/EasyKit-CS/issues
-[license-shield]: https://img.shields.io/github/license/LoveDoLove/EasyKit-CS.svg?style=for-the-badge
-[license-url]: https://github.com/LoveDoLove/EasyKit-CS/blob/master/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/LoveDoLove/EasyKit.svg?style=for-the-badge
+[contributors-url]: https://github.com/LoveDoLove/EasyKit/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/LoveDoLove/EasyKit.svg?style=for-the-badge
+[forks-url]: https://github.com/LoveDoLove/EasyKit/network/members
+[stars-shield]: https://img.shields.io/github/stars/LoveDoLove/EasyKit.svg?style=for-the-badge
+[stars-url]: https://github.com/LoveDoLove/EasyKit/stargazers
+[issues-shield]: https://img.shields.io/github/issues/LoveDoLove/EasyKit.svg?style=for-the-badge
+[issues-url]: https://github.com/LoveDoLove/EasyKit/issues
+[license-shield]: https://img.shields.io/github/license/LoveDoLove/EasyKit.svg?style=for-the-badge
+[license-url]: https://github.com/LoveDoLove/EasyKit/blob/master/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/lovedolove
 [DotNet-badge]: https://img.shields.io/badge/.NET-5C2D91?style=for-the-badge&logo=.net&logoColor=white
