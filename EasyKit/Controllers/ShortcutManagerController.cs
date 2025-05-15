@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace EasyKit.Controllers;
@@ -48,6 +50,15 @@ internal class ShortcutManagerController
 
     private void ManageContextMenu()
     {
+        // Only show context menu management options on Windows
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _console.WriteInfo("\nContext menu management is only available on Windows.");
+            _console.WriteInfo("Press any key to return...");
+            Console.ReadKey(true);
+            return;
+        }
+
         while (true)
         {
             bool openWithEasyKit = _config.Get("open_with_easykit", false) is bool b && b;
@@ -61,7 +72,6 @@ internal class ShortcutManagerController
             else if (choice == "0") break;
         }
     }
-
 
     private void ToggleOpenWithEasyKit()
     {
@@ -81,23 +91,58 @@ internal class ShortcutManagerController
         _config.SaveConfig();
     }
 
+    [SupportedOSPlatform("windows")]
     private void RegisterOpenWithEasyKit()
     {
         try
         {
-            string menuName = "Open with EasyKit";
             string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "EasyKit.exe";
-            using (var key = Registry.CurrentUser.CreateSubKey(@"Software\Classes\*\shell\" + menuName))
-            {
-                if (key != null)
+            var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
+            var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
+            string[] registryPaths = scope == "system"
+                ? new[]
                 {
-                    key.SetValue("", menuName);
-                    using (var commandKey = key.CreateSubKey("command"))
+                    @"*\shell\EasyKit",
+                    @"Directory\shell\EasyKit",
+                    @"Directory\Background\shell\EasyKit"
+                }
+                : new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                };
+
+            foreach (var registryPath in registryPaths)
+                try
+                {
+                    using (var key = root.CreateSubKey(registryPath))
                     {
-                        if (commandKey != null) commandKey.SetValue("", $"\"{exePath}\" \"%1\"");
+                        if (key == null)
+                        {
+                            _console.WriteInfo(
+                                $"Failed to create registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}");
+                            continue;
+                        }
+
+                        key.SetValue("", "EasyKit", RegistryValueKind.String);
+                        using (var commandKey = key.CreateSubKey("command"))
+                        {
+                            if (commandKey != null)
+                            {
+                                string arg = GetContextMenuArgument(registryPath);
+                                string command = $"\"{exePath}\" \"{arg}\"";
+                                commandKey.SetValue("", command, RegistryValueKind.String);
+                                // Don't add IsolatedCommand as it can cause issues with elevation
+                            }
+                        }
                     }
                 }
-            }
+                catch (Exception ex)
+                {
+                    _console.WriteInfo(
+                        $"Exception creating registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}: {ex.Message}");
+                }
         }
         catch (Exception ex)
         {
@@ -105,12 +150,45 @@ internal class ShortcutManagerController
         }
     }
 
+    /// <summary>
+    ///     Returns the correct argument for the context menu command based on the registry path.
+    /// </summary>
+    private static string GetContextMenuArgument(string registryPath)
+    {
+        if (registryPath.Contains("Directory\\Background"))
+            return "%V";
+        return "%1";
+    }
+
+    [SupportedOSPlatform("windows")]
     private void UnregisterOpenWithEasyKit()
     {
         try
         {
-            string menuName = "Open with EasyKit";
-            Registry.CurrentUser.DeleteSubKeyTree(@"Software\Classes\*\shell\" + menuName, false);
+            var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
+            var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
+            string[] delRegistryPaths = scope == "system"
+                ? new[]
+                {
+                    @"*\shell\EasyKit",
+                    @"Directory\shell\EasyKit",
+                    @"Directory\Background\shell\EasyKit"
+                }
+                : new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                };
+            foreach (var delRegistryPath in delRegistryPaths)
+                try
+                {
+                    root.DeleteSubKeyTree(delRegistryPath, false);
+                }
+                catch
+                {
+                    /* Ignore if not present */
+                }
         }
         catch (Exception ex)
         {
@@ -119,6 +197,7 @@ internal class ShortcutManagerController
     }
 
     // Add a shortcut to the directory background context menu
+    [SupportedOSPlatform("windows")]
     private void AddBackgroundContextMenuShortcut(string shortcutName, string command)
     {
         try
@@ -148,6 +227,7 @@ internal class ShortcutManagerController
     }
 
     // Remove a shortcut from the directory background context menu
+    [SupportedOSPlatform("windows")]
     private void RemoveBackgroundContextMenuShortcut(string shortcutName)
     {
         try

@@ -6,7 +6,7 @@ public class Config
 {
     private const string AppName = "EasyKit";
     private const string AppAuthor = "LoveDoLove";
-    private const string AppVersion = "3.2.1";
+    private const string AppVersion = "4.0.1";
     private readonly string _configFilePath;
 
     public Config()
@@ -32,7 +32,17 @@ public class Config
             { "confirm_exit", true },
             { "confirm_destructive_actions", true },
             { "menu_width", 50 },
-            { "version", AppVersion }
+            { "version", AppVersion },
+            { "context_menu_name", "EasyKit" },
+            {
+                "context_menu_registry_paths", new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                }
+            },
+            { "context_menu_scope", "user" } // "user" for HKCU, "system" for HKCR
         };
 
         // Load from config file if exists
@@ -66,6 +76,17 @@ public class Config
         return Settings.ContainsKey(key) ? Settings[key] : defaultValue;
     }
 
+    /// <summary>
+    ///     Sets a configuration value and saves the configuration to disk.
+    /// </summary>
+    /// <param name="key">The configuration key to set</param>
+    /// <param name="value">The value to store</param>
+    public void Set(string key, object value)
+    {
+        Settings[key] = value;
+        SaveConfig();
+    }
+
     private string GetLogPath()
     {
         var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppName,
@@ -89,7 +110,17 @@ public class Config
             { "confirm_exit", true },
             { "confirm_destructive_actions", true },
             { "menu_width", 50 },
-            { "version", AppVersion }
+            { "version", AppVersion },
+            { "context_menu_name", "EasyKit" },
+            {
+                "context_menu_registry_paths", new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                }
+            },
+            { "context_menu_scope", "user" } // "user" for HKCU, "system" for HKCR
         };
         SaveConfig();
     }
