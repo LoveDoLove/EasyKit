@@ -128,9 +128,7 @@ public class ComposerController
                 _console.WriteError("Critical PHP extensions are missing. Composer might not work correctly.");
                 _console.WriteInfo("Please enable these extensions in your php.ini file.");
             }
-        }
-
-        // Find the composer command
+        }        // Find the composer command
         var composerCmd = FindComposerCommand();
         if (composerCmd == null)
         {
@@ -153,7 +151,8 @@ public class ComposerController
             int exitCode = 0;
             bool result = false;
 
-            // If the command is "php composer.phar", we need to handle it differently
+            // If the command is "php composer.phar" or any path to a .phar file prefixed with php, 
+            // we need to handle it differently
             if (composerCmd.StartsWith("php "))
             {
                 string phpArgs = composerCmd.Substring(4) + " " + args;
@@ -201,14 +200,42 @@ public class ComposerController
             HandleComposerError(ex.Message);
             return false;
         }
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Handles common Composer errors and provides helpful information to the user
     /// </summary>
     /// <param name="errorMessage">The error message from Composer</param>
     private void HandleComposerError(string errorMessage)
     {
+        // Check for the specific invalid application error for .phar files
+        if (errorMessage.Contains("not a valid application for this OS platform") && 
+            errorMessage.Contains("composer.phar"))
+        {
+            _console.WriteError("Error: Composer PHAR file cannot be executed directly on Windows.");
+            _console.WriteInfo("This could be fixed by either:");
+            _console.WriteInfo("1. Running composer.phar with PHP: php composer.phar [command]");
+            _console.WriteInfo("2. Using Composer installer for Windows to get composer.bat");
+            _console.WriteInfo("3. Downloading Composer from https://getcomposer.org/download/");
+            
+            // Check if we have PHP available
+            var (phpVersion, phpPath, _) = _processService.GetPhpVersionInfo();
+            if (phpVersion != "Unknown" && File.Exists(phpPath))
+            {
+                _console.WriteInfo("\nAttempting to run with PHP instead...");
+                
+                // Extract the composer.phar path from the error message
+                var match = System.Text.RegularExpressions.Regex.Match(errorMessage, @"'([^']*composer\.phar)'");
+                if (match.Success)
+                {
+                    string composerPharPath = match.Groups[1].Value;
+                    _console.WriteInfo($"Using PHP to execute: {composerPharPath}");
+                    // Store the corrected path for future use
+                    _console.Config.Set("composer_path", $"php {composerPharPath}");
+                }
+            }
+            
+            return;
+        }
+        
         // Common Composer error patterns and solutions
         Dictionary<string, string> errorPatterns = new()
         {
