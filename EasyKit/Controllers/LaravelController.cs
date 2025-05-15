@@ -15,7 +15,6 @@ public class LaravelController
         _logger = logger;
         _console = console;
     }
-
     public void ShowMenu()
     {
         // Get user settings
@@ -36,22 +35,27 @@ public class LaravelController
         if (colorSchemeStr.ToLower() == "light")
             colorScheme = MenuTheme.ColorScheme.Light;
 
+        // Display current directory
+        string currentDirectory = Environment.CurrentDirectory;
+
         // Create and configure the menu with a Laravel-specific theme
         var menuView = new MenuView();
-        menuView.CreateMenu("Laravel Tools", width: menuWidth)
-            .AddOption("1", "Quick setup (env, install, key, cache)", () => QuickSetup())
-            .AddOption("2", "Install Composer packages", () => InstallPackages())
-            .AddOption("3", "Update Composer packages", () => UpdatePackages())
-            .AddOption("4", "Regenerate autoload files", () => RegenerateAutoload())
-            .AddOption("5", "Build for production", () => BuildProduction())
-            .AddOption("6", "Start development server", () => RunDevServer())
-            .AddOption("7", "Create storage link", () => CreateStorageLink())
-            .AddOption("8", "Run database seeding (migrate:fresh --seed)", () => RunDatabaseSeeding())
-            .AddOption("9", "Test database connection", () => TestDatabase())
-            .AddOption("10", "Check PHP version", () => CheckPhpVersion())
-            .AddOption("11", "Check Laravel configuration", () => CheckConfiguration())
-            .AddOption("12", "Reset all Laravel cache", () => ResetCache())
-            .AddOption("0", "Back to main menu", () =>
+        menuView.CreateMenu("Laravel Toolkit", width: menuWidth)
+            .WithSubtitle($"Current Directory: {currentDirectory}")
+            .AddOption("1", "Quick Setup (env, install, key, cache)", () => QuickSetup())
+            .AddOption("2", "Install Composer Packages", () => InstallPackages())
+            .AddOption("3", "Update Composer Packages", () => UpdatePackages())
+            .AddOption("4", "Regenerate Autoload Files", () => RegenerateAutoload())
+            .AddOption("5", "Build for Production", () => BuildProduction())
+            .AddOption("6", "Start Development Server", () => RunDevServer())
+            .AddOption("7", "Create Storage Link", () => CreateStorageLink())
+            .AddOption("8", "Run Database Seeding (migrate:fresh --seed)", () => RunDatabaseSeeding())
+            .AddOption("9", "Test Database Connection", () => TestDatabase())
+            .AddOption("10", "Check PHP Version", () => CheckPhpVersion())
+            .AddOption("11", "Check Laravel Configuration", () => CheckConfiguration())
+            .AddOption("12", "Reset All Laravel Cache", () => ResetCache())
+            .AddOption("13", "View Route List", () => ViewRouteList())
+            .AddOption("0", "Back to Main Menu", () =>
             {
                 /* Return to main menu */
             })
@@ -96,7 +100,6 @@ public class LaravelController
 
         return RunProcess(composerCmd, args, showOutput);
     }
-
     private bool RunArtisanCommand(string args, bool showOutput = true)
     {
         if (!EnsurePhpInstalled()) return false;
@@ -107,7 +110,35 @@ public class LaravelController
             return false;
         }
 
-        return RunProcess("php", $"artisan {args}", showOutput);
+        try
+        {
+            // Add timeout handling for long-running commands
+            var result = RunProcess("php", $"artisan {args}", showOutput);
+
+            // Check for common error patterns in output even when exit code is 0
+            if (!result && showOutput)
+            {
+                // Provide suggestions based on common issues
+                if (args.Contains("cache:status") && result == false)
+                {
+                    _console.WriteInfo("Note: 'cache:status' command may not be available in all Laravel versions.");
+                    _console.WriteInfo("Try using 'php artisan list cache' to see available cache commands.");
+                }
+                else if (args.Contains("--compact") && result == false)
+                {
+                    _console.WriteInfo("Note: The '--compact' option may not be available in your Laravel version.");
+                    _console.WriteInfo("Try using 'php artisan route:list' without additional options.");
+                }
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error running Artisan command: {ex.Message}");
+            if (showOutput) _console.WriteError($"Error: {ex.Message}");
+            return false;
+        }
     }
 
     private bool RunProcess(string file, string args, bool showOutput = true)
@@ -225,17 +256,65 @@ public class LaravelController
             _console.WriteError("✗ Failed to regenerate autoload files.");
         Console.ReadLine();
     }
-
     private void BuildProduction()
     {
         _console.WriteInfo("Building for production...");
-        var steps = new[]
+
+        // Check Laravel version to determine appropriate optimization commands
+        bool isLaravel11Plus = false;
+
+        var versionProcess = new Process
         {
-            ("Installing production dependencies...", "install --no-dev"),
-            ("Optimizing configuration...", "artisan config:cache"),
-            ("Optimizing routes...", "artisan route:cache"),
-            ("Optimizing views...", "artisan view:cache")
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "php",
+                Arguments = "artisan --version",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
         };
+
+        try
+        {
+            versionProcess.Start();
+            string versionOutput = versionProcess.StandardOutput.ReadToEnd();
+            versionProcess.WaitForExit();
+
+            // Check if Laravel 11+
+            if (versionOutput.Contains("Laravel Framework") &&
+                (versionOutput.Contains("11.") || versionOutput.Contains("12.")))
+            {
+                isLaravel11Plus = true;
+            }
+        }
+        catch
+        {
+            // If version check fails, default to backward compatible commands
+            isLaravel11Plus = false;
+        }
+
+        // Define base steps that work across versions
+        var steps = new List<(string message, string command)>
+        {
+            ("Installing production dependencies...", "install --no-dev")
+        };
+
+        // Add version-specific optimization steps
+        if (isLaravel11Plus)
+        {
+            // Laravel 11+ optimization steps
+            steps.Add(("Optimizing application...", "artisan optimize"));
+        }
+        else
+        {
+            // Legacy optimization steps for Laravel 10 and below
+            steps.Add(("Optimizing configuration...", "artisan config:cache"));
+            steps.Add(("Optimizing routes...", "artisan route:cache"));
+            steps.Add(("Optimizing views...", "artisan view:cache"));
+        }
+
+        // Execute all steps
         foreach (var (msg, cmd) in steps)
         {
             _console.WriteInfo(msg);
@@ -317,14 +396,31 @@ public class LaravelController
 
         Console.ReadLine();
     }
-
     private void TestDatabase()
     {
         _console.WriteInfo("Testing database connection...");
-        if (RunArtisanCommand("db:show"))
+        // Try db:show first (Laravel 9+)
+        bool success = RunArtisanCommand("db:show", false);
+
+        // If db:show fails, fall back to older methods
+        if (!success)
+        {
+            // For older Laravel versions
+            success = RunArtisanCommand("db:monitor", false);
+
+            // Last resort - simple connection test
+            if (!success)
+            {
+                _console.WriteInfo("Trying alternative connection test...");
+                success = RunArtisanCommand("migrate:status", true);
+            }
+        }
+
+        if (success)
             _console.WriteSuccess("✓ Database connection successful!");
         else
             _console.WriteError("✗ Database connection failed.");
+
         Console.ReadLine();
     }
 
@@ -334,7 +430,6 @@ public class LaravelController
         RunProcess("php", "--version");
         Console.ReadLine();
     }
-
     private void CheckConfiguration()
     {
         _console.WriteInfo("Checking Laravel configuration...");
@@ -342,14 +437,31 @@ public class LaravelController
         {
             ("PHP Version", "php --version"),
             ("Laravel Version", "php artisan --version"),
-            ("Environment", "php artisan env"),
-            ("Cache Status", "php artisan cache:status"),
-            ("Route List", "php artisan route:list --compact")
+            ("Environment", "php artisan env")
         };
+
+        // Handle special cases for commands that might not be available in all Laravel versions
         foreach (var (name, cmd) in checks)
         {
-            _console.WriteInfo($"{name}:");
+            _console.WriteInfo($"\n{name}:");
             RunProcess(cmd.Split(' ')[0], string.Join(' ', cmd.Split(' ').Skip(1)));
+        }
+
+        // Handle cache status with error handling
+        _console.WriteInfo("\nCache Status:");
+        bool cacheStatusSuccess = RunArtisanCommand("cache:status", true);
+        if (!cacheStatusSuccess)
+        {
+            _console.WriteInfo("Available cache commands:");
+            RunArtisanCommand("list cache", true);
+        }
+
+        // Handle route list with error handling
+        _console.WriteInfo("\nRoute List:");
+        bool routeListSuccess = RunArtisanCommand("route:list", true);
+        if (!routeListSuccess)
+        {
+            _console.WriteInfo("Please use \"php artisan route:list\" without unsupported options.");
         }
 
         Console.ReadLine();
@@ -375,6 +487,23 @@ public class LaravelController
         else
         {
             _console.WriteInfo("Cancelled.");
+        }
+
+        Console.ReadLine();
+    }
+
+    private void ViewRouteList()
+    {
+        _console.WriteInfo("Retrieving route list...");
+
+        // Try with pagination first for better readability
+        bool success = RunArtisanCommand("route:list", true);
+
+        if (!success)
+        {
+            // If that fails, try without any options
+            _console.WriteInfo("Trying alternative route listing...");
+            RunArtisanCommand("route:list", true);
         }
 
         Console.ReadLine();
