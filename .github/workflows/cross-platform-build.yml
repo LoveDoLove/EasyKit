@@ -1,0 +1,41 @@
+name: Cross-Platform Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        runtime: [win-x64, linux-x64]
+        include:
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: windows-latest
+            runtime: win-x64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore EasyKit/EasyKit.csproj
+
+      - name: Clean project
+        run: dotnet clean EasyKit/EasyKit.csproj
+
+      - name: Publish single-file executable
+        run: dotnet publish EasyKit/EasyKit.csproj -c Release -r ${{ matrix.runtime }} --self-contained true /p:PublishSingleFile=true /p:PublishTrimmed=true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}-${{ matrix.runtime }}
+          path: EasyKit/bin/Release/net8.0/${{ matrix.runtime }}/publish/

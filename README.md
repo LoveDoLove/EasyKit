@@ -1,173 +1,237 @@
-# EasyKit 3.2.1
+<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<a id="readme-top"></a>
 
-**Your All-in-One Python Toolkit for Streamlined Windows Web Development**
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
 
-EasyKit is a modern Python utility designed to simplify and accelerate web development tasks on Windows. It provides a unified interface to manage tools and project configurations, boosting productivity and ensuring consistency across your workflow.
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <h3 align="center">EasyKit</h3>
 
-## Features
+  <p align="center">
+    A C# console toolkit for developers with powerful management tools for NPM, Laravel, Composer, and Git
+    <br />
+    <a href="https://github.com/LoveDoLove/EasyKit"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/LoveDoLove/EasyKit">View Demo</a>
+    ·
+    <a href="https://github.com/LoveDoLove/EasyKit/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/LoveDoLove/EasyKit/issues">Request Feature</a>
+  </p>
+</div>
 
-- **Windows Support:** Designed for Windows environments
-- **Modern CLI:** Rich text, colors, progress bars, and interactive prompts
-- **Python-Based Integrations:** Git, Composer, NPM, Laravel Artisan
-- **Smart Config:** Platform-specific configuration with platformdirs
-- **Auto Updates:** Built-in version checking and update system
-- **Enhanced Security:** Proper permission handling and validation
-- **User Configs:** JSON-based, user-specific settings
-- **Organized Logging:** Log directories for Windows
-- **Comprehensive Testing:** Reliable for Windows
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
 
-## What's New in 3.2.1
+<!-- ABOUT THE PROJECT -->
+## About The Project
 
-- All version references updated to 3.2.1 across the codebase, installer, and documentation.
-- New release notes for 3.2.1 in `docs/3.2.1-release-notes.md`.
-- No breaking changes or new features; this is a version synchronization release.
-- Use `uv` tools to manage the Python environment, making it easier to recover the environment.
+EasyKit is a powerful C# console-based toolkit designed to streamline development workflows. It provides a suite of tools for managing various aspects of web development projects including NPM, Laravel, Composer, and Git operations through an intuitive menu interface.
 
+Key features:
+* Easy-to-use console menu system with customizable themes
+* Tools for managing NPM packages and operations
+* Laravel project tools and utilities
+* Composer package management
+* Git workflow integration
+* Customizable settings and configuration
+* Built-in logging and console management
+
+Whether you're setting up a new project, managing dependencies, or handling version control, EasyKit provides a unified interface to handle these tasks efficiently.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Built With
+
+EasyKit is built with modern .NET technologies to provide a reliable and efficient development experience.
+
+* [![.NET][DotNet-badge]][DotNet-url]
+* [![C#][CSharp-badge]][CSharp-url]
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- GETTING STARTED -->
 ## Getting Started
 
+To get EasyKit up and running on your local machine, follow these simple steps.
+
 ### Prerequisites
-- Windows 10 or higher
-- [Miniconda (recommended for environment management)](https://docs.conda.io/en/latest/miniconda.html)
-- Git (for source install)
+
+Make sure you have the following installed:
+* [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or newer
+* For NPM features: [Node.js and npm](https://nodejs.org/)
+* For Laravel/Composer features: [PHP and Composer](https://getcomposer.org/)
+* For Git integration: [Git](https://git-scm.com/)
 
 ### Installation
 
-Install from PyPI (recommended):
-```cmd
-pip install easykit
-```
-
-Or install from source:
-```cmd
-git clone https://github.com/YourUsername/EasyKit.git
-cd EasyKit
-pip install -e .
-```
-
----
-
-## Setup & Build (with Miniconda)
-
-### 1. Download and Install Miniconda
-- Download Miniconda for Windows from: https://docs.conda.io/en/latest/miniconda.html
-- Run the installer and follow the prompts (choose "Add Miniconda to my PATH" if you want to use `conda` from any terminal).
-
-### 2. Create and Activate a Conda Environment
-```cmd
-conda create -n easykit python=3.11
-conda activate easykit
-```
-
-### 3. Install Build Dependencies in the Conda Environment
-```cmd
-pip install --upgrade pip
-pip install -r requirements.txt
-pip install nuitka
-```
-
-### 4. (Optional) Clean Previous Build Artifacts
-```cmd
-rmdir /s /q build
-rmdir /s /q dist
-del run_easykit.build
-del run_easykit.dist
-```
-
-### 5. Build the Executable with Nuitka (Windows standalone mode)
-```cmd
-python -m nuitka --standalone --windows-icon-from-ico=images/icon.ico --output-dir=dist --output-filename=EasyKit_v3.2.1.exe --include-data-dir=docs=docs --include-data-dir=images=images main.py
-```
-> In Windows cmd.exe, run this as a single line (no backslashes). Replace `3.2.1` with your version/tag. Nuitka will create all files (EXE, DLLs, etc.) directly in the `dist` folder. **You must include all files from `dist` in your installer, not just the EXE.**
-
-**Important:**
-- Do **not** use `--onefile`! Only use `--standalone`.
-- If you still see your app extracting to a temp folder at runtime, you are either running a onefile build or not running from the installed folder.
-- Always run the EXE from the install directory (where all DLLs and files are present), not by copying the EXE elsewhere.
-- If you see missing DLL errors, double-check that all files from `dist` are included in your installer and present after install.
-
-**Note:** Nuitka produces a true native executable. No .spec file is needed.
-
-### 6. Build a Windows Installer (Setup EXE)
-
-#### a. Install Inno Setup (if not already installed)
-```cmd
-choco install innosetup -y
-```
-
-#### b. Build the Installer
-```cmd
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" EasyKitInstaller.iss
-```
-This will generate `EasyKitSetup_3.2.1.exe` in your project directory.
-
-#### c. Distribute the Installer
-Share `EasyKitSetup_3.2.1.exe` with users. They can double-click to install EasyKit on their Windows system, including all required files and shortcuts.
-
----
-
-## Usage
-
-After installation, run EasyKit from the Start Menu or desktop shortcut, or from the command line:
-```cmd
-easykit
-```
-
-Features include:
-- Manage development tools and dependencies
-- Configure your environment
-- Create/manage projects
-- Update EasyKit and its components
-
-## Configuration
-
-EasyKit uses Windows config directories:
-- **Global:** `%APPDATA%\EasyKit\config\settings.json`
-- **User:** `%LOCALAPPDATA%\EasyKit\config\user_settings.json`
-
-## Logging
-
-Logs are stored in Windows locations:
-- `%LOCALAPPDATA%\EasyKit\logs\easykit.log`
-
-## Removed Features
-- Batch file dependencies (all Python now)
-- Legacy config methods (now JSON-based)
-
-## Development & Testing
-
-1. Clone the repository:
-   ```cmd
-   git clone https://github.com/yourusername/EasyKit.git
+1. Clone the repository
+   ```sh
+   git clone https://github.com/LoveDoLove/EasyKit.git
+   ```
+2. Navigate to the project directory
+   ```sh
    cd EasyKit
    ```
-2. Create and activate a conda environment:
-   ```cmd
-   conda create -n easykit python=3.11
-   conda activate easykit
+3. Build the application
+   ```sh
+   dotnet build
    ```
-3. Install dependencies:
-   ```cmd
-   pip install -r requirements.txt
+4. Run the application
+   ```sh
+   dotnet run --project EasyKit
    ```
 
-### Running Tests
+Alternatively, you can download the latest release from the [releases page](https://github.com/LoveDoLove/EasyKit/releases).
 
-Pytest is no longer used. See updated docs for testing methods.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- USAGE EXAMPLES -->
+## Usage
+
+EasyKit provides a menu-driven interface for various development tools:
+
+### NPM Tools
+* Install/update npm packages
+* Run npm scripts
+* Manage package.json
+* View npm project information
+
+### Laravel Tools
+* Create new Laravel projects
+* Manage Laravel extensions
+* Run artisan commands
+* Handle migrations and database management
+
+### Composer Tools
+* Install/update Composer packages
+* Manage composer.json
+* Run Composer scripts
+
+### Git Integration
+* Initialize repositories
+* Manage branches
+* Commit changes
+* Push/pull operations
+
+### Settings
+* Customize menu appearance
+* Configure tool preferences
+* Set up default paths and behaviors
+* Toggle between light and dark themes
+
+_For more examples, please refer to the [Documentation](https://github.com/LoveDoLove/EasyKit/wiki)_
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ROADMAP -->
+## Roadmap
+
+- [x] Core menu system with customizable themes
+- [x] NPM integration
+- [x] Laravel tools
+- [x] Composer integration
+- [x] Git integration
+- [x] Settings management
+- [ ] Docker integration
+- [ ] VS Code extensions management
+- [ ] Project templates and scaffolding
+- [ ] Multi-language support
+    - [ ] Spanish
+    - [ ] Chinese
+
+See the [open issues](https://github.com/LoveDoLove/EasyKit/issues) for a full list of proposed features (and known issues).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONTRIBUTING -->
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests
-5. Commit (`git commit -m 'Add some amazing feature'`)
-6. Push (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- LICENSE -->
 ## License
 
-EasyKit is released under the [MIT License](LICENSE).
+Distributed under the MIT License. See `LICENSE` for more information.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Thank you for using EasyKit! We hope it makes your Windows development process smoother and more efficient.
+<!-- CONTACT -->
+## Contact
+
+LoveDoLove - [GitHub Profile](https://github.com/LoveDoLove)
+
+Project Link: [https://github.com/LoveDoLove/EasyKit](https://github.com/LoveDoLove/EasyKit)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+* [Best-README-Template](https://github.com/othneildrew/Best-README-Template) for the excellent README template
+* [Shields.io](https://shields.io) for the README badges
+* [Choose an Open Source License](https://choosealicense.com)
+* [Font Awesome](https://fontawesome.com)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/LoveDoLove/EasyKit.svg?style=for-the-badge
+[contributors-url]: https://github.com/LoveDoLove/EasyKit/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/LoveDoLove/EasyKit.svg?style=for-the-badge
+[forks-url]: https://github.com/LoveDoLove/EasyKit/network/members
+[stars-shield]: https://img.shields.io/github/stars/LoveDoLove/EasyKit.svg?style=for-the-badge
+[stars-url]: https://github.com/LoveDoLove/EasyKit/stargazers
+[issues-shield]: https://img.shields.io/github/issues/LoveDoLove/EasyKit.svg?style=for-the-badge
+[issues-url]: https://github.com/LoveDoLove/EasyKit/issues
+[license-shield]: https://img.shields.io/github/license/LoveDoLove/EasyKit.svg?style=for-the-badge
+[license-url]: https://github.com/LoveDoLove/EasyKit/blob/master/LICENSE
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://linkedin.com/in/lovedolove
+[DotNet-badge]: https://img.shields.io/badge/.NET-5C2D91?style=for-the-badge&logo=.net&logoColor=white
+[DotNet-url]: https://dotnet.microsoft.com/
+[CSharp-badge]: https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white
+[CSharp-url]: https://docs.microsoft.com/en-us/dotnet/csharp/
