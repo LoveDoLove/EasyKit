@@ -96,8 +96,8 @@ public class ProcessService
                                  file.Equals("composer", StringComparison.OrdinalIgnoreCase)))
                 {
                     _console.WriteError($"\nThe {file} command failed with exit code {process.ExitCode}");
-                    
-                    if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) || 
+
+                    if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
                         file.Equals("node", StringComparison.OrdinalIgnoreCase))
                     {
                         _console.WriteInfo("If you're experiencing npm-related issues, try the following:");
@@ -105,7 +105,7 @@ public class ProcessService
                         _console.WriteInfo("2. Make sure Node.js is properly installed and in your PATH");
                         _console.WriteInfo("3. Try using the 'Configure npm path' option to explicitly set the npm path");
                     }
-                    else if (file.Equals("php", StringComparison.OrdinalIgnoreCase) || 
+                    else if (file.Equals("php", StringComparison.OrdinalIgnoreCase) ||
                             file.Equals("composer", StringComparison.OrdinalIgnoreCase))
                     {
                         _console.WriteInfo("If you're experiencing PHP/Composer issues, try the following:");
@@ -115,16 +115,17 @@ public class ProcessService
                 }
                 return false;
             }
-        }        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
         {
             _logger.Error($"Command not found: {file}. {ex.Message}");
             if (showOutput)
             {
                 _console.WriteError($"[ERROR] Unable to execute the selected option:");
                 _console.WriteError($"`{file}` is not found in the current environment. Ensure {file} is properly installed and added to your system's PATH.");
-                
+
                 // Special handling for npm on Windows
-                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) && 
+                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) &&
                     Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
                     // Try to find npm.cmd in common locations
@@ -134,7 +135,7 @@ public class ProcessService
                         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm", "npm.cmd"),
                         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Roaming", "npm", "npm.cmd")
                     };
-                    
+
                     foreach (string npmPath in npmLocations)
                     {
                         if (File.Exists(npmPath))
@@ -145,7 +146,7 @@ public class ProcessService
                         }
                     }
                 }
-                
+
                 // Display diagnostic information to help troubleshoot
                 DisplayPathDiagnostics(file);
             }
@@ -158,10 +159,10 @@ public class ProcessService
             return false;
         }
     }    /// <summary>
-    /// Attempts to find the explicit path for a given executable name.
-    /// </summary>
-    /// <param name="executableName">The name of the executable to find.</param>
-    /// <returns>The explicit path if found, otherwise null.</returns>
+         /// Attempts to find the explicit path for a given executable name.
+         /// </summary>
+         /// <param name="executableName">The name of the executable to find.</param>
+         /// <returns>The explicit path if found, otherwise null.</returns>
     public string? FindExecutablePath(string executableName)
     {
         // If no config is available, return null
@@ -173,7 +174,7 @@ public class ProcessService
         {
             return configPath.ToString();
         }
-        
+
         // For npm and node, try to find them directly in PATH first
         if (executableName.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
             executableName.Equals("node", StringComparison.OrdinalIgnoreCase))
@@ -187,7 +188,7 @@ public class ProcessService
 
         // Common paths for executables depending on OS
         string[] searchPaths = GetSearchPathsForExecutable(executableName);
-        
+
         foreach (var path in searchPaths)
         {
             if (File.Exists(path))
@@ -215,7 +216,7 @@ public class ProcessService
             string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
             string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);            switch (executableName.ToLower())
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData); switch (executableName.ToLower())
             {
                 case "npm":
                 case "node":
@@ -223,7 +224,7 @@ public class ProcessService
                     paths.Add(Path.Combine(programFilesX86, "nodejs", $"{executableName}{extension}"));
                     paths.Add(Path.Combine(appData, "npm", $"{executableName}{extension}"));
                     paths.Add(Path.Combine(appData, "nvm", "current", $"{executableName}{extension}"));
-                    
+
                     // Add .cmd versions for npm on Windows
                     if (executableName.ToLower() == "npm")
                     {
@@ -243,11 +244,27 @@ public class ProcessService
                     paths.Add(Path.Combine(programFilesX86, "PHP", $"{executableName}{extension}"));
                     paths.Add(Path.Combine("C:", "PHP", $"{executableName}{extension}"));
                     paths.Add(Path.Combine("C:", "xampp", "php", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "laragon", "bin", "php", "php-8.2.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "laragon", "bin", "php", "php-8.1.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "laragon", "bin", "php", "php-8.0.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "laragon", "bin", "php", "php-7.4.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "wamp64", "bin", "php", "php8.2.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "wamp64", "bin", "php", "php8.1.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "wamp64", "bin", "php", "php8.0.0", $"{executableName}{extension}"));
+                    paths.Add(Path.Combine("C:", "wamp64", "bin", "php", "php7.4.0", $"{executableName}{extension}"));
                     break;
                 case "composer":
                     paths.Add(Path.Combine(appData, "Composer", "composer.phar"));
                     paths.Add(Path.Combine("C:", "xampp", "php", "composer.phar"));
                     paths.Add(Path.Combine("C:", "ProgramData", "ComposerSetup", "bin", "composer.phar"));
+                    paths.Add(Path.Combine("C:", "ProgramData", "ComposerSetup", "bin", "composer.bat"));
+                    paths.Add(Path.Combine("C:", "ProgramData", "ComposerSetup", "bin", "composer"));
+                    paths.Add(Path.Combine("C:", "composer", "composer.phar"));
+                    paths.Add(Path.Combine("C:", "composer", "composer.bat"));
+                    paths.Add(Path.Combine("C:", "laragon", "bin", "composer", "composer.phar"));
+                    paths.Add(Path.Combine("C:", "laragon", "bin", "composer", "composer.bat"));
+                    paths.Add(Path.Combine("C:", "wamp64", "bin", "composer", "composer.phar"));
+                    paths.Add(Path.Combine("C:", "wamp64", "bin", "composer", "composer.bat"));
                     break;
             }
         }
@@ -281,12 +298,12 @@ public class ProcessService
 
         return paths.ToArray();
     }    /// <summary>
-    /// Runs a process and captures its output, error, and exit code.
-    /// </summary>
-    /// <param name="file">The executable file to run.</param>
-    /// <param name="args">The arguments to pass to the executable.</param>
-    /// <param name="workingDirectory">The working directory for the process. Defaults to the current directory if not specified.</param>
-    /// <returns>A tuple containing the process output, error, and exit code.</returns>
+         /// Runs a process and captures its output, error, and exit code.
+         /// </summary>
+         /// <param name="file">The executable file to run.</param>
+         /// <param name="args">The arguments to pass to the executable.</param>
+         /// <param name="workingDirectory">The working directory for the process. Defaults to the current directory if not specified.</param>
+         /// <returns>A tuple containing the process output, error, and exit code.</returns>
     public (string output, string error, int exitCode) RunProcessWithOutput(string file, string args, string? workingDirectory = null)
     {
         try
@@ -305,9 +322,9 @@ public class ProcessService
                     executablePath = explicitPath;
                     _logger.Info($"Using explicit path for {file}: {explicitPath}");
                 }
-                
+
                 // Special handling for npm which might need .cmd extension on Windows
-                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) && 
+                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) &&
                     Environment.OSVersion.Platform == PlatformID.Win32NT &&
                     !executablePath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
                 {
@@ -327,7 +344,7 @@ public class ProcessService
             process.StartInfo.RedirectStandardError = true;
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.CreateNoWindow = true;
-            
+
             // On Windows, load user profile to ensure PATH is available
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
@@ -369,10 +386,10 @@ public class ProcessService
         try
         {
             _console.WriteInfo("\nDiagnostic Information:");
-            
+
             // Show current working directory
             _console.WriteInfo($"Current directory: {Environment.CurrentDirectory}");
-            
+
             // Show PATH environment variable
             string path = Environment.GetEnvironmentVariable("PATH") ?? "";
             _console.WriteInfo($"PATH contains the following directories:");
@@ -381,7 +398,7 @@ public class ProcessService
                 if (!string.IsNullOrWhiteSpace(dir))
                 {
                     _console.WriteInfo($"  - {dir}");
-                    
+
                     // Check if the command exists in this PATH directory
                     string cmdPath = Path.Combine(dir, command);
                     string cmdPathWithExt = Path.Combine(dir, command + ".exe");
@@ -391,40 +408,40 @@ public class ProcessService
                         _console.WriteInfo($"    ✓ {command}.exe found in this location!");
                 }
             }
-              // Provide installation guidance based on the command
-            if (command.Equals("npm", StringComparison.OrdinalIgnoreCase) || 
+            // Provide installation guidance based on the command
+            if (command.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
                 command.Equals("node", StringComparison.OrdinalIgnoreCase))
             {
                 _console.WriteInfo("\nTo install Node.js/npm:");
                 _console.WriteInfo("- Windows: Download installer from https://nodejs.org/");
                 _console.WriteInfo("- macOS: Use Homebrew `brew install node` or download from https://nodejs.org/");
                 _console.WriteInfo("- Linux: Use your package manager or NVM (https://github.com/nvm-sh/nvm)");
-                
+
                 // On Windows, npm is usually a .cmd file, so try to detect that
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT && command.Equals("npm", StringComparison.OrdinalIgnoreCase))
                 {
                     string pathEnv = Environment.GetEnvironmentVariable("PATH") ?? "";
                     bool npmCmdFound = false;
                     bool npmFound = false;
-                    
+
                     foreach (var dir in pathEnv.Split(Path.PathSeparator))
                     {
                         if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
                             continue;
-                            
+
                         if (File.Exists(Path.Combine(dir, "npm.cmd")))
                         {
                             npmCmdFound = true;
                             _console.WriteInfo($"\nFound npm.cmd in: {dir}");
                         }
-                        
+
                         if (File.Exists(Path.Combine(dir, "npm")))
                         {
                             npmFound = true;
                             _console.WriteInfo($"\nFound npm in: {dir}");
                         }
                     }
-                    
+
                     if (npmCmdFound || npmFound)
                     {
                         _console.WriteInfo("\nIt appears npm is installed but not accessible. Try these steps:");
@@ -462,20 +479,20 @@ public class ProcessService
     {
         try
         {
-            string extensions = Environment.OSVersion.Platform == PlatformID.Win32NT 
-                ? ".exe;.cmd;.bat;" 
+            string extensions = Environment.OSVersion.Platform == PlatformID.Win32NT
+                ? ".exe;.cmd;.bat;"
                 : string.Empty;
-                
+
             string path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-            
+
             foreach (string directory in path.Split(Path.PathSeparator))
             {
                 if (string.IsNullOrWhiteSpace(directory))
                     continue;
-                    
+
                 if (!Directory.Exists(directory))
                     continue;
-                    
+
                 // Check for the executable with various extensions
                 if (string.IsNullOrEmpty(extensions))
                 {
@@ -489,12 +506,12 @@ public class ProcessService
                     {
                         if (string.IsNullOrEmpty(ext))
                             continue;
-                            
+
                         // Check with the extension
                         string filePathWithExt = Path.Combine(directory, executableName + ext);
                         if (File.Exists(filePathWithExt))
                             return filePathWithExt;
-                            
+
                         // Also check without the extension for npm/node
                         if (executableName.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
                             executableName.Equals("node", StringComparison.OrdinalIgnoreCase))
@@ -511,7 +528,366 @@ public class ProcessService
         {
             _logger.Error($"Error searching PATH for {executableName}: {ex.Message}");
         }
-        
+
         return null;
+    }
+
+    /// <summary>
+    /// Gets information about the installed PHP version
+    /// </summary>
+    /// <returns>A tuple containing (phpVersion, phpPath, isCompatible)</returns>
+    public (string version, string path, bool isCompatible) GetPhpVersionInfo()
+    {
+        string phpPath = "php";
+        string version = "Unknown";
+        bool isCompatible = false;
+
+        // Try to find the PHP executable path
+        var explicitPath = FindExecutablePath("php");
+        if (!string.IsNullOrEmpty(explicitPath))
+        {
+            phpPath = explicitPath;
+            _logger.Info($"Using explicit path for PHP: {explicitPath}");
+        }
+
+        // Run the PHP --version command
+        var (output, error, exitCode) = RunProcessWithOutput(phpPath, "--version");
+
+        if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
+        {
+            // Parse the PHP version from the output
+            // Example output: "PHP 8.1.0 (cli) (built: Nov 23 2021 10:40:40) (NTS)"
+            var versionMatch = System.Text.RegularExpressions.Regex.Match(output, @"PHP\s+(\d+\.\d+\.\d+)");
+            if (versionMatch.Success)
+            {
+                version = versionMatch.Groups[1].Value;
+
+                // Check if the version is compatible with Laravel/Composer
+                var versionParts = version.Split('.');
+                if (versionParts.Length >= 2 &&
+                    int.TryParse(versionParts[0], out int major) &&
+                    int.TryParse(versionParts[1], out int minor))
+                {
+                    // Laravel 10+ requires PHP 8.1+
+                    // Laravel 9 requires PHP 8.0+
+                    // Laravel 8 requires PHP 7.3+
+                    isCompatible = (major > 7) || (major == 7 && minor >= 3);
+                }
+            }
+        }
+
+        return (version, phpPath, isCompatible);
+    }
+
+    /// <summary>
+    /// Checks if required PHP extensions for Laravel/Composer are installed
+    /// </summary>
+    /// <param name="phpPath">Path to the PHP executable</param>
+    /// <returns>A tuple containing (missingExtensions, isCompatible)</returns>
+    public (List<string> missingExtensions, bool isCompatible) CheckPhpExtensions(string phpPath = "php")
+    {
+        var requiredExtensions = new List<string>
+        {
+            "BCMath",
+            "Ctype",
+            "Fileinfo",
+            "JSON",
+            "Mbstring",
+            "OpenSSL",
+            "PDO",
+            "Tokenizer",
+            "XML",
+            "cURL"
+        };
+
+        var missingExtensions = new List<string>();
+        bool isCompatible = true;
+
+        // Run PHP -m to get loaded extensions
+        var (output, _, exitCode) = RunProcessWithOutput(phpPath, "-m");
+
+        if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
+        {
+            var loadedExtensions = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                         .Select(ext => ext.Trim().ToLower())
+                                         .ToList();
+
+            foreach (var ext in requiredExtensions)
+            {
+                if (!loadedExtensions.Contains(ext.ToLower()))
+                {
+                    missingExtensions.Add(ext);
+                }
+            }
+
+            // Check if any critical extensions are missing
+            isCompatible = !missingExtensions.Any(ext =>
+                ext == "JSON" || ext == "PDO" || ext == "OpenSSL" || ext == "Mbstring");
+        }
+        else
+        {
+            // If we can't check extensions, assume not compatible
+            isCompatible = false;
+            missingExtensions = requiredExtensions;
+        }
+
+        return (missingExtensions, isCompatible);
+    }
+
+    /// <summary>
+    /// Checks if Composer is installed and returns version information
+    /// </summary>
+    /// <returns>A tuple containing (composerVersion, composerPath, isGlobal)</returns>
+    public (string version, string path, bool isGlobal) GetComposerInfo()
+    {
+        string version = "Unknown";
+        string composerPath = "composer";
+        bool isGlobal = false;
+
+        // Try to find the Composer executable path
+        var explicitPath = FindExecutablePath("composer");
+        if (!string.IsNullOrEmpty(explicitPath))
+        {
+            composerPath = explicitPath;
+            _logger.Info($"Using explicit path for Composer: {explicitPath}");
+            isGlobal = !explicitPath.EndsWith("composer.phar");
+        }
+
+        // Check if composer.phar exists in the current directory
+        if (File.Exists("composer.phar"))
+        {
+            composerPath = "php composer.phar";
+            isGlobal = false;
+        }
+
+        // Run the Composer --version command
+        var (output, _, exitCode) = composerPath.StartsWith("php ")
+            ? RunProcessWithOutput("php", composerPath.Substring(4) + " --version")
+            : RunProcessWithOutput(composerPath, "--version");
+
+        if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
+        {
+            // Parse the Composer version from the output
+            // Example output: "Composer version 2.3.5 2022-04-13 16:43:00"
+            var versionMatch = System.Text.RegularExpressions.Regex.Match(output, @"Composer version (\d+\.\d+\.\d+)");
+            if (versionMatch.Success)
+            {
+                version = versionMatch.Groups[1].Value;
+            }
+        }
+
+        return (version, composerPath, isGlobal);
+    }
+
+    /// <summary>
+    /// Gets information about the installed Laravel version
+    /// </summary>
+    /// <param name="workingDirectory">The Laravel project directory</param>
+    /// <returns>A tuple containing (laravelVersion, isCompatible)</returns>
+    public (string version, bool isCompatible) GetLaravelVersionInfo(string? workingDirectory = null)
+    {
+        string version = "Unknown";
+        bool isCompatible = false;
+
+        string directory = workingDirectory ?? Environment.CurrentDirectory;
+
+        // Check if artisan file exists
+        if (!File.Exists(Path.Combine(directory, "artisan")))
+        {
+            return (version, isCompatible);
+        }
+
+        // Run Laravel version command
+        var (output, _, exitCode) = RunProcessWithOutput("php", "artisan --version", directory);
+
+        if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
+        {
+            // Parse the Laravel version (e.g., "Laravel Framework 8.83.27")
+            var versionMatch = System.Text.RegularExpressions.Regex.Match(output, @"Laravel Framework\s+(\d+\.\d+\.?\d*)");
+            if (versionMatch.Success)
+            {
+                version = versionMatch.Groups[1].Value;
+
+                // Check major version for compatibility
+                if (version.Contains('.'))
+                {
+                    string majorVersionStr = version.Split('.')[0];
+                    if (int.TryParse(majorVersionStr, out int majorVersion))
+                    {
+                        // Laravel versions 6+ are supported in this context
+                        isCompatible = majorVersion >= 6;
+                    }
+                }
+            }
+        }
+
+        return (version, isCompatible);
+    }
+
+    /// <summary>
+    /// Sets environment-specific PHP configuration options for better performance
+    /// </summary>
+    /// <param name="options">Dictionary of PHP options to set</param>
+    /// <returns>A string with PHP -d options that can be prepended to commands</returns>
+    public string GetPhpConfigOptions(Dictionary<string, string>? options = null)
+    {
+        var configOptions = options ?? new Dictionary<string, string>
+        {
+            ["memory_limit"] = "-1",
+            ["max_execution_time"] = "0"
+        };
+
+        // Build the string of -d options
+        var optionsStr = string.Join(" ", configOptions.Select(o => $"-d {o.Key}={o.Value}"));
+
+        return optionsStr;
+    }
+
+    /// <summary>
+    /// Checks if PHP has the required memory settings for Composer operations
+    /// </summary>
+    /// <param name="phpPath">Path to PHP executable</param>
+    /// <returns>A tuple with (hasEnoughMemory, currentLimit, recommendedLimit)</returns>
+    public (bool hasEnoughMemory, string currentLimit, string recommendedLimit) CheckPhpMemoryLimit(string phpPath = "php")
+    {
+        const string recommendedLimit = "-1"; // No limit is best for Composer
+        string currentLimit = "Unknown";
+        bool hasEnoughMemory = false;
+
+        // Run PHP to check memory_limit setting
+        var (output, _, exitCode) = RunProcessWithOutput(phpPath, "-r \"echo ini_get('memory_limit');\"");
+
+        if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
+        {
+            currentLimit = output.Trim();
+
+            // Parse the memory limit
+            if (currentLimit == "-1")
+            {
+                // No limit, which is ideal
+                hasEnoughMemory = true;
+            }
+            else if (currentLimit.EndsWith("M", StringComparison.OrdinalIgnoreCase) &&
+                     int.TryParse(currentLimit.TrimEnd('M', 'm'), out int mbLimit))
+            {
+                // Check if at least 1.5GB is available (Composer recommendation)
+                hasEnoughMemory = mbLimit >= 1536;
+            }
+            else if (currentLimit.EndsWith("G", StringComparison.OrdinalIgnoreCase) &&
+                     int.TryParse(currentLimit.TrimEnd('G', 'g'), out int gbLimit))
+            {
+                // Convert GB to MB for comparison
+                hasEnoughMemory = gbLimit >= 1.5;
+            }
+        }
+
+        return (hasEnoughMemory, currentLimit, recommendedLimit);
+    }
+
+    /// <summary>
+    /// Checks if a specific Composer package is installed
+    /// </summary>
+    /// <param name="packageName">Name of the package to check</param>
+    /// <param name="workingDirectory">Directory containing composer.json</param>
+    /// <returns>True if the package is installed</returns>
+    public bool IsComposerPackageInstalled(string packageName, string? workingDirectory = null)
+    {
+        string directory = workingDirectory ?? Environment.CurrentDirectory;
+
+        // Check if composer.json exists
+        string composerJsonPath = Path.Combine(directory, "composer.json");
+        if (!File.Exists(composerJsonPath))
+        {
+            return false;
+        }
+
+        try
+        {
+            // Read composer.json
+            string json = File.ReadAllText(composerJsonPath);
+
+            // Parse the JSON
+            using var jsonDoc = System.Text.Json.JsonDocument.Parse(json);
+            var root = jsonDoc.RootElement;
+
+            // Check require and require-dev sections
+            bool CheckSection(string sectionName)
+            {
+                if (root.TryGetProperty(sectionName, out var section) && section.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    foreach (var property in section.EnumerateObject())
+                    {
+                        if (property.Name.Equals(packageName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            return CheckSection("require") || CheckSection("require-dev");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error checking for Composer package {packageName}: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Detects which PHP environment variables are set and provides recommended values
+    /// </summary>
+    /// <returns>Dictionary of environment variables with recommendations</returns>
+    public Dictionary<string, (string? currentValue, string recommendedValue, bool needsUpdate)> GetPhpEnvironmentRecommendations()
+    {
+        var recommendations = new Dictionary<string, (string? currentValue, string recommendedValue, bool needsUpdate)>
+        {
+            // Common PHP environment variables and their recommended values for development
+            ["PHP_MEMORY_LIMIT"] = (null, "-1", false),
+            ["PHP_MAX_EXECUTION_TIME"] = (null, "0", false),
+            ["PHP_UPLOAD_MAX_FILESIZE"] = (null, "128M", false),
+            ["PHP_POST_MAX_SIZE"] = (null, "128M", false),
+            ["PHP_DISPLAY_ERRORS"] = (null, "On", false),
+            ["COMPOSER_MEMORY_LIMIT"] = (null, "-1", false),
+            ["COMPOSER_PROCESS_TIMEOUT"] = (null, "0", false),
+            ["COMPOSER_NO_INTERACTION"] = (null, "1", false)
+        };
+
+        // Get current values from environment
+        foreach (var key in recommendations.Keys.ToList())
+        {
+            string? currentValue = Environment.GetEnvironmentVariable(key);
+            string recommendedValue = recommendations[key].recommendedValue;
+
+            // Check if update is needed
+            bool needsUpdate = string.IsNullOrEmpty(currentValue) || currentValue != recommendedValue;
+
+            recommendations[key] = (currentValue, recommendedValue, needsUpdate);
+        }
+
+        return recommendations;
+    }
+
+    /// <summary>
+    /// Sets recommended PHP environment variables for the current process
+    /// </summary>
+    /// <returns>Number of variables that were updated</returns>
+    public int SetRecommendedPhpEnvironmentVariables()
+    {
+        var recommendations = GetPhpEnvironmentRecommendations();
+        int updatedCount = 0;
+
+        foreach (var (key, (current, recommended, needsUpdate)) in recommendations)
+        {
+            if (needsUpdate)
+            {
+                Environment.SetEnvironmentVariable(key, recommended);
+                _logger.Info($"Set environment variable {key}={recommended}");
+                updatedCount++;
+            }
+        }
+
+        return updatedCount;
     }
 }

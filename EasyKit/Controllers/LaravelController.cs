@@ -67,33 +67,69 @@ public class LaravelController
             .WithDoubleBorder()
             .Show();
     }
-
     private bool EnsurePhpInstalled()
     {
-        var result = _processService.RunProcess("php", "--version", false);
-        if (!result)
+        var (phpVersion, phpPath, isCompatible) = _processService.GetPhpVersionInfo();
+
+        if (phpVersion == "Unknown" || !isCompatible)
         {
-            _console.WriteError("PHP is not installed or not in PATH. Please install PHP from https://www.php.net/");
+            _console.WriteError($"PHP is not properly installed or not compatible with Laravel.");
+            _console.WriteInfo($"Found PHP version: {phpVersion}");
+            _console.WriteInfo("Laravel requires PHP 7.3+ (PHP 8.0+ recommended for newer Laravel versions).");
+            _console.WriteInfo("Please install PHP from https://www.php.net/ or https://windows.php.net/download/");
             Console.ReadLine();
+            return false;
         }
 
-        return result;
+        // Check PHP extensions required for Laravel
+        var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
+        if (missingExtensions.Count > 0)
+        {
+            _console.WriteInfo("Some PHP extensions required by Laravel might be missing:");
+            foreach (var ext in missingExtensions)
+            {
+                _console.WriteInfo($"  - {ext}");
+            }
+
+            if (!extensionsCompatible)
+            {
+                _console.WriteError("Critical PHP extensions are missing. Laravel might not work correctly.");
+                _console.WriteInfo("Please enable these extensions in your php.ini file.");
+                Console.ReadLine();
+                return false;
+            }
+        }
+
+        _console.WriteInfo($"Using PHP {phpVersion} from {phpPath}");
+        return true;
     }
 
     private string? FindComposerCommand()
     {
+        // Get detailed Composer information
+        var (composerVersion, composerPath, isGlobal) = _processService.GetComposerInfo();
+
+        if (!string.IsNullOrEmpty(composerPath) && composerPath != "composer")
+        {
+            _console.WriteInfo($"Using Composer {composerVersion} from {composerPath}");
+            return composerPath;
+        }
+
+        // Fallback to checking local files
         if (File.Exists("composer.phar"))
             return "php composer.phar";
         if (File.Exists("composer.bat"))
             return "composer.bat";
         if (File.Exists("composer.exe"))
             return "composer.exe";
+
         return "composer";
     }
 
     private bool RunComposerCommand(string args, bool showOutput = true)
     {
         if (!EnsurePhpInstalled()) return false;
+
         var composerCmd = FindComposerCommand();
         if (composerCmd == null)
         {
@@ -101,11 +137,33 @@ public class LaravelController
             return false;
         }
 
-        return _processService.RunProcess(composerCmd, args, showOutput);
+        try
+        {
+            // If the command is "php composer.phar", we need to handle it differently
+            if (composerCmd.StartsWith("php "))
+            {
+                string phpArgs = composerCmd.Substring(4) + " " + args;
+                // Add memory limit for large projects
+                phpArgs = "-d memory_limit=-1 " + phpArgs;
+                return _processService.RunProcess("php", phpArgs, showOutput, Environment.CurrentDirectory);
+            }
+            else
+            {
+                // For global composer installation
+                return _processService.RunProcess(composerCmd, args, showOutput, Environment.CurrentDirectory);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error running Composer command: {ex.Message}");
+            if (showOutput) _console.WriteError($"Error: {ex.Message}");
+            return false;
+        }
     }
     private bool RunArtisanCommand(string args, bool showOutput = true)
     {
         if (!EnsurePhpInstalled()) return false;
+
         if (!File.Exists("artisan"))
         {
             _console.WriteError(
@@ -115,12 +173,38 @@ public class LaravelController
 
         try
         {
-            // Add timeout handling for long-running commands
-            var result = _processService.RunProcess("php", $"artisan {args}", showOutput);
+            // Get Laravel version info
+            var (laravelVersion, isCompatible) = _processService.GetLaravelVersionInfo();
+
+            if (showOutput && laravelVersion != "Unknown")
+            {
+                _console.WriteInfo($"Laravel version: {laravelVersion}");
+
+                if (!isCompatible)
+                {
+                    _console.WriteInfo("Warning: Your Laravel version might not be fully supported by EasyKit.");
+                }
+            }
+
+            // Add PHP config options for better performance
+            string phpOptions = _processService.GetPhpConfigOptions(new Dictionary<string, string>
+            {
+                ["memory_limit"] = "-1",
+                ["max_execution_time"] = "0",
+                ["display_errors"] = "On"
+            });
+
+            // Set environment variables for optimal Laravel performance
+            _processService.SetRecommendedPhpEnvironmentVariables();
+
+            // Run Artisan command with config options
+            bool result = _processService.RunProcess("php", $"{phpOptions} artisan {args}", showOutput);
 
             // Check for common error patterns in output even when exit code is 0
             if (!result && showOutput)
             {
+                HandleLaravelError(args);
+
                 // Provide suggestions based on common issues
                 if (args.Contains("cache:status") && result == false)
                 {
@@ -142,7 +226,8 @@ public class LaravelController
             if (showOutput) _console.WriteError($"Error: {ex.Message}");
             return false;
         }
-    }    private void QuickSetup()
+    }
+    private void QuickSetup()
     {
         if (!File.Exists("artisan"))
         {
@@ -468,5 +553,57 @@ public class LaravelController
         }
 
         Console.ReadLine();
+    }
+
+    /// <summary>
+    /// Provides helpful diagnostics for common Laravel errors
+    /// </summary>
+    /// <param name="command">The Artisan command that failed</param>
+    private void HandleLaravelError(string command)
+    {
+        _console.WriteInfo("\nDiagnosing Laravel error...");
+
+        // Common Laravel error patterns and solutions
+        if (command.StartsWith("migrate") || command.Contains("db:"))
+        {
+            // Database-related errors
+            _console.WriteInfo("This might be a database connection issue. Check your .env file for correct database settings.");
+            _console.WriteInfo("Make sure your database server is running and accessible.");
+            _console.WriteInfo("Common solutions:");
+            _console.WriteInfo("1. Verify DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, and DB_PASSWORD in your .env file");
+            _console.WriteInfo("2. Ensure your database server is running");
+            _console.WriteInfo("3. Run 'php artisan config:clear' to clear cached configuration");
+        }
+        else if (command.StartsWith("key:generate"))
+        {
+            // Key generation errors
+            _console.WriteInfo("Error generating application key. Check your .env file and ensure it exists and is writable.");
+            _console.WriteInfo("If your .env file doesn't exist, copy .env.example to .env first.");
+        }
+        else if (command.Contains("storage:link"))
+        {
+            // Storage link errors
+            _console.WriteInfo("Error creating storage link. Possible solutions:");
+            _console.WriteInfo("1. Check if you have sufficient permissions to create symbolic links");
+            _console.WriteInfo("2. On Windows, make sure you're running as Administrator");
+            _console.WriteInfo("3. Try creating the link manually with 'mklink /D public\\storage storage\\app\\public'");
+        }
+        else if (command.StartsWith("cache:") || command.StartsWith("config:") || command.StartsWith("route:"))
+        {
+            // Cache-related errors
+            _console.WriteInfo("Error clearing cache. Possible solutions:");
+            _console.WriteInfo("1. Check if storage/framework directories exist and are writable");
+            _console.WriteInfo("2. Try manually deleting cache files in storage/framework/cache");
+            _console.WriteInfo("3. Ensure you have appropriate file system permissions");
+        }
+        else
+        {
+            // General Laravel/Artisan errors
+            _console.WriteInfo("Common troubleshooting steps:");
+            _console.WriteInfo("1. Check if all required PHP extensions are enabled");
+            _console.WriteInfo("2. Run 'composer dump-autoload' to regenerate class mappings");
+            _console.WriteInfo("3. Ensure you have proper permissions for storage and bootstrap/cache directories");
+            _console.WriteInfo("4. Check Laravel logs in storage/logs for more details");
+        }
     }
 }
