@@ -1,6 +1,5 @@
-using System.Diagnostics;
 using System.Text.Json;
-using EasyKit.Services;
+using System.Text.RegularExpressions;
 
 namespace EasyKit.Controllers;
 
@@ -9,9 +8,9 @@ public class ComposerController
     private readonly ConfirmationService _confirmation = new();
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
+    private readonly ProcessService _processService;
     private readonly PromptView _prompt = new();
     private readonly Software _software;
-    private readonly ProcessService _processService;
 
     public ComposerController(Software software, LoggerService logger, ConsoleService console)
     {
@@ -118,22 +117,21 @@ public class ComposerController
         if (missingExtensions.Count > 0 && showOutput)
         {
             _console.WriteInfo("Some PHP extensions required by Laravel/Composer might be missing:");
-            foreach (var ext in missingExtensions)
-            {
-                _console.WriteInfo($"  - {ext}");
-            }
+            foreach (var ext in missingExtensions) _console.WriteInfo($"  - {ext}");
 
             if (!extensionsCompatible)
             {
                 _console.WriteError("Critical PHP extensions are missing. Composer might not work correctly.");
                 _console.WriteInfo("Please enable these extensions in your php.ini file.");
             }
-        }        // Find the composer command
+        } // Find the composer command
+
         var composerCmd = FindComposerCommand();
         if (composerCmd == null)
         {
             _console.WriteError("Composer executable not found. Please ensure Composer is installed and in your PATH.");
-            _console.WriteInfo("You can install Composer by following instructions at https://getcomposer.org/download/");
+            _console.WriteInfo(
+                "You can install Composer by following instructions at https://getcomposer.org/download/");
             return false;
         }
 
@@ -143,6 +141,7 @@ public class ComposerController
             _console.WriteInfo($"Using PHP {phpVersion} from {phpPath}");
             _console.WriteInfo($"Using Composer command: {composerCmd}");
         }
+
         try
         {
             // Capture the output to parse for common errors
@@ -160,7 +159,8 @@ public class ComposerController
                 phpArgs = "-d memory_limit=-1 " + phpArgs;
 
                 // Run the command with output capture for error handling
-                (output, error, exitCode) = _processService.RunProcessWithOutput("php", phpArgs, Environment.CurrentDirectory);
+                (output, error, exitCode) =
+                    _processService.RunProcessWithOutput("php", phpArgs, Environment.CurrentDirectory);
 
                 // Display output if requested
                 if (showOutput)
@@ -174,7 +174,8 @@ public class ComposerController
             else
             {
                 // For global composer command, run it directly
-                (output, error, exitCode) = _processService.RunProcessWithOutput(composerCmd, args, Environment.CurrentDirectory);
+                (output, error, exitCode) =
+                    _processService.RunProcessWithOutput(composerCmd, args, Environment.CurrentDirectory);
 
                 // Display output if requested
                 if (showOutput)
@@ -184,7 +185,8 @@ public class ComposerController
                 }
 
                 result = exitCode == 0;
-            }            // Handle common Composer errors
+            } // Handle common Composer errors
+
             if (!result && showOutput)
             {
                 string combinedOutput = output + "\n" + error;
@@ -200,14 +202,16 @@ public class ComposerController
             HandleComposerError(ex.Message);
             return false;
         }
-    }    /// <summary>
-    /// Handles common Composer errors and provides helpful information to the user
+    }
+
+    /// <summary>
+    ///     Handles common Composer errors and provides helpful information to the user
     /// </summary>
     /// <param name="errorMessage">The error message from Composer</param>
     private void HandleComposerError(string errorMessage)
     {
         // Check for the specific invalid application error for .phar files
-        if (errorMessage.Contains("not a valid application for this OS platform") && 
+        if (errorMessage.Contains("not a valid application for this OS platform") &&
             errorMessage.Contains("composer.phar"))
         {
             _console.WriteError("Error: Composer PHAR file cannot be executed directly on Windows.");
@@ -215,15 +219,15 @@ public class ComposerController
             _console.WriteInfo("1. Running composer.phar with PHP: php composer.phar [command]");
             _console.WriteInfo("2. Using Composer installer for Windows to get composer.bat");
             _console.WriteInfo("3. Downloading Composer from https://getcomposer.org/download/");
-            
+
             // Check if we have PHP available
             var (phpVersion, phpPath, _) = _processService.GetPhpVersionInfo();
             if (phpVersion != "Unknown" && File.Exists(phpPath))
             {
                 _console.WriteInfo("\nAttempting to run with PHP instead...");
-                
+
                 // Extract the composer.phar path from the error message
-                var match = System.Text.RegularExpressions.Regex.Match(errorMessage, @"'([^']*composer\.phar)'");
+                var match = Regex.Match(errorMessage, @"'([^']*composer\.phar)'");
                 if (match.Success)
                 {
                     string composerPharPath = match.Groups[1].Value;
@@ -232,40 +236,48 @@ public class ComposerController
                     _console.Config.Set("composer_path", $"php {composerPharPath}");
                 }
             }
-            
+
             return;
         }
-        
+
         // Common Composer error patterns and solutions
         Dictionary<string, string> errorPatterns = new()
         {
             // Memory limit errors
-            {"allowed memory size of", "Composer is running out of memory. Try setting COMPOSER_MEMORY_LIMIT=-1 environment variable."},
-            
+            {
+                "allowed memory size of",
+                "Composer is running out of memory. Try setting COMPOSER_MEMORY_LIMIT=-1 environment variable."
+            },
+
             // Timeout errors
-            {"operation timed out", "Network operation timed out. Check your internet connection or try increasing COMPOSER_PROCESS_TIMEOUT."},
-            
+            {
+                "operation timed out",
+                "Network operation timed out. Check your internet connection or try increasing COMPOSER_PROCESS_TIMEOUT."
+            },
+
             // Package not found errors
-            {"could not find a matching version", "The requested package version doesn't exist. Check the package name and version constraint."},
-            
+            {
+                "could not find a matching version",
+                "The requested package version doesn't exist. Check the package name and version constraint."
+            },
+
             // PHP version errors
-            {"requires php", "Your PHP version is not compatible with the package requirements."},
-            
+            { "requires php", "Your PHP version is not compatible with the package requirements." },
+
             // Extension errors
-            {"requires ext-", "You're missing a required PHP extension. Check your php.ini configuration."},
-            
+            { "requires ext-", "You're missing a required PHP extension. Check your php.ini configuration." },
+
             // JSON errors
-            {"json parse error", "There's a syntax error in your composer.json file."},
-            
+            { "json parse error", "There's a syntax error in your composer.json file." },
+
             // Authentication errors
-            {"authentication required", "Authentication failed. Check your Composer credentials."},
-            
+            { "authentication required", "Authentication failed. Check your Composer credentials." },
+
             // Permission errors
-            {"permission denied", "Permission error. Try running as administrator or check folder permissions."}
+            { "permission denied", "Permission error. Try running as administrator or check folder permissions." }
         };
 
         foreach (var (pattern, solution) in errorPatterns)
-        {
             if (errorMessage.ToLower().Contains(pattern.ToLower()))
             {
                 _console.WriteInfo($"\nPossible solution: {solution}");
@@ -276,7 +288,8 @@ public class ComposerController
                     var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit();
                     _console.WriteInfo($"Current PHP memory_limit: {currentLimit}");
                     _console.WriteInfo($"Recommended setting: {recommendedLimit}");
-                    _console.WriteInfo("You can set this temporarily with: php -d memory_limit=-1 composer.phar [command]");
+                    _console.WriteInfo(
+                        "You can set this temporarily with: php -d memory_limit=-1 composer.phar [command]");
                     _console.WriteInfo("Or permanently in your php.ini file.");
                 }
 
@@ -287,16 +300,12 @@ public class ComposerController
                     if (missingExtensions.Count > 0)
                     {
                         _console.WriteInfo("Missing PHP extensions detected:");
-                        foreach (var ext in missingExtensions)
-                        {
-                            _console.WriteInfo($"  - {ext}");
-                        }
+                        foreach (var ext in missingExtensions) _console.WriteInfo($"  - {ext}");
                     }
                 }
 
                 break; // Only show the first matching solution
             }
-        }
     }
 
     private void InstallPackages()
@@ -424,18 +433,17 @@ public class ComposerController
 
         // Check PHP memory limit
         var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit(phpPath);
-        _console.WriteInfo($"PHP Memory Limit: {currentLimit} (Recommended: {recommendedLimit}, Sufficient: {(hasEnoughMemory ? "Yes" : "No")})");
+        _console.WriteInfo(
+            $"PHP Memory Limit: {currentLimit} (Recommended: {recommendedLimit}, Sufficient: {(hasEnoughMemory ? "Yes" : "No")})");
 
         // Check PHP extensions
         var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
-        _console.WriteInfo($"PHP Extensions Status: {(extensionsCompatible ? "All critical extensions present" : "Missing critical extensions")}");
+        _console.WriteInfo(
+            $"PHP Extensions Status: {(extensionsCompatible ? "All critical extensions present" : "Missing critical extensions")}");
         if (missingExtensions.Count > 0)
         {
             _console.WriteInfo("Missing Extensions:");
-            foreach (var ext in missingExtensions)
-            {
-                _console.WriteInfo($"  - {ext}");
-            }
+            foreach (var ext in missingExtensions) _console.WriteInfo($"  - {ext}");
         }
 
         // Check Composer installation
@@ -450,26 +458,28 @@ public class ComposerController
         foreach (var (key, (currentValue, recommendedValue, needsUpdate)) in envRecommendations)
         {
             string status = needsUpdate ? "Not Optimal" : "OK";
-            _console.WriteInfo($"  - {key}: {(currentValue ?? "Not Set")} (Recommended: {recommendedValue}, Status: {status})");
+            _console.WriteInfo(
+                $"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})");
         }
 
         // Check composer.json if it exists
         if (File.Exists("composer.json"))
-        {
             try
             {
                 _console.WriteInfo("\nProject Analysis:");
                 var json = File.ReadAllText("composer.json");
-                using var jsonDoc = System.Text.Json.JsonDocument.Parse(json);
+                using var jsonDoc = JsonDocument.Parse(json);
                 var root = jsonDoc.RootElement;
 
                 // Check PHP version requirement
-                if (root.TryGetProperty("require", out var requirements) && requirements.TryGetProperty("php", out var phpRequirement))
+                if (root.TryGetProperty("require", out var requirements) &&
+                    requirements.TryGetProperty("php", out var phpRequirement))
                 {
                     _console.WriteInfo($"  - Required PHP Version: {phpRequirement}");
                     // Check if current PHP version meets requirements
                     bool isPhpCompatible = phpRequirement.ToString().Contains(phpVersion.Split('.')[0]);
-                    _console.WriteInfo($"  - PHP Version Compatibility: {(isPhpCompatible ? "Compatible" : "Might not be compatible")}");
+                    _console.WriteInfo(
+                        $"  - PHP Version Compatibility: {(isPhpCompatible ? "Compatible" : "Might not be compatible")}");
                 }
 
                 // Get package count
@@ -490,16 +500,12 @@ public class ComposerController
                 var (output, error, exitCode) = _processService.RunProcessWithOutput(
                     FindComposerCommand() ?? "composer", "validate --no-check-publish", Environment.CurrentDirectory);
                 _console.WriteInfo($"  - composer.json Validity: {(exitCode == 0 ? "Valid" : "Invalid")}");
-                if (exitCode != 0)
-                {
-                    _console.WriteInfo($"  - Validation Error: {error}");
-                }
+                if (exitCode != 0) _console.WriteInfo($"  - Validation Error: {error}");
             }
             catch (Exception ex)
             {
                 _console.WriteError($"Error analyzing composer.json: {ex.Message}");
             }
-        }
 
         _console.WriteInfo("\nDiagnostic complete!");
         Console.ReadLine();

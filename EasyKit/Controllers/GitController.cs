@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using EasyKit.Services;
-
 namespace EasyKit.Controllers;
 
 public class GitController
@@ -8,9 +5,9 @@ public class GitController
     private readonly ConfirmationService _confirmation = new();
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
+    private readonly ProcessService _processService;
     private readonly PromptView _prompt = new();
     private readonly Software _software;
-    private readonly ProcessService _processService;
 
     public GitController(Software software, LoggerService logger, ConsoleService console)
     {
@@ -75,7 +72,9 @@ public class GitController
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .WithRoundedBorder()
             .Show();
-    }    private bool RunGitCommand(string args, bool showOutput = true)
+    }
+
+    private bool RunGitCommand(string args, bool showOutput = true)
     {
         if (!File.Exists(".git/config") && args != "init")
         {
@@ -85,7 +84,8 @@ public class GitController
         }
 
         return _processService.RunProcess("git", args, showOutput, Environment.CurrentDirectory);
-    }    // New helper to get output and error from git command
+    } // New helper to get output and error from git command
+
     private (string output, string error, int exitCode) RunGitCommandWithOutput(string args)
     {
         if (!File.Exists(".git/config") && args != "init")
@@ -129,7 +129,8 @@ public class GitController
             _console.WriteSuccess("✓ Working tree clean. Nothing to commit.");
         }
         else
-        {            // Prevent invisible output: check for black-on-black
+        {
+            // Prevent invisible output: check for black-on-black
             var textColorObj = _console.Config?.Get("text_color", "");
             var bgColorObj = _console.Config?.Get("background_color", "");
             if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")

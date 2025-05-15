@@ -47,7 +47,8 @@ internal class Program
 
             // If an argument is provided, open the folder or file directly
             if (!string.IsNullOrEmpty(originalArg))
-            {                try
+            {
+                try
                 {
                     // Handle the file or directory passed from context menu
                     if (Directory.Exists(originalArg))
@@ -57,7 +58,7 @@ internal class Program
                         Console.WriteLine($"Directory set to: {originalArg}");
                         NotificationView.Show($"Working directory set to: {originalArg}",
                             NotificationView.NotificationType.Success, requireKeyPress: false);
-                        
+
                         // After setting directory, continue to the main menu
                         MainMenu();
                     }
@@ -66,13 +67,13 @@ internal class Program
                         // Handle file operations based on file type
                         string extension = Path.GetExtension(originalArg).ToLower();
                         string directory = Path.GetDirectoryName(originalArg) ?? Environment.CurrentDirectory;
-                        
+
                         // Set current directory to the file's directory
                         Environment.CurrentDirectory = directory;
                         Console.WriteLine($"File selected: {originalArg}");
                         NotificationView.Show($"File selected: {Path.GetFileName(originalArg)}",
                             NotificationView.NotificationType.Success, requireKeyPress: false);
-                            
+
                         // After handling file, continue to the main menu
                         MainMenu();
                     }
@@ -96,6 +97,7 @@ internal class Program
                     // Continue to main menu even after error
                     MainMenu();
                 }
+
                 return;
             }
 

@@ -34,11 +34,14 @@ public class Config
             { "menu_width", 50 },
             { "version", AppVersion },
             { "context_menu_name", "EasyKit" },
-            { "context_menu_registry_paths", new[] {
-                @"Software\Classes\*\shell\EasyKit",
-                @"Software\Classes\Directory\shell\EasyKit",
-                @"Software\Classes\Directory\Background\shell\EasyKit"
-            }},
+            {
+                "context_menu_registry_paths", new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                }
+            },
             { "context_menu_scope", "user" } // "user" for HKCU, "system" for HKCR
         };
 
@@ -67,13 +70,14 @@ public class Config
         var json = JsonSerializer.Serialize(Settings, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_configFilePath, json);
     }
+
     public object? Get(string key, object? defaultValue = null)
     {
         return Settings.ContainsKey(key) ? Settings[key] : defaultValue;
     }
 
     /// <summary>
-    /// Sets a configuration value and saves the configuration to disk.
+    ///     Sets a configuration value and saves the configuration to disk.
     /// </summary>
     /// <param name="key">The configuration key to set</param>
     /// <param name="value">The value to store</param>
@@ -108,11 +112,14 @@ public class Config
             { "menu_width", 50 },
             { "version", AppVersion },
             { "context_menu_name", "EasyKit" },
-            { "context_menu_registry_paths", new[] {
-                @"Software\Classes\*\shell\EasyKit",
-                @"Software\Classes\Directory\shell\EasyKit",
-                @"Software\Classes\Directory\Background\shell\EasyKit"
-            }},
+            {
+                "context_menu_registry_paths", new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                }
+            },
             { "context_menu_scope", "user" } // "user" for HKCU, "system" for HKCR
         };
         SaveConfig();

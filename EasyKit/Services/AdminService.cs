@@ -95,10 +95,7 @@ public static class AdminService
                 FileName = exePath,
                 Verb = "runas" // This is what requests elevation
             };
-            if (!string.IsNullOrEmpty(argument))
-            {
-                startInfo.Arguments = $"\"{argument}\"";
-            }
+            if (!string.IsNullOrEmpty(argument)) startInfo.Arguments = $"\"{argument}\"";
 
             // Start the new process with admin rights
             Process.Start(startInfo);

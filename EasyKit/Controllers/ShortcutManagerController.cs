@@ -100,28 +100,31 @@ internal class ShortcutManagerController
             var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
             var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
             string[] registryPaths = scope == "system"
-                ? new[] {
+                ? new[]
+                {
                     @"*\shell\EasyKit",
                     @"Directory\shell\EasyKit",
                     @"Directory\Background\shell\EasyKit"
-                  }
-                : new[] {
+                }
+                : new[]
+                {
                     @"Software\Classes\*\shell\EasyKit",
                     @"Software\Classes\Directory\shell\EasyKit",
                     @"Software\Classes\Directory\Background\shell\EasyKit"
-                  };
+                };
 
             foreach (var registryPath in registryPaths)
-            {
                 try
                 {
                     using (var key = root.CreateSubKey(registryPath))
                     {
                         if (key == null)
                         {
-                            _console.WriteInfo($"Failed to create registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}");
+                            _console.WriteInfo(
+                                $"Failed to create registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}");
                             continue;
                         }
+
                         key.SetValue("", "EasyKit", RegistryValueKind.String);
                         using (var commandKey = key.CreateSubKey("command"))
                         {
@@ -137,9 +140,9 @@ internal class ShortcutManagerController
                 }
                 catch (Exception ex)
                 {
-                    _console.WriteInfo($"Exception creating registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}: {ex.Message}");
+                    _console.WriteInfo(
+                        $"Exception creating registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}: {ex.Message}");
                 }
-            }
         }
         catch (Exception ex)
         {
@@ -148,7 +151,7 @@ internal class ShortcutManagerController
     }
 
     /// <summary>
-    /// Returns the correct argument for the context menu command based on the registry path.
+    ///     Returns the correct argument for the context menu command based on the registry path.
     /// </summary>
     private static string GetContextMenuArgument(string registryPath)
     {
@@ -165,24 +168,27 @@ internal class ShortcutManagerController
             var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
             var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
             string[] delRegistryPaths = scope == "system"
-                ? new[] {
+                ? new[]
+                {
                     @"*\shell\EasyKit",
                     @"Directory\shell\EasyKit",
                     @"Directory\Background\shell\EasyKit"
-                  }
-                : new[] {
+                }
+                : new[]
+                {
                     @"Software\Classes\*\shell\EasyKit",
                     @"Software\Classes\Directory\shell\EasyKit",
                     @"Software\Classes\Directory\Background\shell\EasyKit"
-                  };
+                };
             foreach (var delRegistryPath in delRegistryPaths)
-            {
                 try
                 {
                     root.DeleteSubKeyTree(delRegistryPath, false);
                 }
-                catch { /* Ignore if not present */ }
-            }
+                catch
+                {
+                    /* Ignore if not present */
+                }
         }
         catch (Exception ex)
         {
