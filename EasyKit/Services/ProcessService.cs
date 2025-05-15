@@ -16,16 +16,14 @@ public class ProcessService
         _logger = logger;
         _console = console;
         _config = config;
-    }
-
-    /// <summary>
-    /// Runs a process with the specified parameters.
-    /// </summary>
-    /// <param name="file">The executable file to run.</param>
-    /// <param name="args">The arguments to pass to the executable.</param>
-    /// <param name="showOutput">Whether to show the output in the console.</param>
-    /// <param name="workingDirectory">The working directory for the process. Defaults to the current directory if not specified.</param>
-    /// <returns>True if the process exited with code 0, otherwise false.</returns>
+    }    /// <summary>
+         /// Runs a process with the specified parameters.
+         /// </summary>
+         /// <param name="file">The executable file to run.</param>
+         /// <param name="args">The arguments to pass to the executable.</param>
+         /// <param name="showOutput">Whether to show the output in the console.</param>
+         /// <param name="workingDirectory">The working directory for the process. Defaults to the current directory if not specified.</param>
+         /// <returns>True if the process exited with code 0, otherwise false.</returns>
     public bool RunProcess(string file, string args, bool showOutput = true, string? workingDirectory = null)
     {
         try
@@ -43,6 +41,21 @@ public class ProcessService
                 {
                     executablePath = explicitPath;
                     _logger.Info($"Using explicit path for {file}: {explicitPath}");
+
+                    // Special handling for composer.phar files - run them using PHP
+                    if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
+                        explicitPath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Find PHP path
+                        string phpPath = "php";
+                        var phpExplicitPath = FindExecutablePath("php");
+                        if (!string.IsNullOrEmpty(phpExplicitPath))
+                        {
+                            phpPath = phpExplicitPath;
+                        }
+
+                        return RunProcess(phpPath, $"{explicitPath} {args}", showOutput, workingDirectory);
+                    }
                 }
             }
 
@@ -334,6 +347,14 @@ public class ProcessService
                         executablePath = npmCmd;
                         _logger.Info($"Using npm.cmd instead of npm: {npmCmd}");
                     }
+                }
+
+                // Special handling for composer.phar files
+                if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
+                    executablePath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.Info($"Found Composer phar file at {executablePath}, using PHP to execute it");
+                    return RunProcessWithOutput("php", executablePath + " " + args, workingDirectory);
                 }
             }
 
@@ -642,15 +663,22 @@ public class ProcessService
     {
         string version = "Unknown";
         string composerPath = "composer";
-        bool isGlobal = false;
-
-        // Try to find the Composer executable path
+        bool isGlobal = false;        // Try to find the Composer executable path
         var explicitPath = FindExecutablePath("composer");
         if (!string.IsNullOrEmpty(explicitPath))
         {
-            composerPath = explicitPath;
-            _logger.Info($"Using explicit path for Composer: {explicitPath}");
-            isGlobal = !explicitPath.EndsWith("composer.phar");
+            // If it's a .phar file, we need to run it with PHP
+            if (explicitPath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
+            {
+                composerPath = "php " + explicitPath;
+                isGlobal = false;
+            }
+            else
+            {
+                composerPath = explicitPath;
+                isGlobal = true;
+            }
+            _logger.Info($"Using explicit path for Composer: {composerPath}");
         }
 
         // Check if composer.phar exists in the current directory
