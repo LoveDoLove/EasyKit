@@ -20,17 +20,87 @@ internal class Program
     private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
     private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
 
+    // Helper to select the best executable for a tool on Windows
+    private static string? SelectBestExecutable(string tool, List<string> candidates)
+    {
+        if (candidates == null || candidates.Count == 0)
+            return null;
+
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        {
+            switch (tool.ToLower())
+            {
+                case "npm":
+                    // Prefer npm.cmd, then npm.exe, then npm
+                    var npmCmd = candidates.FirstOrDefault(p => p.EndsWith("npm.cmd", StringComparison.OrdinalIgnoreCase));
+                    if (npmCmd != null) return npmCmd;
+                    var npmExe = candidates.FirstOrDefault(p => p.EndsWith("npm.exe", StringComparison.OrdinalIgnoreCase));
+                    if (npmExe != null) return npmExe;
+                    break;
+                case "node":
+                    // Prefer node.exe
+                    var nodeExe = candidates.FirstOrDefault(p => p.EndsWith("node.exe", StringComparison.OrdinalIgnoreCase));
+                    if (nodeExe != null) return nodeExe;
+                    break;
+                case "php":
+                    // Prefer php.exe
+                    var phpExe = candidates.FirstOrDefault(p => p.EndsWith("php.exe", StringComparison.OrdinalIgnoreCase));
+                    if (phpExe != null) return phpExe;
+                    break;
+                case "composer":
+                    // Prefer composer.bat, then composer.phar, then composer.exe
+                    var composerBat = candidates.FirstOrDefault(p => p.EndsWith("composer.bat", StringComparison.OrdinalIgnoreCase));
+                    if (composerBat != null) return composerBat;
+                    var composerPhar = candidates.FirstOrDefault(p => p.EndsWith("composer.phar", StringComparison.OrdinalIgnoreCase));
+                    if (composerPhar != null) return composerPhar;
+                    var composerExe = candidates.FirstOrDefault(p => p.EndsWith("composer.exe", StringComparison.OrdinalIgnoreCase));
+                    if (composerExe != null) return composerExe;
+                    break;
+                case "git":
+                    // Prefer git.exe
+                    var gitExe = candidates.FirstOrDefault(p => p.EndsWith("git.exe", StringComparison.OrdinalIgnoreCase));
+                    if (gitExe != null) return gitExe;
+                    break;
+            }
+        }
+        // Fallback: return the first candidate
+        return candidates[0];
+    }
+
     private static void AutoDetectAndSaveToolPaths()
     {
         var processService = new ProcessService(Logger, ConsoleService, Config);
         var tools = new[] { "npm", "node", "php", "composer", "git" };
         foreach (var tool in tools)
         {
-            var detectedPath = processService.FindExecutablePath(tool);
-            if (!string.IsNullOrEmpty(detectedPath))
+            // Gather all possible candidates
+            var candidates = new List<string>();
+            // 1. PATH search
+            var pathExecutable = processService.FindExecutablePath(tool);
+            if (!string.IsNullOrEmpty(pathExecutable))
+                candidates.Add(pathExecutable);
+            // 2. All known search paths
+            var searchPaths = typeof(ProcessService)
+                .GetMethod("GetSearchPathsForExecutable", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.Invoke(processService, new object[] { tool }) as string[];
+            if (searchPaths != null)
             {
-                Config.Set($"{tool}_path", detectedPath);
-                Logger.Info($"Auto-detected {tool} path: {detectedPath} and saved to config.");
+                foreach (var path in searchPaths)
+                {
+                    if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path) && !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
+                        candidates.Add(path);
+                }
+            }
+            // Select the best candidate
+            var best = SelectBestExecutable(tool, candidates);
+            if (!string.IsNullOrEmpty(best))
+            {
+                if (candidates.Count > 1 && !string.Equals(best, candidates[0], StringComparison.OrdinalIgnoreCase))
+                {
+                    Logger.Warning($"Auto-detected {tool}: Found multiple candidates, selected '{best}' as the best match.");
+                }
+                Config.Set($"{tool}_path", best);
+                Logger.Info($"Auto-detected {tool} path: {best} and saved to config.");
             }
         }
     }
