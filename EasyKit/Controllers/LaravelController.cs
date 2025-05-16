@@ -130,7 +130,6 @@ public class LaravelController
         // Create and configure the menu with a Laravel-specific theme
         var menuView = new MenuView();
         menuView.CreateMenu("Laravel Toolkit", width: menuWidth)
-            .WithSubtitle($"Current Directory: {currentDirectory}")
             .AddOption("1", "Quick Setup (env, install, key, cache)", () => QuickSetup())
             .AddOption("2", "Install Composer Packages", () => InstallPackages())
             .AddOption("3", "Update Composer Packages", () => UpdatePackages())
