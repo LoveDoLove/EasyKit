@@ -72,11 +72,16 @@ public class ComposerController
             .Show();
     }
 
+    // Helper to get the detected composer path
+    private string GetComposerPath() => _processService.FindExecutablePath("composer") ?? "composer";
+    // Helper to get the detected php path
+    private string GetPhpPath() => _processService.FindExecutablePath("php") ?? "php";
+
     private string? FindComposerCommand()
     {
         // First, check if we have a local composer.phar
         if (File.Exists("composer.phar"))
-            return "php composer.phar";
+            return $"{GetPhpPath()} composer.phar";
 
         // Next, check if composer.bat exists locally
         if (File.Exists("composer.bat"))
@@ -95,7 +100,7 @@ public class ComposerController
         }
 
         // Fallback to just "composer" and let the system try to find it
-        return "composer";
+        return GetComposerPath();
     }
 
     private bool RunComposerCommand(string args, bool showOutput = true)
@@ -135,8 +140,9 @@ public class ComposerController
                 NotificationView.Show("Critical PHP extensions are missing. Composer might not work correctly.", NotificationView.NotificationType.Error);
                 NotificationView.Show("Please enable these extensions in your php.ini file.", NotificationView.NotificationType.Info);
             }
-        } // Find the composer command
+        }
 
+        // Find the composer command
         var composerCmd = FindComposerCommand();
         if (composerCmd == null)
         {
@@ -154,7 +160,6 @@ public class ComposerController
 
         try
         {
-            // Capture the output to parse for common errors
             string output = "";
             string error = "";
             int exitCode = 0;
@@ -170,7 +175,7 @@ public class ComposerController
 
                 // Run the command with output capture for error handling
                 (output, error, exitCode) =
-                    _processService.RunProcessWithOutput("php", phpArgs, Environment.CurrentDirectory);
+                    _processService.RunProcessWithOutput(GetPhpPath(), phpArgs, Environment.CurrentDirectory);
 
                 // Display output if requested
                 if (showOutput)
@@ -195,8 +200,9 @@ public class ComposerController
                 }
 
                 result = exitCode == 0;
-            } // Handle common Composer errors
+            }
 
+            // Handle common Composer errors
             if (!result && showOutput)
             {
                 string combinedOutput = output + "\n" + error;
@@ -503,7 +509,7 @@ public class ComposerController
 
                 // Run composer validate silently
                 var (output, error, exitCode) = _processService.RunProcessWithOutput(
-                    FindComposerCommand() ?? "composer", "validate --no-check-publish", Environment.CurrentDirectory);
+                    FindComposerCommand() ?? GetComposerPath(), "validate --no-check-publish", Environment.CurrentDirectory);
                 NotificationView.Show($"  - composer.json Validity: {(exitCode == 0 ? "Valid" : "Invalid")}", NotificationView.NotificationType.Info);
                 if (exitCode != 0) NotificationView.Show($"  - Validation Error: {error}", NotificationView.NotificationType.Warning);
             }

@@ -29,6 +29,9 @@ public class GitController
         _processService = new ProcessService(logger, console, console.Config);
     }
 
+    // Helper to get the detected git path
+    private string GetGitPath() => _processService.FindExecutablePath("git") ?? "git";
+
     /// <summary>
     ///     Waits for user input, used after most actions.
     /// </summary>
@@ -94,16 +97,14 @@ public class GitController
                 _console.WriteError("This doesn't appear to be a git repository. Run 'git init' first.");
             return false;
         }
-
-        return _processService.RunProcess("git", args, showOutput, Environment.CurrentDirectory);
+        return _processService.RunProcess(GetGitPath(), args, showOutput, Environment.CurrentDirectory);
     } // New helper to get output and error from git command
 
     private (string output, string error, int exitCode) RunGitCommandWithOutput(string args)
     {
         if (!File.Exists(".git/config") && args != "init")
             return ("", "This doesn't appear to be a git repository. Run 'git init' first.", 1);
-
-        return _processService.RunProcessWithOutput("git", args, Environment.CurrentDirectory);
+        return _processService.RunProcessWithOutput(GetGitPath(), args, Environment.CurrentDirectory);
     }
 
     private void InitRepo()
