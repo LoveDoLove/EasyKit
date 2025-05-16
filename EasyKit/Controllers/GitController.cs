@@ -1,16 +1,14 @@
 namespace EasyKit.Controllers;
 
-using EasyKit.Views;
-
 public class GitController
 {
     private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
+    private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;
-    private readonly NotificationView _notificationView;
 
     public GitController(
         Software software,
@@ -30,7 +28,10 @@ public class GitController
     }
 
     // Helper to get the detected git path
-    private string GetGitPath() => _processService.FindExecutablePath("git") ?? "git";
+    private string GetGitPath()
+    {
+        return _processService.FindExecutablePath("git") ?? "git";
+    }
 
     /// <summary>
     ///     Waits for user input, used after most actions.
@@ -44,11 +45,13 @@ public class GitController
     public void RunDiagnostics()
     {
         _console.WriteInfo("===== GIT Configuration Diagnostics =====");
-        _console.WriteInfo("This will check your Git installation and repository status, and provide troubleshooting information.\n");
+        _console.WriteInfo(
+            "This will check your Git installation and repository status, and provide troubleshooting information.\n");
 
         // Step 1: Check if git is accessible in PATH
         _console.WriteInfo("Step 1: Checking if git is accessible in PATH");
-        var (gitVersionOutput, gitVersionError, gitVersionExit) = _processService.RunProcessWithOutput(GetGitPath(), "--version", Environment.CurrentDirectory);
+        var (gitVersionOutput, gitVersionError, gitVersionExit) =
+            _processService.RunProcessWithOutput(GetGitPath(), "--version", Environment.CurrentDirectory);
         if (gitVersionExit == 0 && !string.IsNullOrWhiteSpace(gitVersionOutput))
         {
             _console.WriteSuccess($"\u2713 Git is accessible. Version: {gitVersionOutput.Trim()}");
@@ -86,25 +89,21 @@ public class GitController
         _console.WriteInfo("\nStep 4: Checking repository status (git status)");
         var (statusOutput, statusError, statusExit) = RunGitCommandWithOutput("status");
         if (!string.IsNullOrWhiteSpace(statusError))
-        {
             _console.WriteError(statusError.Trim());
-        }
         else if (!string.IsNullOrWhiteSpace(statusOutput))
-        {
             _console.WriteInfo(statusOutput.Trim());
-        }
         else
-        {
             _console.WriteInfo("No status output received from git.");
-        }
 
         // Step 5: Recommendations
         _console.WriteInfo("\nStep 5: Recommendations");
         _console.WriteInfo("If you encounter issues:");
         _console.WriteInfo("- Ensure Git is installed and in your PATH.");
         _console.WriteInfo("- Restart your terminal or EasyKit after installation.");
-        _console.WriteInfo("- For more help, visit https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup");
-        _console.WriteInfo("- Use the Tool Marketplace in EasyKit to check installation status or open the download page.");
+        _console.WriteInfo(
+            "- For more help, visit https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup");
+        _console.WriteInfo(
+            "- Use the Tool Marketplace in EasyKit to check installation status or open the download page.");
 
         _console.WriteInfo("\n===== End of GIT Configuration Diagnostics =====");
         WaitForUser();
@@ -167,6 +166,7 @@ public class GitController
                 _console.WriteError("This doesn't appear to be a git repository. Run 'git init' first.");
             return false;
         }
+
         return _processService.RunProcess(GetGitPath(), args, showOutput, Environment.CurrentDirectory);
     } // New helper to get output and error from git command
 

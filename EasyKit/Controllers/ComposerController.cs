@@ -1,6 +1,6 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using EasyKit.Views;
 
 namespace EasyKit.Controllers;
 
@@ -9,10 +9,10 @@ public class ComposerController
     private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
+    private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;
-    private readonly NotificationView _notificationView;
 
     public ComposerController(
         Software software,
@@ -73,9 +73,16 @@ public class ComposerController
     }
 
     // Helper to get the detected composer path
-    private string GetComposerPath() => _processService.FindExecutablePath("composer") ?? "composer";
+    private string GetComposerPath()
+    {
+        return _processService.FindExecutablePath("composer") ?? "composer";
+    }
+
     // Helper to get the detected php path
-    private string GetPhpPath() => _processService.FindExecutablePath("php") ?? "php";
+    private string GetPhpPath()
+    {
+        return _processService.FindExecutablePath("php") ?? "php";
+    }
 
     private string? FindComposerCommand()
     {
@@ -144,7 +151,8 @@ public class ComposerController
         if (composerCmd == null)
         {
             _console.WriteError("Composer executable not found. Please ensure Composer is installed and in your PATH.");
-            _console.WriteInfo("You can install Composer by following instructions at https://getcomposer.org/download/");
+            _console.WriteInfo(
+                "You can install Composer by following instructions at https://getcomposer.org/download/");
             return false;
         }
 
@@ -166,28 +174,30 @@ public class ComposerController
             {
                 string phpArgs = composerCmd.Substring(4) + " " + args;
                 phpArgs = "-d memory_limit=-1 " + phpArgs;
-                (output, error, exitCode) = _processService.RunProcessWithOutput(GetPhpPath(), phpArgs, Environment.CurrentDirectory);
+                (output, error, exitCode) =
+                    _processService.RunProcessWithOutput(GetPhpPath(), phpArgs, Environment.CurrentDirectory);
                 if (showOutput)
                 {
                     if (!string.IsNullOrEmpty(output)) _console.WriteInfo(output);
                     if (!string.IsNullOrEmpty(error)) _console.WriteError(error);
                 }
+
                 result = exitCode == 0;
             }
             else
             {
-                (output, error, exitCode) = _processService.RunProcessWithOutput(composerCmd, args, Environment.CurrentDirectory);
+                (output, error, exitCode) =
+                    _processService.RunProcessWithOutput(composerCmd, args, Environment.CurrentDirectory);
                 if (showOutput)
                 {
                     if (!string.IsNullOrEmpty(output)) _console.WriteInfo(output);
                     if (!string.IsNullOrEmpty(error)) _console.WriteError(error);
                 }
+
                 result = exitCode == 0;
             }
-            if (!result && showOutput && !string.IsNullOrEmpty(error))
-            {
-                HandleComposerError(error);
-            }
+
+            if (!result && showOutput && !string.IsNullOrEmpty(error)) HandleComposerError(error);
             return result;
         }
         catch (Exception ex)
@@ -227,14 +237,24 @@ public class ComposerController
                     _console.Config.Set("composer_path", $"php {composerPharPath}");
                 }
             }
+
             return;
         }
 
         Dictionary<string, string> errorPatterns = new()
         {
-            { "allowed memory size of", "Composer is running out of memory. Try setting COMPOSER_MEMORY_LIMIT=-1 environment variable." },
-            { "operation timed out", "Network operation timed out. Check your internet connection or try increasing COMPOSER_PROCESS_TIMEOUT." },
-            { "could not find a matching version", "The requested package version doesn't exist. Check the package name and version constraint." },
+            {
+                "allowed memory size of",
+                "Composer is running out of memory. Try setting COMPOSER_MEMORY_LIMIT=-1 environment variable."
+            },
+            {
+                "operation timed out",
+                "Network operation timed out. Check your internet connection or try increasing COMPOSER_PROCESS_TIMEOUT."
+            },
+            {
+                "could not find a matching version",
+                "The requested package version doesn't exist. Check the package name and version constraint."
+            },
             { "requires php", "Your PHP version is not compatible with the package requirements." },
             { "requires ext-", "You're missing a required PHP extension. Check your php.ini configuration." },
             { "json parse error", "There's a syntax error in your composer.json file." },
@@ -251,9 +271,11 @@ public class ComposerController
                     var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit();
                     Console.WriteLine($"Current PHP memory_limit: {currentLimit}");
                     Console.WriteLine($"Recommended setting: {recommendedLimit}");
-                    Console.WriteLine("You can set this temporarily with: php -d memory_limit=-1 composer.phar [command]");
+                    Console.WriteLine(
+                        "You can set this temporarily with: php -d memory_limit=-1 composer.phar [command]");
                     Console.WriteLine("Or permanently in your php.ini file.");
                 }
+
                 if (pattern == "requires ext-")
                 {
                     var (missingExtensions, _) = _processService.CheckPhpExtensions();
@@ -263,6 +285,7 @@ public class ComposerController
                         foreach (var ext in missingExtensions) Console.WriteLine($"  - {ext}");
                     }
                 }
+
                 break;
             }
     }
@@ -330,6 +353,7 @@ public class ComposerController
             Console.ReadLine();
             return;
         }
+
         _console.WriteInfo("Validating composer.json...");
         if (RunComposerCommand("validate"))
             _console.WriteSuccess("✓ composer.json is valid!");
@@ -352,6 +376,7 @@ public class ComposerController
         {
             _console.WriteInfo("Cancelled.");
         }
+
         Console.ReadLine();
     }
 
@@ -363,6 +388,7 @@ public class ComposerController
             Console.ReadLine();
             return;
         }
+
         try
         {
             var json = File.ReadAllText("composer.json");
@@ -374,18 +400,20 @@ public class ComposerController
             _logger.Error($"Error reading composer.json: {ex.Message}");
             _console.WriteError("Invalid composer.json file");
         }
+
         Console.ReadLine();
     }
 
     private void RunDiagnostics()
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
         sb.AppendLine("===== COMPOSER Configuration Diagnostics =====\n");
 
         // Step 1: Check if Composer is accessible
         sb.AppendLine("Step 1: Checking if Composer is accessible in PATH or via detected path");
         var (composerVersion, composerPath, isGlobal) = _processService.GetComposerInfo();
-        var (composerOut, composerErr, composerExit) = _processService.RunProcessWithOutput(composerPath, "--version", Environment.CurrentDirectory);
+        var (composerOut, composerErr, composerExit) =
+            _processService.RunProcessWithOutput(composerPath, "--version", Environment.CurrentDirectory);
         if (composerExit == 0 && !string.IsNullOrWhiteSpace(composerOut))
         {
             sb.AppendLine($"[OK] Composer is accessible. Version: {composerOut.Trim()}");
@@ -395,7 +423,8 @@ public class ComposerController
         else
         {
             sb.AppendLine("[ERROR] Composer is not accessible via PATH or detected path.");
-            sb.AppendLine("Please install Composer from https://getcomposer.org/download/ and ensure it is in your PATH.");
+            sb.AppendLine(
+                "Please install Composer from https://getcomposer.org/download/ and ensure it is in your PATH.");
             sb.AppendLine("You can also use the Tool Marketplace in EasyKit to open the download page.");
             sb.AppendLine("\n===== End of COMPOSER Configuration Diagnostics =====");
             Console.WriteLine(sb.ToString());
@@ -433,7 +462,8 @@ public class ComposerController
         if (hasEnoughMemory)
             sb.AppendLine("[OK] PHP memory limit is sufficient for Composer operations.");
         else
-            sb.AppendLine("[WARNING] PHP memory limit may be too low for Composer. Set memory_limit to -1 or at least 1536M.");
+            sb.AppendLine(
+                "[WARNING] PHP memory limit may be too low for Composer. Set memory_limit to -1 or at least 1536M.");
 
         // Step 5: Show environment variable recommendations
         sb.AppendLine("\nStep 5: Environment variable recommendations");
@@ -441,7 +471,8 @@ public class ComposerController
         foreach (var (key, (currentValue, recommendedValue, needsUpdate)) in envRecommendations)
         {
             string status = needsUpdate ? "Not Optimal" : "OK";
-            sb.AppendLine($"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})");
+            sb.AppendLine(
+                $"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})");
         }
 
         // Step 6: Validate composer.json
@@ -449,7 +480,8 @@ public class ComposerController
         if (File.Exists("composer.json"))
         {
             var (output, error, exitCode) = _processService.RunProcessWithOutput(
-                FindComposerCommand() ?? GetComposerPath(), "validate --no-check-publish", Environment.CurrentDirectory);
+                FindComposerCommand() ?? GetComposerPath(), "validate --no-check-publish",
+                Environment.CurrentDirectory);
             sb.AppendLine($"composer.json Validity: {(exitCode == 0 ? "Valid" : "Invalid")}");
             if (exitCode != 0) sb.AppendLine($"Validation Error: {error}");
         }
@@ -461,7 +493,6 @@ public class ComposerController
         // Step 7: Project analysis (dependencies)
         sb.AppendLine("\nStep 7: Project analysis (dependencies)");
         if (File.Exists("composer.json"))
-        {
             try
             {
                 var json = File.ReadAllText("composer.json");
@@ -473,23 +504,26 @@ public class ComposerController
                     if (reqSection.TryGetProperty("php", out _)) packageCount--; // Exclude PHP itself
                     sb.AppendLine($"Production Dependencies: {packageCount}");
                 }
+
                 if (root.TryGetProperty("require-dev", out var reqDevSection))
                 {
                     int devPackageCount = reqDevSection.EnumerateObject().Count();
                     sb.AppendLine($"Development Dependencies: {devPackageCount}");
                 }
-                if (root.TryGetProperty("require", out var requirements) && requirements.TryGetProperty("php", out var phpRequirement))
+
+                if (root.TryGetProperty("require", out var requirements) &&
+                    requirements.TryGetProperty("php", out var phpRequirement))
                 {
                     sb.AppendLine($"Required PHP Version: {phpRequirement}");
                     bool isPhpCompatible = phpRequirement.ToString().Contains(phpVersion.Split('.')[0]);
-                    sb.AppendLine($"PHP Version Compatibility: {(isPhpCompatible ? "Compatible" : "Might not be compatible")}");
+                    sb.AppendLine(
+                        $"PHP Version Compatibility: {(isPhpCompatible ? "Compatible" : "Might not be compatible")}");
                 }
             }
             catch (Exception ex)
             {
                 sb.AppendLine($"Error analyzing composer.json: {ex.Message}");
             }
-        }
 
         // Step 8: Recommendations
         sb.AppendLine("\nStep 8: Recommendations");

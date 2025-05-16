@@ -55,7 +55,8 @@ public class Config
                     foreach (var kv in userConfig)
                         Settings[kv.Key] = kv.Value;
                 // --- Version auto-update logic ---
-                if (!Settings.TryGetValue("version", out var userVersion) || userVersion == null || userVersion.ToString() != AppVersion)
+                if (!Settings.TryGetValue("version", out var userVersion) || userVersion == null ||
+                    userVersion.ToString() != AppVersion)
                 {
                     Settings["version"] = AppVersion;
                     SaveConfig();

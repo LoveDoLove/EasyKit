@@ -1,18 +1,17 @@
 using System.Diagnostics;
 using System.Text.Json;
-using EasyKit.Views;
 
 namespace EasyKit.Controllers;
 
 public class NpmController
 {
+    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
-    private readonly ProcessService _processService;
-    private readonly Software _software;
-    private readonly ConfirmationService _confirmation;
-    private readonly PromptView _prompt;
     private readonly NotificationView _notificationView;
+    private readonly ProcessService _processService;
+    private readonly PromptView _prompt;
+    private readonly Software _software;
 
     public NpmController(
         Software software,
@@ -32,11 +31,22 @@ public class NpmController
     }
 
     // Helper to get the detected npm path
-    private string GetNpmPath() => _processService.FindExecutablePath("npm") ?? "npm";
+    private string GetNpmPath()
+    {
+        return _processService.FindExecutablePath("npm") ?? "npm";
+    }
+
     // Helper to get the detected node path
-    private string GetNodePath() => _processService.FindExecutablePath("node") ?? "node";
+    private string GetNodePath()
+    {
+        return _processService.FindExecutablePath("node") ?? "node";
+    }
+
     // Helper to get the detected ncu path
-    private string GetNcuPath() => _processService.FindExecutablePath("ncu") ?? "ncu";
+    private string GetNcuPath()
+    {
+        return _processService.FindExecutablePath("ncu") ?? "ncu";
+    }
 
     public void ShowMenu()
     {
@@ -306,11 +316,13 @@ public class NpmController
         _console.WriteInfo("Installing npm packages...");
         if (EnsureNpmInstalled())
         {
-            if (_processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true, Environment.CurrentDirectory))
+            if (_processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true,
+                    Environment.CurrentDirectory))
                 _console.WriteSuccess("✓ Packages installed successfully!");
             else
                 _console.WriteError("✗ Failed to install packages.");
         }
+
         Console.ReadLine();
     }
 
@@ -322,26 +334,31 @@ public class NpmController
             Console.ReadLine();
             return;
         }
+
         // Check if ncu is installed
         if (!_processService.RunProcess(GetNcuPath(), "--version", false))
         {
             _console.WriteInfo("Installing npm-check-updates globally...");
-            if (!_processService.RunProcess(GetNpmPath(), "install -g npm-check-updates", true, Environment.CurrentDirectory))
+            if (!_processService.RunProcess(GetNpmPath(), "install -g npm-check-updates", true,
+                    Environment.CurrentDirectory))
             {
                 _console.WriteError("Failed to install npm-check-updates");
                 Console.ReadLine();
                 return;
             }
         }
+
         if (_processService.RunProcess(GetNcuPath(), "-u", true, Environment.CurrentDirectory))
         {
             _console.WriteInfo("✓ package.json updated!");
-            _processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true, Environment.CurrentDirectory);
+            _processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true,
+                Environment.CurrentDirectory);
         }
         else
         {
             _console.WriteError("✗ Failed to update packages.");
         }
+
         Console.ReadLine();
     }
 
@@ -355,6 +372,7 @@ public class NpmController
             else
                 _console.WriteError("✗ Build failed.");
         }
+
         Console.ReadLine();
     }
 
@@ -366,13 +384,14 @@ public class NpmController
             Console.ReadLine();
             return;
         }
+
         try
         {
             // Open a new cmd window and run npm run dev using the detected npm path
             var npmPath = GetNpmPath();
-            var npmDir = System.IO.Path.GetDirectoryName(npmPath);
+            var npmDir = Path.GetDirectoryName(npmPath);
             var npmCmd = npmPath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ? npmPath : npmPath + ".cmd";
-            if (!System.IO.File.Exists(npmCmd)) npmCmd = npmPath; // fallback if .cmd doesn't exist
+            if (!File.Exists(npmCmd)) npmCmd = npmPath; // fallback if .cmd doesn't exist
             var quotedNpm = npmCmd.Contains(" ") ? $"\"{npmCmd}\"" : npmCmd;
             Process.Start(new ProcessStartInfo
             {
@@ -388,6 +407,7 @@ public class NpmController
             _logger.Error($"Error starting dev server: {ex.Message}");
             _console.WriteError("✗ Failed to start development server.");
         }
+
         Console.ReadLine();
     }
 
@@ -406,12 +426,14 @@ public class NpmController
             Console.ReadLine();
             return;
         }
+
         if (!File.Exists("package.json"))
         {
             _console.WriteError("No package.json found in current directory");
             Console.ReadLine();
             return;
         }
+
         try
         {
             var json = File.ReadAllText("package.json");
@@ -422,6 +444,7 @@ public class NpmController
                 Console.ReadLine();
                 return;
             }
+
             var scripts = scriptsProp.EnumerateObject().Select(p => p.Name).ToList();
             if (scripts.Count == 0)
             {
@@ -429,6 +452,7 @@ public class NpmController
                 Console.ReadLine();
                 return;
             }
+
             _console.WriteInfo("Available scripts:");
             foreach (var script in scripts)
                 _console.WriteInfo($"- {script}");
@@ -439,12 +463,14 @@ public class NpmController
                 Console.ReadLine();
                 return;
             }
+
             if (!scripts.Contains(scriptName))
             {
                 _console.WriteError("Invalid script name.");
                 Console.ReadLine();
                 return;
             }
+
             _console.WriteInfo($"Running npm run {scriptName}...");
             if (_processService.RunProcess(GetNpmPath(), $"run {scriptName}", true, Environment.CurrentDirectory))
                 _console.WriteInfo($"✓ Script {scriptName} completed!");
@@ -456,6 +482,7 @@ public class NpmController
             _logger.Error($"Error running custom script: {ex.Message}");
             _console.WriteError("Error reading package.json");
         }
+
         Console.ReadLine();
     }
 
@@ -467,6 +494,7 @@ public class NpmController
             Console.ReadLine();
             return;
         }
+
         try
         {
             var json = File.ReadAllText("package.json");
@@ -477,6 +505,7 @@ public class NpmController
             _logger.Error($"Error reading package.json: {ex.Message}");
             _console.WriteError("Invalid package.json file");
         }
+
         Console.ReadLine();
     }
 
@@ -495,6 +524,7 @@ public class NpmController
         {
             _console.WriteInfo("Cache reset cancelled.");
         }
+
         Console.ReadLine();
     }
 
@@ -669,7 +699,8 @@ public class NpmController
             if (npmPathSetting == null || string.IsNullOrWhiteSpace(npmPathSetting.ToString()) ||
                 !npmPathSetting.ToString()!.Equals(npmPath, StringComparison.OrdinalIgnoreCase))
             {
-                var configureFoundPath = _prompt.ConfirmYesNo("Would you like to configure EasyKit to use this npm path?");
+                var configureFoundPath =
+                    _prompt.ConfirmYesNo("Would you like to configure EasyKit to use this npm path?");
 
                 if (configureFoundPath)
                 {
@@ -750,7 +781,8 @@ public class NpmController
 
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
-                    var openEnvVars = _prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?");
+                    var openEnvVars =
+                        _prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?");
 
                     if (openEnvVars)
                         try

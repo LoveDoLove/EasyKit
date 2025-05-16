@@ -1,6 +1,4 @@
-﻿using EasyKit.Views;
-
-namespace EasyKit.Controllers;
+﻿namespace EasyKit.Controllers;
 
 internal class SettingsController
 {
@@ -315,6 +313,7 @@ internal class SettingsController
         {
             _console.WriteInfo("Reset to defaults canceled.");
         }
+
         Console.ReadLine();
     }
 }

@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using EasyKit.Views;
-using EasyKit.Controllers;
+﻿using System.Reflection;
 
 namespace EasyKit;
 
@@ -14,14 +12,26 @@ internal class Program
     private static readonly MenuView MenuView = new();
     private static readonly PromptView PromptView = new();
     private static readonly NotificationView NotificationView = new();
-    private static readonly NpmController NpmController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
-    private static readonly LaravelController LaravelController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
-    private static readonly ComposerController ComposerController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
-    private static readonly GitController GitController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly NpmController NpmController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly LaravelController LaravelController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly ComposerController ComposerController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly GitController GitController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
     private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView);
-    private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView);
+
+    private static readonly ShortcutManagerController ShortcutManagerController =
+        new(Config, Logger, ConsoleService, PromptView);
+
     private static readonly ToolMarketplaceController ToolMarketplaceController = new(
-        new Services.ProcessService(Logger, ConsoleService, Config),
+        new ProcessService(Logger, ConsoleService, Config),
         ConsoleService);
 
     // Helper to select the best executable for a tool on Windows
@@ -31,42 +41,49 @@ internal class Program
             return null;
 
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
             switch (tool.ToLower())
             {
                 case "npm":
                     // Prefer npm.cmd, then npm.exe, then npm
-                    var npmCmd = candidates.FirstOrDefault(p => p.EndsWith("npm.cmd", StringComparison.OrdinalIgnoreCase));
+                    var npmCmd =
+                        candidates.FirstOrDefault(p => p.EndsWith("npm.cmd", StringComparison.OrdinalIgnoreCase));
                     if (npmCmd != null) return npmCmd;
-                    var npmExe = candidates.FirstOrDefault(p => p.EndsWith("npm.exe", StringComparison.OrdinalIgnoreCase));
+                    var npmExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("npm.exe", StringComparison.OrdinalIgnoreCase));
                     if (npmExe != null) return npmExe;
                     break;
                 case "node":
                     // Prefer node.exe
-                    var nodeExe = candidates.FirstOrDefault(p => p.EndsWith("node.exe", StringComparison.OrdinalIgnoreCase));
+                    var nodeExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("node.exe", StringComparison.OrdinalIgnoreCase));
                     if (nodeExe != null) return nodeExe;
                     break;
                 case "php":
                     // Prefer php.exe
-                    var phpExe = candidates.FirstOrDefault(p => p.EndsWith("php.exe", StringComparison.OrdinalIgnoreCase));
+                    var phpExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("php.exe", StringComparison.OrdinalIgnoreCase));
                     if (phpExe != null) return phpExe;
                     break;
                 case "composer":
                     // Prefer composer.bat, then composer.phar, then composer.exe
-                    var composerBat = candidates.FirstOrDefault(p => p.EndsWith("composer.bat", StringComparison.OrdinalIgnoreCase));
+                    var composerBat = candidates.FirstOrDefault(p =>
+                        p.EndsWith("composer.bat", StringComparison.OrdinalIgnoreCase));
                     if (composerBat != null) return composerBat;
-                    var composerPhar = candidates.FirstOrDefault(p => p.EndsWith("composer.phar", StringComparison.OrdinalIgnoreCase));
+                    var composerPhar = candidates.FirstOrDefault(p =>
+                        p.EndsWith("composer.phar", StringComparison.OrdinalIgnoreCase));
                     if (composerPhar != null) return composerPhar;
-                    var composerExe = candidates.FirstOrDefault(p => p.EndsWith("composer.exe", StringComparison.OrdinalIgnoreCase));
+                    var composerExe = candidates.FirstOrDefault(p =>
+                        p.EndsWith("composer.exe", StringComparison.OrdinalIgnoreCase));
                     if (composerExe != null) return composerExe;
                     break;
                 case "git":
                     // Prefer git.exe
-                    var gitExe = candidates.FirstOrDefault(p => p.EndsWith("git.exe", StringComparison.OrdinalIgnoreCase));
+                    var gitExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("git.exe", StringComparison.OrdinalIgnoreCase));
                     if (gitExe != null) return gitExe;
                     break;
             }
-        }
+
         // Fallback: return the first candidate
         return candidates[0];
     }
@@ -85,24 +102,21 @@ internal class Program
                 candidates.Add(pathExecutable);
             // 2. All known search paths
             var searchPaths = typeof(ProcessService)
-                .GetMethod("GetSearchPathsForExecutable", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .GetMethod("GetSearchPathsForExecutable", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.Invoke(processService, new object[] { tool }) as string[];
             if (searchPaths != null)
-            {
                 foreach (var path in searchPaths)
-                {
-                    if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path) && !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(path) && File.Exists(path) &&
+                        !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
                         candidates.Add(path);
-                }
-            }
+
             // Select the best candidate
             var best = SelectBestExecutable(tool, candidates);
             if (!string.IsNullOrEmpty(best))
             {
                 if (candidates.Count > 1 && !string.Equals(best, candidates[0], StringComparison.OrdinalIgnoreCase))
-                {
-                    Logger.Warning($"Auto-detected {tool}: Found multiple candidates, selected '{best}' as the best match.");
-                }
+                    Logger.Warning(
+                        $"Auto-detected {tool}: Found multiple candidates, selected '{best}' as the best match.");
                 Config.Set($"{tool}_path", best);
                 Logger.Info($"Auto-detected {tool} path: {best} and saved to config.");
             }
@@ -241,9 +255,6 @@ internal class Program
                     break;
                 case ConsoleKey.D5:
                     SettingsController.ShowMenu();
-                    break;
-                default:
-                    // Ignore other keys
                     break;
             }
         }
