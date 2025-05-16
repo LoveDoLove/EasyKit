@@ -213,7 +213,7 @@ internal class Program
         while (true)
         {
             Console.Clear();
-            string version = "1.0"; // Or fetch dynamically if available
+            string version = Config.Get("version", "1.0")?.ToString() ?? "1.0";
             MenuView.ShowMainMenu(version);
             Console.WriteLine("[T] Tool Marketplace");
             Console.WriteLine("[Q] Quit");
