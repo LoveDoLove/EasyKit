@@ -306,9 +306,8 @@ public class NpmController
         _console.WriteInfo("Installing npm packages...");
         if (EnsureNpmInstalled())
         {
-            if (_processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true,
-                    Environment.CurrentDirectory))
-                _console.WriteInfo("✓ Packages installed successfully!");
+            if (_processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true, Environment.CurrentDirectory))
+                _console.WriteSuccess("✓ Packages installed successfully!");
             else
                 _console.WriteError("✗ Failed to install packages.");
         }
@@ -468,7 +467,6 @@ public class NpmController
             Console.ReadLine();
             return;
         }
-
         try
         {
             var json = File.ReadAllText("package.json");
@@ -479,7 +477,6 @@ public class NpmController
             _logger.Error($"Error reading package.json: {ex.Message}");
             _console.WriteError("Invalid package.json file");
         }
-
         Console.ReadLine();
     }
 

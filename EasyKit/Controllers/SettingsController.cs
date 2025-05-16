@@ -8,15 +8,13 @@ internal class SettingsController
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly PromptView _prompt;
-    private readonly NotificationView _notificationView;
 
-    public SettingsController(Config config, LoggerService logger, ConsoleService console, PromptView prompt, NotificationView notificationView)
+    public SettingsController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;
         _logger = logger;
         _console = console;
         _prompt = prompt;
-        _notificationView = notificationView;
     }
 
     public void ShowMenu()
@@ -311,15 +309,12 @@ internal class SettingsController
         if (confirm?.Trim().ToLower() == "y")
         {
             _config.ResetToDefaults();
-            NotificationView.Show("All settings have been reset to default values.",
-                NotificationView.NotificationType.Success, 0, true);
-            _console.WriteSuccess("[Notice] All settings have been reset to default values.");
+            _console.WriteSuccess("All settings have been reset to default values.");
         }
         else
         {
             _console.WriteInfo("Reset to defaults canceled.");
         }
-
         Console.ReadLine();
     }
 }

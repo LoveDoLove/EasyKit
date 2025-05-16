@@ -82,11 +82,11 @@ namespace EasyKit.Controllers
             try
             {
                 Process.Start(new ProcessStartInfo { FileName = tool.DownloadUrl, UseShellExecute = true });
-                NotificationView.Show($"Opened download page for {tool.Name}.", NotificationView.NotificationType.Success);
+                _console.WriteInfo($"[INFO] Opened download page for {tool.Name}.");
             }
             catch (Exception ex)
             {
-                NotificationView.Show($"Failed to open browser: {ex.Message}", NotificationView.NotificationType.Error);
+                _console.WriteError($"[ERROR] Failed to open browser: {ex.Message}");
             }
         }
 

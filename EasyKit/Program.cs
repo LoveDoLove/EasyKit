@@ -18,8 +18,8 @@ internal class Program
     private static readonly LaravelController LaravelController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
     private static readonly ComposerController ComposerController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
     private static readonly GitController GitController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
-    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
-    private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
+    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView);
+    private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView);
     private static readonly ToolMarketplaceController ToolMarketplaceController = new(
         new Services.ProcessService(Logger, ConsoleService, Config),
         ConsoleService);

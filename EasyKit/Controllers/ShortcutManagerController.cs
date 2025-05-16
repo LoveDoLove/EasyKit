@@ -12,34 +12,28 @@ internal class ShortcutManagerController
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly PromptView _prompt;
-    private readonly NotificationView _notificationView;
 
-    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt, NotificationView notificationView)
+    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;
         _logger = logger;
         _console = console;
         _prompt = prompt;
-        _notificationView = notificationView;
     }
 
-    public void ShowMenu()
+    private void ShowMenu()
     {
         int menuWidth = 50;
         string colorSchemeStr = "dark";
-
-        var menuWidthObj = _config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 50);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _config.Get("color_scheme", "dark");
+        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
         if (colorSchemeObj != null)
             colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-
         var colorScheme = MenuTheme.ColorScheme.Dark;
         if (colorSchemeStr.ToLower() == "light")
             colorScheme = MenuTheme.ColorScheme.Light;
-
         var menuView = new MenuView();
         menuView.CreateMenu("Shortcut Manager", width: menuWidth)
             .AddOption("1", "View Shortcuts", () => _console.WriteInfo("View Shortcuts - Not Implemented"))
