@@ -20,10 +20,27 @@ internal class Program
     private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
     private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
 
+    private static void AutoDetectAndSaveToolPaths()
+    {
+        var processService = new ProcessService(Logger, ConsoleService, Config);
+        var tools = new[] { "npm", "node", "php", "composer", "git" };
+        foreach (var tool in tools)
+        {
+            var detectedPath = processService.FindExecutablePath(tool);
+            if (!string.IsNullOrEmpty(detectedPath))
+            {
+                Config.Set($"{tool}_path", detectedPath);
+                Logger.Info($"Auto-detected {tool} path: {detectedPath} and saved to config.");
+            }
+        }
+    }
+
     private static void Main(string[] args)
     {
         try
         {
+            AutoDetectAndSaveToolPaths();
+
             // If launched from context menu, always use absolute path argument
             string? originalArg = args.Length > 0 ? args[0] : null;
 
