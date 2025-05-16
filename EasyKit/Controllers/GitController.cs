@@ -2,19 +2,35 @@ namespace EasyKit.Controllers;
 
 public class GitController
 {
-    private readonly ConfirmationService _confirmation = new();
+    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
+    private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
-    private readonly PromptView _prompt = new();
+    private readonly PromptView _prompt;
     private readonly Software _software;
 
-    public GitController(Software software, LoggerService logger, ConsoleService console)
+    public GitController(
+        Software software,
+        LoggerService logger,
+        ConsoleService console,
+        ConfirmationService confirmation,
+        PromptView prompt,
+        NotificationView notificationView)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _confirmation = confirmation;
+        _prompt = prompt;
+        _notificationView = notificationView;
         _processService = new ProcessService(logger, console, console.Config);
+    }
+
+    // Helper to get the detected git path
+    private string GetGitPath()
+    {
+        return _processService.FindExecutablePath("git") ?? "git";
     }
 
     /// <summary>
@@ -24,6 +40,73 @@ public class GitController
     {
         _console.WriteInfo("Press Enter to continue...");
         Console.ReadLine();
+    }
+
+    public void RunDiagnostics()
+    {
+        _console.WriteInfo("===== GIT Configuration Diagnostics =====");
+        _console.WriteInfo(
+            "This will check your Git installation and repository status, and provide troubleshooting information.\n");
+
+        // Step 1: Check if git is accessible in PATH
+        _console.WriteInfo("Step 1: Checking if git is accessible in PATH");
+        var (gitVersionOutput, gitVersionError, gitVersionExit) =
+            _processService.RunProcessWithOutput(GetGitPath(), "--version", Environment.CurrentDirectory);
+        if (gitVersionExit == 0 && !string.IsNullOrWhiteSpace(gitVersionOutput))
+        {
+            _console.WriteSuccess($"\u2713 Git is accessible. Version: {gitVersionOutput.Trim()}");
+        }
+        else
+        {
+            _console.WriteError("\u2717 Git is not accessible via PATH or detected path.");
+            _console.WriteInfo("Please install Git from https://git-scm.com/downloads and ensure it is in your PATH.");
+            _console.WriteInfo("You can also use the Tool Marketplace in EasyKit to open the download page.");
+            _console.WriteInfo("\n===== End of GIT Configuration Diagnostics =====");
+            WaitForUser();
+            return;
+        }
+
+        // Step 2: Show detected git path
+        var gitPath = GetGitPath();
+        _console.WriteInfo($"Detected git path: {gitPath}");
+
+        // Step 3: Check if current directory is a git repository
+        _console.WriteInfo("\nStep 3: Checking if current directory is a git repository");
+        if (File.Exists(".git/config"))
+        {
+            _console.WriteSuccess("\u2713 This is a git repository.");
+        }
+        else
+        {
+            _console.WriteError("\u2717 This is not a git repository.");
+            _console.WriteInfo("You can initialize a repository with 'Init repository' in the menu or run 'git init'.");
+            _console.WriteInfo("\n===== End of GIT Configuration Diagnostics =====");
+            WaitForUser();
+            return;
+        }
+
+        // Step 4: Run git status
+        _console.WriteInfo("\nStep 4: Checking repository status (git status)");
+        var (statusOutput, statusError, statusExit) = RunGitCommandWithOutput("status");
+        if (!string.IsNullOrWhiteSpace(statusError))
+            _console.WriteError(statusError.Trim());
+        else if (!string.IsNullOrWhiteSpace(statusOutput))
+            _console.WriteInfo(statusOutput.Trim());
+        else
+            _console.WriteInfo("No status output received from git.");
+
+        // Step 5: Recommendations
+        _console.WriteInfo("\nStep 5: Recommendations");
+        _console.WriteInfo("If you encounter issues:");
+        _console.WriteInfo("- Ensure Git is installed and in your PATH.");
+        _console.WriteInfo("- Restart your terminal or EasyKit after installation.");
+        _console.WriteInfo(
+            "- For more help, visit https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup");
+        _console.WriteInfo(
+            "- Use the Tool Marketplace in EasyKit to check installation status or open the download page.");
+
+        _console.WriteInfo("\n===== End of GIT Configuration Diagnostics =====");
+        WaitForUser();
     }
 
     public void ShowMenu()
@@ -63,6 +146,7 @@ public class GitController
             .AddOption("12", "Apply stash", () => ApplyStash())
             .AddOption("13", "Create pull request (info)", () => CreatePullRequest())
             .AddOption("14", "List pull requests (info)", () => ListPullRequests())
+            .AddOption("15", "Run git diagnostics", () => RunDiagnostics())
             .AddOption("0", "Back to main menu", () =>
             {
                 /* Return to main menu */
@@ -83,15 +167,14 @@ public class GitController
             return false;
         }
 
-        return _processService.RunProcess("git", args, showOutput, Environment.CurrentDirectory);
+        return _processService.RunProcess(GetGitPath(), args, showOutput, Environment.CurrentDirectory);
     } // New helper to get output and error from git command
 
     private (string output, string error, int exitCode) RunGitCommandWithOutput(string args)
     {
         if (!File.Exists(".git/config") && args != "init")
             return ("", "This doesn't appear to be a git repository. Run 'git init' first.", 1);
-
-        return _processService.RunProcessWithOutput("git", args, Environment.CurrentDirectory);
+        return _processService.RunProcessWithOutput(GetGitPath(), args, Environment.CurrentDirectory);
     }
 
     private void InitRepo()

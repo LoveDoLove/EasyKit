@@ -5,17 +5,47 @@ namespace EasyKit.Controllers;
 
 public class NpmController
 {
+    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
+    private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
+    private readonly PromptView _prompt;
     private readonly Software _software;
 
-    public NpmController(Software software, LoggerService logger, ConsoleService console)
+    public NpmController(
+        Software software,
+        LoggerService logger,
+        ConsoleService console,
+        ConfirmationService confirmation,
+        PromptView prompt,
+        NotificationView notificationView)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _confirmation = confirmation;
+        _prompt = prompt;
+        _notificationView = notificationView;
         _processService = new ProcessService(logger, console, console.Config);
+    }
+
+    // Helper to get the detected npm path
+    private string GetNpmPath()
+    {
+        return _processService.FindExecutablePath("npm") ?? "npm";
+    }
+
+    // Helper to get the detected node path
+    private string GetNodePath()
+    {
+        return _processService.FindExecutablePath("node") ?? "node";
+    }
+
+    // Helper to get the detected ncu path
+    private string GetNcuPath()
+    {
+        return _processService.FindExecutablePath("ncu") ?? "ncu";
     }
 
     public void ShowMenu()
@@ -83,7 +113,7 @@ public class NpmController
 
     private bool IsNpmInstalled()
     {
-        return _processService.RunProcess("npm", "--version", false, Environment.CurrentDirectory);
+        return _processService.RunProcess(GetNpmPath(), "--version", false, Environment.CurrentDirectory);
     }
 
     private void OpenNodejsWebsite()
@@ -128,8 +158,7 @@ public class NpmController
                 _console.WriteInfo("4. Restart any open command prompts or this application");
 
                 // Ask if user wants to open System Properties directly
-                var promptView = new PromptView();
-                if (promptView.ConfirmYesNo("Would you like to open Environment Variables settings now?"))
+                if (_prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?"))
                     try
                     {
                         Process.Start(new ProcessStartInfo
@@ -160,8 +189,7 @@ public class NpmController
             _console.WriteInfo("Please install Node.js from https://nodejs.org/");
 
             // Ask if the user wants to download Node.js now
-            var promptView = new PromptView();
-            if (promptView.ConfirmYesNo("Would you like to open the Node.js download page now?"))
+            if (_prompt.ConfirmYesNo("Would you like to open the Node.js download page now?"))
             {
                 OpenNodejsWebsite();
                 return; // The OpenNodejsWebsite method already has Console.ReadLine()
@@ -173,7 +201,7 @@ public class NpmController
 
     private bool EnsureNpmInstalled()
     {
-        var result = _processService.RunProcess("npm", "--version", false, Environment.CurrentDirectory);
+        var result = _processService.RunProcess(GetNpmPath(), "--version", false, Environment.CurrentDirectory);
         if (!result)
         {
             _console.WriteError("Node.js/NPM is not installed or not found in PATH.");
@@ -288,9 +316,9 @@ public class NpmController
         _console.WriteInfo("Installing npm packages...");
         if (EnsureNpmInstalled())
         {
-            if (_processService.RunProcess("npm", "install --no-fund --loglevel=error", true,
+            if (_processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true,
                     Environment.CurrentDirectory))
-                _console.WriteInfo("✓ Packages installed successfully!");
+                _console.WriteSuccess("✓ Packages installed successfully!");
             else
                 _console.WriteError("✗ Failed to install packages.");
         }
@@ -308,10 +336,11 @@ public class NpmController
         }
 
         // Check if ncu is installed
-        if (!_processService.RunProcess("ncu", "--version", false))
+        if (!_processService.RunProcess(GetNcuPath(), "--version", false))
         {
             _console.WriteInfo("Installing npm-check-updates globally...");
-            if (!_processService.RunProcess("npm", "install -g npm-check-updates", true, Environment.CurrentDirectory))
+            if (!_processService.RunProcess(GetNpmPath(), "install -g npm-check-updates", true,
+                    Environment.CurrentDirectory))
             {
                 _console.WriteError("Failed to install npm-check-updates");
                 Console.ReadLine();
@@ -319,10 +348,11 @@ public class NpmController
             }
         }
 
-        if (_processService.RunProcess("ncu", "-u", true, Environment.CurrentDirectory))
+        if (_processService.RunProcess(GetNcuPath(), "-u", true, Environment.CurrentDirectory))
         {
             _console.WriteInfo("✓ package.json updated!");
-            _processService.RunProcess("npm", "install --no-fund --loglevel=error", true, Environment.CurrentDirectory);
+            _processService.RunProcess(GetNpmPath(), "install --no-fund --loglevel=error", true,
+                Environment.CurrentDirectory);
         }
         else
         {
@@ -337,7 +367,7 @@ public class NpmController
         _console.WriteInfo("Building for production (npm run build)...");
         if (EnsureNpmInstalled())
         {
-            if (_processService.RunProcess("npm", "run build", true, Environment.CurrentDirectory))
+            if (_processService.RunProcess(GetNpmPath(), "run build", true, Environment.CurrentDirectory))
                 _console.WriteInfo("✓ Production build completed!");
             else
                 _console.WriteError("✗ Build failed.");
@@ -357,12 +387,18 @@ public class NpmController
 
         try
         {
-            // Open a new cmd window and run npm run dev
+            // Open a new cmd window and run npm run dev using the detected npm path
+            var npmPath = GetNpmPath();
+            var npmDir = Path.GetDirectoryName(npmPath);
+            var npmCmd = npmPath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase) ? npmPath : npmPath + ".cmd";
+            if (!File.Exists(npmCmd)) npmCmd = npmPath; // fallback if .cmd doesn't exist
+            var quotedNpm = npmCmd.Contains(" ") ? $"\"{npmCmd}\"" : npmCmd;
             Process.Start(new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = "/c start cmd /k \"npm run dev\"",
-                UseShellExecute = true
+                Arguments = $"/c start cmd /k \"{quotedNpm} run dev\"",
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory
             });
             _console.WriteInfo("✓ Development server started in a new terminal window.");
         }
@@ -379,7 +415,7 @@ public class NpmController
     {
         _console.WriteInfo("Running npm security audit...");
         if (EnsureNpmInstalled())
-            _processService.RunProcess("npm", "audit", true, Environment.CurrentDirectory);
+            _processService.RunProcess(GetNpmPath(), "audit", true, Environment.CurrentDirectory);
         Console.ReadLine();
     }
 
@@ -420,10 +456,7 @@ public class NpmController
             _console.WriteInfo("Available scripts:");
             foreach (var script in scripts)
                 _console.WriteInfo($"- {script}");
-
-            var promptView = new PromptView();
-            var scriptName = promptView.PromptWithAutocomplete("Enter script name to run: ", scripts);
-
+            var scriptName = _prompt.PromptWithAutocomplete("Enter script name to run: ", scripts);
             if (string.IsNullOrWhiteSpace(scriptName))
             {
                 _console.WriteInfo("Operation cancelled.");
@@ -439,7 +472,7 @@ public class NpmController
             }
 
             _console.WriteInfo($"Running npm run {scriptName}...");
-            if (_processService.RunProcess("npm", $"run {scriptName}", true, Environment.CurrentDirectory))
+            if (_processService.RunProcess(GetNpmPath(), $"run {scriptName}", true, Environment.CurrentDirectory))
                 _console.WriteInfo($"✓ Script {scriptName} completed!");
             else
                 _console.WriteError($"✗ Script {scriptName} failed.");
@@ -482,7 +515,7 @@ public class NpmController
         if (promptView.ConfirmYesNo("Are you sure you want to reset the npm cache?", false))
         {
             if (EnsureNpmInstalled() &&
-                _processService.RunProcess("npm", "cache clean --force", true, Environment.CurrentDirectory))
+                _processService.RunProcess(GetNpmPath(), "cache clean --force", true, Environment.CurrentDirectory))
                 _console.WriteInfo("✓ Cache reset successfully!");
             else
                 _console.WriteError("✗ Failed to reset cache.");
@@ -506,8 +539,7 @@ public class NpmController
         if (!string.IsNullOrEmpty(npmPath))
         {
             _console.WriteInfo($"Found npm at: {npmPath}");
-            var promptView = new PromptView();
-            bool useDetected = promptView.ConfirmYesNo("Use this detected npm location?");
+            var useDetected = _prompt.ConfirmYesNo("Use this detected npm location?");
 
             if (useDetected)
             {
@@ -529,8 +561,7 @@ public class NpmController
         else
             _console.WriteInfo("Example: /usr/local/bin/npm");
 
-        var promptView2 = new PromptView();
-        string? customPath = promptView2.Prompt("Enter npm path (or leave empty to cancel): ");
+        string? customPath = _prompt.Prompt("Enter npm path (or leave empty to cancel): ");
 
         if (string.IsNullOrWhiteSpace(customPath))
         {
@@ -588,11 +619,9 @@ public class NpmController
         _console.WriteInfo("===== NPM Configuration Diagnostics =====");
         _console.WriteInfo(
             "This will check your Node.js and npm installation and provide troubleshooting information.\n");
-
         // Step 1: Check if npm is in PATH
         _console.WriteInfo("Step 1: Checking if npm is accessible in PATH");
-        bool npmInPath = _processService.RunProcess("npm", "--version", true, Environment.CurrentDirectory);
-
+        bool npmInPath = _processService.RunProcess(GetNpmPath(), "--version", true, Environment.CurrentDirectory);
         if (npmInPath)
             _console.WriteSuccess("✓ npm is correctly configured in your PATH environment variable.");
         else
@@ -600,8 +629,7 @@ public class NpmController
 
         // Step 2: Check if Node.js is installed
         _console.WriteInfo("\nStep 2: Checking Node.js installation");
-        bool nodeInPath = _processService.RunProcess("node", "--version", true, Environment.CurrentDirectory);
-
+        bool nodeInPath = _processService.RunProcess(GetNodePath(), "--version", true, Environment.CurrentDirectory);
         if (nodeInPath)
             _console.WriteSuccess("✓ Node.js is correctly configured in your PATH environment variable.");
         else
@@ -671,9 +699,8 @@ public class NpmController
             if (npmPathSetting == null || string.IsNullOrWhiteSpace(npmPathSetting.ToString()) ||
                 !npmPathSetting.ToString()!.Equals(npmPath, StringComparison.OrdinalIgnoreCase))
             {
-                var promptView = new PromptView();
-                bool configureFoundPath =
-                    promptView.ConfirmYesNo("Would you like to configure EasyKit to use this npm path?");
+                var configureFoundPath =
+                    _prompt.ConfirmYesNo("Would you like to configure EasyKit to use this npm path?");
 
                 if (configureFoundPath)
                 {
@@ -754,9 +781,8 @@ public class NpmController
 
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
-                    var promptView = new PromptView();
-                    bool openEnvVars =
-                        promptView.ConfirmYesNo("Would you like to open Environment Variables settings now?");
+                    var openEnvVars =
+                        _prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?");
 
                     if (openEnvVars)
                         try
@@ -785,8 +811,7 @@ public class NpmController
                 _console.WriteInfo(
                     "3. Alternatively, download and install Node.js, then use 'Configure npm path' to set the path manually.");
 
-                var promptView = new PromptView();
-                bool openDownload = promptView.ConfirmYesNo("Would you like to open the Node.js download page now?");
+                var openDownload = _prompt.ConfirmYesNo("Would you like to open the Node.js download page now?");
 
                 if (openDownload)
                 {

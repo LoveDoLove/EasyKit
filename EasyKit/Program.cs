@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using System.Reflection;
 
 namespace EasyKit;
 
@@ -10,19 +10,127 @@ internal class Program
     private static readonly ConsoleService ConsoleService = new(Config);
     private static readonly ConfirmationService ConfirmationService = new(ConsoleService, Config);
     private static readonly MenuView MenuView = new();
-    private static readonly NpmController NpmController = new(Software, Logger, ConsoleService);
-    private static readonly LaravelController LaravelController = new(Software, Logger, ConsoleService);
-    private static readonly ComposerController ComposerController = new(Software, Logger, ConsoleService);
-    private static readonly GitController GitController = new(Software, Logger, ConsoleService);
-    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService);
-    private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService);
+    private static readonly PromptView PromptView = new();
+    private static readonly NotificationView NotificationView = new();
+
+    private static readonly NpmController NpmController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly LaravelController LaravelController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly ComposerController ComposerController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly GitController GitController =
+        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
+    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView);
+
+    private static readonly ShortcutManagerController ShortcutManagerController =
+        new(Config, Logger, ConsoleService, PromptView);
+
+    private static readonly ToolMarketplaceController ToolMarketplaceController = new(
+        new ProcessService(Logger, ConsoleService, Config),
+        ConsoleService);
+
+    // Helper to select the best executable for a tool on Windows
+    private static string? SelectBestExecutable(string tool, List<string> candidates)
+    {
+        if (candidates == null || candidates.Count == 0)
+            return null;
+
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            switch (tool.ToLower())
+            {
+                case "npm":
+                    // Prefer npm.cmd, then npm.exe, then npm
+                    var npmCmd =
+                        candidates.FirstOrDefault(p => p.EndsWith("npm.cmd", StringComparison.OrdinalIgnoreCase));
+                    if (npmCmd != null) return npmCmd;
+                    var npmExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("npm.exe", StringComparison.OrdinalIgnoreCase));
+                    if (npmExe != null) return npmExe;
+                    break;
+                case "node":
+                    // Prefer node.exe
+                    var nodeExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("node.exe", StringComparison.OrdinalIgnoreCase));
+                    if (nodeExe != null) return nodeExe;
+                    break;
+                case "php":
+                    // Prefer php.exe
+                    var phpExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("php.exe", StringComparison.OrdinalIgnoreCase));
+                    if (phpExe != null) return phpExe;
+                    break;
+                case "composer":
+                    // Prefer composer.bat, then composer.phar, then composer.exe
+                    var composerBat = candidates.FirstOrDefault(p =>
+                        p.EndsWith("composer.bat", StringComparison.OrdinalIgnoreCase));
+                    if (composerBat != null) return composerBat;
+                    var composerPhar = candidates.FirstOrDefault(p =>
+                        p.EndsWith("composer.phar", StringComparison.OrdinalIgnoreCase));
+                    if (composerPhar != null) return composerPhar;
+                    var composerExe = candidates.FirstOrDefault(p =>
+                        p.EndsWith("composer.exe", StringComparison.OrdinalIgnoreCase));
+                    if (composerExe != null) return composerExe;
+                    break;
+                case "git":
+                    // Prefer git.exe
+                    var gitExe =
+                        candidates.FirstOrDefault(p => p.EndsWith("git.exe", StringComparison.OrdinalIgnoreCase));
+                    if (gitExe != null) return gitExe;
+                    break;
+            }
+
+        // Fallback: return the first candidate
+        return candidates[0];
+    }
+
+    private static void AutoDetectAndSaveToolPaths()
+    {
+        var processService = new ProcessService(Logger, ConsoleService, Config);
+        var tools = new[] { "npm", "node", "php", "composer", "git" };
+        foreach (var tool in tools)
+        {
+            // Gather all possible candidates
+            var candidates = new List<string>();
+            // 1. PATH search
+            var pathExecutable = processService.FindExecutablePath(tool);
+            if (!string.IsNullOrEmpty(pathExecutable))
+                candidates.Add(pathExecutable);
+            // 2. All known search paths
+            var searchPaths = typeof(ProcessService)
+                .GetMethod("GetSearchPathsForExecutable", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.Invoke(processService, new object[] { tool }) as string[];
+            if (searchPaths != null)
+                foreach (var path in searchPaths)
+                    if (!string.IsNullOrEmpty(path) && File.Exists(path) &&
+                        !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
+                        candidates.Add(path);
+
+            // Select the best candidate
+            var best = SelectBestExecutable(tool, candidates);
+            if (!string.IsNullOrEmpty(best))
+            {
+                if (candidates.Count > 1 && !string.Equals(best, candidates[0], StringComparison.OrdinalIgnoreCase))
+                    Logger.Warning(
+                        $"Auto-detected {tool}: Found multiple candidates, selected '{best}' as the best match.");
+                Config.Set($"{tool}_path", best);
+                Logger.Info($"Auto-detected {tool} path: {best} and saved to config.");
+            }
+        }
+    }
 
     private static void Main(string[] args)
     {
         try
         {
+            AutoDetectAndSaveToolPaths();
+
             // If launched from context menu, always use absolute path argument
-            string originalArg = args.Length > 0 ? args[0] : null;
+            string? originalArg = args.Length > 0 ? args[0] : null;
 
             // Check if the application is running as administrator
             if (!AdminService.IsRunningAsAdmin())
@@ -118,51 +226,37 @@ internal class Program
     {
         while (true)
         {
-            int menuWidth = 50;
-            var menuWidthObj = Config.Get("menu_width", 50);
-            if (menuWidthObj is int mw)
-                menuWidth = mw;
-            else if (menuWidthObj is JsonElement je && je.ValueKind == JsonValueKind.Number &&
-                     je.TryGetInt32(out int jeInt)) menuWidth = jeInt;
-
-            var versionObj = Config.Get("version", "4.0.1");
-            string version = versionObj?.ToString() ?? "4.0.1";
-
-            string colorSchemeStr = "dark";
-            var colorSchemeObj = Config.Get("color_scheme", "dark");
-            if (colorSchemeObj != null)
-                colorSchemeStr =
-                    colorSchemeObj.ToString() ?? "dark"; // Apply the appropriate color scheme based on user settings
-            var colorScheme = MenuTheme.ColorScheme.Dark;
-            if (colorSchemeStr.ToLower() == "light")
-                colorScheme = MenuTheme.ColorScheme.Light;
-
-            // Create and configure the main menu using the MenuBuilder
-            MenuView.CreateMenu("EasyKit Main Menu", version, menuWidth)
-                .AddOption("1", "NPM Tools", () => NpmController.ShowMenu())
-                .AddOption("2", "Laravel Tools", () => LaravelController.ShowMenu())
-                .AddOption("3", "Composer Tools", () => ComposerController.ShowMenu())
-                .AddOption("4", "Git Tools", () => GitController.ShowMenu())
-                .AddOption("5", "Settings", () => SettingsController.ShowMenu())
-                .AddOption("6", "Shortcut Manager", () => ShortcutManagerController.ShowMenu())
-                .AddOption("0", "Exit", () =>
-                {
-                    if (ExitProgram()) Environment.Exit(0);
-                })
-                // Add keyboard shortcuts for common operations
-                .AddShortcut(ConsoleKey.N, "Quick access to NPM Tools", () => NpmController.ShowMenu())
-                .AddShortcut(ConsoleKey.L, "Quick access to Laravel Tools", () => LaravelController.ShowMenu())
-                .AddShortcut(ConsoleKey.C, "Quick access to Composer Tools", () => ComposerController.ShowMenu())
-                .AddShortcut(ConsoleKey.G, "Quick access to Git Tools", () => GitController.ShowMenu())
-                .AddShortcut(ConsoleKey.S, "Quick access to Settings", () => SettingsController.ShowMenu())
-                .AddShortcut(ConsoleKey.M, "Quick access to Shortcut Manager",
-                    () => ShortcutManagerController.ShowMenu())
-                .WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
-                    colorScheme.help)
-                .WithHelpText("Use number keys to select an option or arrow keys to navigate. Press F1 for help.")
-                .WithSubtitle("A toolkit for web developers")
-                .WithCenterVertically(true)
-                .Show();
+            Console.Clear();
+            string version = Config.Get("version", "1.0")?.ToString() ?? "1.0";
+            MenuView.ShowMainMenu(version);
+            Console.WriteLine("[T] Tool Marketplace");
+            Console.WriteLine("[Q] Quit");
+            var key = Console.ReadKey(true).Key;
+            switch (key)
+            {
+                case ConsoleKey.T:
+                    ToolMarketplaceController.ShowMarketplace();
+                    break;
+                case ConsoleKey.Q:
+                case ConsoleKey.D0:
+                    if (ExitProgram()) return;
+                    break;
+                case ConsoleKey.D1:
+                    NpmController.ShowMenu();
+                    break;
+                case ConsoleKey.D2:
+                    LaravelController.ShowMenu();
+                    break;
+                case ConsoleKey.D3:
+                    ComposerController.ShowMenu();
+                    break;
+                case ConsoleKey.D4:
+                    GitController.ShowMenu();
+                    break;
+                case ConsoleKey.D5:
+                    SettingsController.ShowMenu();
+                    break;
+            }
         }
     }
 

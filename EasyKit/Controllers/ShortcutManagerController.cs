@@ -10,32 +10,29 @@ internal class ShortcutManagerController
     private readonly Config _config;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
-    private readonly PromptView _prompt = new();
+    private readonly PromptView _prompt;
 
-    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console)
+    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;
         _logger = logger;
         _console = console;
+        _prompt = prompt;
     }
 
-    public void ShowMenu()
+    private void ShowMenu()
     {
         int menuWidth = 50;
         string colorSchemeStr = "dark";
-
-        var menuWidthObj = _config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 50);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _config.Get("color_scheme", "dark");
+        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
         if (colorSchemeObj != null)
             colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-
         var colorScheme = MenuTheme.ColorScheme.Dark;
         if (colorSchemeStr.ToLower() == "light")
             colorScheme = MenuTheme.ColorScheme.Light;
-
         var menuView = new MenuView();
         menuView.CreateMenu("Shortcut Manager", width: menuWidth)
             .AddOption("1", "View Shortcuts", () => _console.WriteInfo("View Shortcuts - Not Implemented"))
@@ -50,7 +47,6 @@ internal class ShortcutManagerController
 
     private void ManageContextMenu()
     {
-        // Only show context menu management options on Windows
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _console.WriteInfo("\nContext menu management is only available on Windows.");
@@ -68,23 +64,31 @@ internal class ShortcutManagerController
 
             var choice = _prompt.Prompt("Select an option: ");
             if (choice == "1")
-                ToggleOpenWithEasyKit();
-            else if (choice == "0") break;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    ToggleOpenWithEasyKitWindows();
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    ToggleOpenWithEasyKitLinux();
+                else if (choice == "0") break;
         }
     }
 
-    private void ToggleOpenWithEasyKit()
+    [SupportedOSPlatform("windows")]
+    private void ToggleOpenWithEasyKitWindows()
     {
         bool openWithEasyKit = _config.Get("open_with_easykit", false) is bool b && b;
         if (!openWithEasyKit)
         {
             RegisterOpenWithEasyKit();
             _console.WriteInfo("'Open with EasyKit' option added.");
+            _config.Settings["open_with_easykit"] = true;
+            _config.SaveConfig();
         }
         else
         {
             UnregisterOpenWithEasyKit();
             _console.WriteInfo("'Open with EasyKit' option removed.");
+            _config.Settings["open_with_easykit"] = false;
+            _config.SaveConfig();
         }
 
         _config.Settings["open_with_easykit"] = !openWithEasyKit;
@@ -100,43 +104,28 @@ internal class ShortcutManagerController
             var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
             var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
             string[] registryPaths = scope == "system"
-                ? new[]
-                {
+                ?
+                [
                     @"*\shell\EasyKit",
                     @"Directory\shell\EasyKit",
                     @"Directory\Background\shell\EasyKit"
-                }
-                : new[]
-                {
+                ]
+                :
+                [
                     @"Software\Classes\*\shell\EasyKit",
                     @"Software\Classes\Directory\shell\EasyKit",
                     @"Software\Classes\Directory\Background\shell\EasyKit"
-                };
+                ];
 
             foreach (var registryPath in registryPaths)
                 try
                 {
-                    using (var key = root.CreateSubKey(registryPath))
-                    {
-                        if (key == null)
-                        {
-                            _console.WriteInfo(
-                                $"Failed to create registry key: {registryPath} in {(scope == "system" ? "HKCR" : "HKCU")}");
-                            continue;
-                        }
-
-                        key.SetValue("", "EasyKit", RegistryValueKind.String);
-                        using (var commandKey = key.CreateSubKey("command"))
-                        {
-                            if (commandKey != null)
-                            {
-                                string arg = GetContextMenuArgument(registryPath);
-                                string command = $"\"{exePath}\" \"{arg}\"";
-                                commandKey.SetValue("", command, RegistryValueKind.String);
-                                // Don't add IsolatedCommand as it can cause issues with elevation
-                            }
-                        }
-                    }
+                    using var key = root.CreateSubKey(registryPath);
+                    key.SetValue("", "EasyKit", RegistryValueKind.String);
+                    using var commandKey = key.CreateSubKey("command");
+                    string arg = GetContextMenuArgument(registryPath);
+                    string command = $"\"{exePath}\" \"{arg}\"";
+                    commandKey.SetValue("", command, RegistryValueKind.String);
                 }
                 catch (Exception ex)
                 {
@@ -150,14 +139,9 @@ internal class ShortcutManagerController
         }
     }
 
-    /// <summary>
-    ///     Returns the correct argument for the context menu command based on the registry path.
-    /// </summary>
     private static string GetContextMenuArgument(string registryPath)
     {
-        if (registryPath.Contains("Directory\\Background"))
-            return "%V";
-        return "%1";
+        return registryPath.Contains("Directory\\Background") ? "%V" : "%1";
     }
 
     [SupportedOSPlatform("windows")]
@@ -168,18 +152,18 @@ internal class ShortcutManagerController
             var scope = _config.Get("context_menu_scope", "user")?.ToString() ?? "user";
             var root = scope == "system" ? Registry.ClassesRoot : Registry.CurrentUser;
             string[] delRegistryPaths = scope == "system"
-                ? new[]
-                {
+                ?
+                [
                     @"*\shell\EasyKit",
                     @"Directory\shell\EasyKit",
                     @"Directory\Background\shell\EasyKit"
-                }
-                : new[]
-                {
+                ]
+                :
+                [
                     @"Software\Classes\*\shell\EasyKit",
                     @"Software\Classes\Directory\shell\EasyKit",
                     @"Software\Classes\Directory\Background\shell\EasyKit"
-                };
+                ];
             foreach (var delRegistryPath in delRegistryPaths)
                 try
                 {
@@ -187,7 +171,7 @@ internal class ShortcutManagerController
                 }
                 catch
                 {
-                    /* Ignore if not present */
+                    // ignored
                 }
         }
         catch (Exception ex)
@@ -196,48 +180,140 @@ internal class ShortcutManagerController
         }
     }
 
-    // Add a shortcut to the directory background context menu
-    [SupportedOSPlatform("windows")]
-    private void AddBackgroundContextMenuShortcut(string shortcutName, string command)
+    [SupportedOSPlatform("linux")]
+    private void ToggleOpenWithEasyKitLinux()
     {
-        try
+        bool openWithEasyKit = _config.Get("open_with_easykit", false) is bool b && b;
+        if (!openWithEasyKit)
         {
-            string keyPath = $@"Software\Classes\Directory\Background\shell\{shortcutName}";
-            using (var key = Registry.CurrentUser.CreateSubKey(keyPath))
-            {
-                if (key != null)
-                {
-                    // Set the menu label
-                    key.SetValue(null, shortcutName, RegistryValueKind.String);
-                    // Optional: set an icon
-                    // key.SetValue("Icon", "C:\\Path\\To\\EasyKit.ico", RegistryValueKind.String);
-                    using (var commandKey = key.CreateSubKey("command"))
-                    {
-                        if (commandKey != null)
-                            // The command must be quoted and include "%V" for the directory path
-                            commandKey.SetValue(null, $"\"{command}\" \"%V\"", RegistryValueKind.String);
-                    }
-                }
-            }
+            RegisterOpenWithEasyKitLinux();
+            _console.WriteInfo("'Open with EasyKit' option added.");
+            _config.Settings["open_with_easykit"] = true;
+            _config.SaveConfig();
         }
-        catch (Exception ex)
+        else
         {
-            _console.WriteInfo("Failed to add background context menu shortcut: " + ex.Message);
+            UnregisterOpenWithEasyKitLinux();
+            _console.WriteInfo("'Open with EasyKit' option removed.");
+            _config.Settings["open_with_easykit"] = false;
+            _config.SaveConfig();
         }
     }
 
-    // Remove a shortcut from the directory background context menu
-    [SupportedOSPlatform("windows")]
-    private void RemoveBackgroundContextMenuShortcut(string shortcutName)
+    [SupportedOSPlatform("linux")]
+    private void RegisterOpenWithEasyKitLinux()
     {
         try
         {
-            string keyPath = $@"Software\Classes\Directory\Background\shell\{shortcutName}";
-            Registry.CurrentUser.DeleteSubKeyTree(keyPath, false);
+            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "EasyKit.exe";
+            string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string appDir = Path.Combine(homeDir, ".local", "share", "applications");
+            string fileActionPath = Path.Combine(appDir, "easykit-file.desktop");
+            string dirActionPath = Path.Combine(appDir, "easykit-directory.desktop");
+
+            // Create applications directory if it doesn't exist
+            if (!Directory.Exists(appDir)) Directory.CreateDirectory(appDir);
+
+            // Desktop file for regular files
+            string fileContent = $"""
+                                  [Desktop Entry]
+                                  Type=Application
+                                  Name=Open with EasyKit
+                                  Icon={exePath}
+                                  Exec={exePath} %f
+                                  NoDisplay=true
+                                  MimeType=*/*;
+                                  """;
+            File.WriteAllText(fileActionPath, fileContent);
+
+            // Desktop file for directories
+            string dirContent = $"""
+                                 [Desktop Entry]
+                                 Type=Application
+                                 Name=Open with EasyKit
+                                 Icon={exePath}
+                                 Exec={exePath} %f
+                                 NoDisplay=true
+                                 MimeType=inode/directory;
+                                 """;
+            File.WriteAllText(dirActionPath, dirContent);
+
+            // Update the database of desktop entries
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "update-desktop-database",
+                    Arguments = $"{appDir}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            try
+            {
+                process.Start();
+                process.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to update desktop database: {ex.Message}");
+            }
+
+            _logger.Info("Linux context menu entries created successfully");
         }
         catch (Exception ex)
         {
-            _console.WriteInfo("Failed to remove background context menu shortcut: " + ex.Message);
+            _console.WriteInfo($"Failed to add context menu entry: {ex.Message}");
+            _logger.Error($"Failed to add Linux context menu entry: {ex.Message}");
+        }
+    }
+
+    [SupportedOSPlatform("linux")]
+    private void UnregisterOpenWithEasyKitLinux()
+    {
+        try
+        {
+            string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            string appDir = Path.Combine(homeDir, ".local", "share", "applications");
+            string fileActionPath = Path.Combine(appDir, "easykit-file.desktop");
+            string dirActionPath = Path.Combine(appDir, "easykit-directory.desktop");
+
+            // Remove desktop entry files if they exist
+            if (File.Exists(fileActionPath)) File.Delete(fileActionPath);
+
+            if (File.Exists(dirActionPath)) File.Delete(dirActionPath);
+
+            // Update the database of desktop entries
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "update-desktop-database",
+                    Arguments = $"{appDir}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            try
+            {
+                process.Start();
+                process.WaitForExit();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Failed to update desktop database: {ex.Message}");
+            }
+
+            _logger.Info("Linux context menu entries removed successfully");
+        }
+        catch (Exception ex)
+        {
+            _console.WriteInfo($"Failed to remove context menu entry: {ex.Message}");
+            _logger.Error($"Failed to remove Linux context menu entry: {ex.Message}");
         }
     }
 }
