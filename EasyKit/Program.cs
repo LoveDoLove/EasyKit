@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using EasyKit.Views;
+using EasyKit.Controllers;
 
 namespace EasyKit;
 
@@ -19,6 +20,9 @@ internal class Program
     private static readonly GitController GitController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
     private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
     private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
+    private static readonly ToolMarketplaceController ToolMarketplaceController = new(
+        new Services.ProcessService(Logger, ConsoleService, Config),
+        ConsoleService);
 
     // Helper to select the best executable for a tool on Windows
     private static string? SelectBestExecutable(string tool, List<string> candidates)
@@ -208,51 +212,40 @@ internal class Program
     {
         while (true)
         {
-            int menuWidth = 50;
-            var menuWidthObj = Config.Get("menu_width", 50);
-            if (menuWidthObj is int mw)
-                menuWidth = mw;
-            else if (menuWidthObj is JsonElement je && je.ValueKind == JsonValueKind.Number &&
-                     je.TryGetInt32(out int jeInt)) menuWidth = jeInt;
-
-            var versionObj = Config.Get("version", "4.0.1");
-            string version = versionObj?.ToString() ?? "4.0.1";
-
-            string colorSchemeStr = "dark";
-            var colorSchemeObj = Config.Get("color_scheme", "dark");
-            if (colorSchemeObj != null)
-                colorSchemeStr =
-                    colorSchemeObj.ToString() ?? "dark"; // Apply the appropriate color scheme based on user settings
-            var colorScheme = MenuTheme.ColorScheme.Dark;
-            if (colorSchemeStr.ToLower() == "light")
-                colorScheme = MenuTheme.ColorScheme.Light;
-
-            // Create and configure the main menu using the MenuBuilder
-            MenuView.CreateMenu("EasyKit Main Menu", version, menuWidth)
-                .AddOption("1", "NPM Tools", () => NpmController.ShowMenu())
-                .AddOption("2", "Laravel Tools", () => LaravelController.ShowMenu())
-                .AddOption("3", "Composer Tools", () => ComposerController.ShowMenu())
-                .AddOption("4", "Git Tools", () => GitController.ShowMenu())
-                .AddOption("5", "Settings", () => SettingsController.ShowMenu())
-                .AddOption("6", "Shortcut Manager", () => ShortcutManagerController.ShowMenu())
-                .AddOption("0", "Exit", () =>
-                {
-                    if (ExitProgram()) Environment.Exit(0);
-                })
-                // Add keyboard shortcuts for common operations
-                .AddShortcut(ConsoleKey.N, "Quick access to NPM Tools", () => NpmController.ShowMenu())
-                .AddShortcut(ConsoleKey.L, "Quick access to Laravel Tools", () => LaravelController.ShowMenu())
-                .AddShortcut(ConsoleKey.C, "Quick access to Composer Tools", () => ComposerController.ShowMenu())
-                .AddShortcut(ConsoleKey.G, "Quick access to Git Tools", () => GitController.ShowMenu())
-                .AddShortcut(ConsoleKey.S, "Quick access to Settings", () => SettingsController.ShowMenu())
-                .AddShortcut(ConsoleKey.M, "Quick access to Shortcut Manager",
-                    () => ShortcutManagerController.ShowMenu())
-                .WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
-                    colorScheme.help)
-                .WithHelpText("Use number keys to select an option or arrow keys to navigate. Press F1 for help.")
-                .WithSubtitle("A toolkit for web developers")
-                .WithCenterVertically(true)
-                .Show();
+            Console.Clear();
+            string version = "1.0"; // Or fetch dynamically if available
+            MenuView.ShowMainMenu(version);
+            Console.WriteLine("[T] Tool Marketplace");
+            Console.WriteLine("[Q] Quit");
+            var key = Console.ReadKey(true).Key;
+            switch (key)
+            {
+                case ConsoleKey.T:
+                    ToolMarketplaceController.ShowMarketplace();
+                    break;
+                case ConsoleKey.Q:
+                case ConsoleKey.D0:
+                    if (ExitProgram()) return;
+                    break;
+                case ConsoleKey.D1:
+                    NpmController.ShowMenu();
+                    break;
+                case ConsoleKey.D2:
+                    LaravelController.ShowMenu();
+                    break;
+                case ConsoleKey.D3:
+                    ComposerController.ShowMenu();
+                    break;
+                case ConsoleKey.D4:
+                    GitController.ShowMenu();
+                    break;
+                case ConsoleKey.D5:
+                    SettingsController.ShowMenu();
+                    break;
+                default:
+                    // Ignore other keys
+                    break;
+            }
         }
     }
 
