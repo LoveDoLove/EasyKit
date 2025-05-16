@@ -6,7 +6,7 @@ public class Config
 {
     private const string AppName = "EasyKit";
     private const string AppAuthor = "LoveDoLove";
-    private const string AppVersion = "4.0.1";
+    private const string AppVersion = "4.0.2";
     private readonly string _configFilePath;
 
     public Config()
@@ -54,6 +54,13 @@ public class Config
                 if (userConfig != null)
                     foreach (var kv in userConfig)
                         Settings[kv.Key] = kv.Value;
+                // --- Version auto-update logic ---
+                if (!Settings.TryGetValue("version", out var userVersion) || userVersion == null || userVersion.ToString() != AppVersion)
+                {
+                    Settings["version"] = AppVersion;
+                    SaveConfig();
+                }
+                // --- End version auto-update logic ---
             }
             catch (Exception ex)
             {
