@@ -439,86 +439,128 @@ public class ComposerController
 
     private void RunDiagnostics()
     {
-        NotificationView.Show("Running Composer diagnostics...\n", NotificationView.NotificationType.Info);
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("===== COMPOSER Configuration Diagnostics =====\n");
 
-        // Check PHP version and configuration
-        var (phpVersion, phpPath, phpCompatible) = _processService.GetPhpVersionInfo();
-        NotificationView.Show($"PHP Version: {phpVersion} (Compatible: {(phpCompatible ? "Yes" : "No")})", NotificationView.NotificationType.Info);
-        NotificationView.Show($"PHP Path: {phpPath}", NotificationView.NotificationType.Info);
-
-        // Check PHP memory limit
-        var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit(phpPath);
-        NotificationView.Show($"PHP Memory Limit: {currentLimit} (Recommended: {recommendedLimit}, Sufficient: {(hasEnoughMemory ? "Yes" : "No")})", NotificationView.NotificationType.Info);
-
-        // Check PHP extensions
-        var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
-        NotificationView.Show($"PHP Extensions Status: {(extensionsCompatible ? "All critical extensions present" : "Missing critical extensions")}", NotificationView.NotificationType.Info);
-        if (missingExtensions.Count > 0)
+        // Step 1: Check if Composer is accessible
+        sb.AppendLine("Step 1: Checking if Composer is accessible in PATH or via detected path");
+        var (composerVersion, composerPath, isGlobal) = _processService.GetComposerInfo();
+        var (composerOut, composerErr, composerExit) = _processService.RunProcessWithOutput(composerPath, "--version", Environment.CurrentDirectory);
+        if (composerExit == 0 && !string.IsNullOrWhiteSpace(composerOut))
         {
-            NotificationView.Show("Missing Extensions:", NotificationView.NotificationType.Warning);
-            foreach (var ext in missingExtensions) NotificationView.Show($"  - {ext}", NotificationView.NotificationType.Warning);
+            sb.AppendLine($"[OK] Composer is accessible. Version: {composerOut.Trim()}");
+            sb.AppendLine($"Detected Composer path: {composerPath}");
+            sb.AppendLine($"Installation Type: {(isGlobal ? "Global" : "Local/Project")}");
+        }
+        else
+        {
+            sb.AppendLine("[ERROR] Composer is not accessible via PATH or detected path.");
+            sb.AppendLine("Please install Composer from https://getcomposer.org/download/ and ensure it is in your PATH.");
+            sb.AppendLine("You can also use the Tool Marketplace in EasyKit to open the download page.");
+            sb.AppendLine("\n===== End of COMPOSER Configuration Diagnostics =====");
+            Console.WriteLine(sb.ToString());
+            Console.ReadLine();
+            return;
         }
 
-        // Check Composer installation
-        var (composerVersion, composerPath, isGlobal) = _processService.GetComposerInfo();
-        NotificationView.Show($"Composer Version: {composerVersion}", NotificationView.NotificationType.Info);
-        NotificationView.Show($"Composer Path: {composerPath}", NotificationView.NotificationType.Info);
-        NotificationView.Show($"Composer Installation Type: {(isGlobal ? "Global" : "Local/Project")}", NotificationView.NotificationType.Info);
+        // Step 2: Check PHP version and compatibility
+        sb.AppendLine("\nStep 2: Checking PHP version and compatibility");
+        var (phpVersion, phpPath, phpCompatible) = _processService.GetPhpVersionInfo();
+        sb.AppendLine($"PHP Version: {phpVersion} (Compatible: {(phpCompatible ? "Yes" : "No")})");
+        sb.AppendLine($"PHP Path: {phpPath}");
+        if (!phpCompatible)
+            sb.AppendLine("[ERROR] PHP version may not be compatible with Composer. Composer requires PHP 7.3+.");
+        else
+            sb.AppendLine("[OK] PHP version is compatible.");
 
-        // Check environment variables
+        // Step 3: Check PHP extensions
+        sb.AppendLine("\nStep 3: Checking required PHP extensions");
+        var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
+        if (extensionsCompatible)
+            sb.AppendLine("[OK] All critical PHP extensions are present.");
+        else
+            sb.AppendLine("[ERROR] Missing critical PHP extensions required for Composer.");
+        if (missingExtensions.Count > 0)
+        {
+            sb.AppendLine("Missing extensions:");
+            foreach (var ext in missingExtensions) sb.AppendLine($"  - {ext}");
+        }
+
+        // Step 4: Check PHP memory limit
+        sb.AppendLine("\nStep 4: Checking PHP memory limit");
+        var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit(phpPath);
+        sb.AppendLine($"Current memory_limit: {currentLimit} (Recommended: {recommendedLimit})");
+        if (hasEnoughMemory)
+            sb.AppendLine("[OK] PHP memory limit is sufficient for Composer operations.");
+        else
+            sb.AppendLine("[WARNING] PHP memory limit may be too low for Composer. Set memory_limit to -1 or at least 1536M.");
+
+        // Step 5: Show environment variable recommendations
+        sb.AppendLine("\nStep 5: Environment variable recommendations");
         var envRecommendations = _processService.GetPhpEnvironmentRecommendations();
-        NotificationView.Show("\nEnvironment Variables Status:", NotificationView.NotificationType.Info);
         foreach (var (key, (currentValue, recommendedValue, needsUpdate)) in envRecommendations)
         {
             string status = needsUpdate ? "Not Optimal" : "OK";
-            NotificationView.Show($"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})", NotificationView.NotificationType.Info);
+            sb.AppendLine($"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})");
         }
 
-        // Check composer.json if it exists
+        // Step 6: Validate composer.json
+        sb.AppendLine("\nStep 6: Validating composer.json");
         if (File.Exists("composer.json"))
+        {
+            var (output, error, exitCode) = _processService.RunProcessWithOutput(
+                FindComposerCommand() ?? GetComposerPath(), "validate --no-check-publish", Environment.CurrentDirectory);
+            sb.AppendLine($"composer.json Validity: {(exitCode == 0 ? "Valid" : "Invalid")}");
+            if (exitCode != 0) sb.AppendLine($"Validation Error: {error}");
+        }
+        else
+        {
+            sb.AppendLine("No composer.json found in current directory.");
+        }
+
+        // Step 7: Project analysis (dependencies)
+        sb.AppendLine("\nStep 7: Project analysis (dependencies)");
+        if (File.Exists("composer.json"))
+        {
             try
             {
-                NotificationView.Show("\nProject Analysis:", NotificationView.NotificationType.Info);
                 var json = File.ReadAllText("composer.json");
                 using var jsonDoc = JsonDocument.Parse(json);
                 var root = jsonDoc.RootElement;
-
-                // Check PHP version requirement
-                if (root.TryGetProperty("require", out var requirements) &&
-                    requirements.TryGetProperty("php", out var phpRequirement))
-                {
-                    NotificationView.Show($"  - Required PHP Version: {phpRequirement}", NotificationView.NotificationType.Info);
-                    // Check if current PHP version meets requirements
-                    bool isPhpCompatible = phpRequirement.ToString().Contains(phpVersion.Split('.')[0]);
-                    NotificationView.Show($"  - PHP Version Compatibility: {(isPhpCompatible ? "Compatible" : "Might not be compatible")}", NotificationView.NotificationType.Info);
-                }
-
-                // Get package count
                 if (root.TryGetProperty("require", out var reqSection))
                 {
                     int packageCount = reqSection.EnumerateObject().Count();
                     if (reqSection.TryGetProperty("php", out _)) packageCount--; // Exclude PHP itself
-                    NotificationView.Show($"  - Production Dependencies: {packageCount}", NotificationView.NotificationType.Info);
+                    sb.AppendLine($"Production Dependencies: {packageCount}");
                 }
-
                 if (root.TryGetProperty("require-dev", out var reqDevSection))
                 {
                     int devPackageCount = reqDevSection.EnumerateObject().Count();
-                    NotificationView.Show($"  - Development Dependencies: {devPackageCount}", NotificationView.NotificationType.Info);
+                    sb.AppendLine($"Development Dependencies: {devPackageCount}");
                 }
-
-                // Run composer validate silently
-                var (output, error, exitCode) = _processService.RunProcessWithOutput(
-                    FindComposerCommand() ?? GetComposerPath(), "validate --no-check-publish", Environment.CurrentDirectory);
-                NotificationView.Show($"  - composer.json Validity: {(exitCode == 0 ? "Valid" : "Invalid")}", NotificationView.NotificationType.Info);
-                if (exitCode != 0) NotificationView.Show($"  - Validation Error: {error}", NotificationView.NotificationType.Warning);
+                if (root.TryGetProperty("require", out var requirements) && requirements.TryGetProperty("php", out var phpRequirement))
+                {
+                    sb.AppendLine($"Required PHP Version: {phpRequirement}");
+                    bool isPhpCompatible = phpRequirement.ToString().Contains(phpVersion.Split('.')[0]);
+                    sb.AppendLine($"PHP Version Compatibility: {(isPhpCompatible ? "Compatible" : "Might not be compatible")}");
+                }
             }
             catch (Exception ex)
             {
-                NotificationView.Show($"Error analyzing composer.json: {ex.Message}", NotificationView.NotificationType.Error);
+                sb.AppendLine($"Error analyzing composer.json: {ex.Message}");
             }
+        }
 
-        NotificationView.Show("\nDiagnostic complete!", NotificationView.NotificationType.Success);
+        // Step 8: Recommendations
+        sb.AppendLine("\nStep 8: Recommendations");
+        sb.AppendLine("- If you encounter issues, ensure Composer and PHP are installed and in your PATH.");
+        sb.AppendLine("- Enable all required extensions in your php.ini file.");
+        sb.AppendLine("- Set memory_limit to -1 for Composer-heavy operations.");
+        sb.AppendLine("- Restart your terminal or EasyKit after making changes.");
+        sb.AppendLine("- Use the Tool Marketplace in EasyKit to check installation status or open the download page.");
+
+        sb.AppendLine("\n===== End of COMPOSER Configuration Diagnostics =====");
+        Console.WriteLine(sb.ToString());
         Console.ReadLine();
     }
 }

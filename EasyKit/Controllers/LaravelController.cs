@@ -30,6 +30,80 @@ public class LaravelController
         _processService = new ProcessService(logger, console, console.Config);
     }
 
+    public void RunPhpDiagnostics()
+    {
+        _console.WriteInfo("===== PHP Configuration Diagnostics =====");
+        _console.WriteInfo("This will check your PHP installation and environment for Laravel/Composer compatibility.\n");
+
+        // Step 1: Check if PHP is accessible in PATH
+        _console.WriteInfo("Step 1: Checking if PHP is accessible in PATH");
+        var phpPath = GetPhpPath();
+        var (phpVersion, detectedPhpPath, isCompatible) = _processService.GetPhpVersionInfo();
+        if (phpVersion != "Unknown")
+        {
+            _console.WriteSuccess($"\u2713 PHP is accessible. Version: {phpVersion}");
+            _console.WriteInfo($"Detected PHP path: {detectedPhpPath}");
+        }
+        else
+        {
+            _console.WriteError("\u2717 PHP is not accessible via PATH or detected path.");
+            _console.WriteInfo("Please install PHP from https://windows.php.net/download/ and ensure it is in your PATH.");
+            _console.WriteInfo("You can also use the Tool Marketplace in EasyKit to open the download page.");
+            _console.WriteInfo("\n===== End of PHP Configuration Diagnostics =====");
+            Console.ReadLine();
+            return;
+        }
+
+        // Step 2: Check PHP version compatibility
+        _console.WriteInfo("\nStep 2: Checking PHP version compatibility");
+        if (isCompatible)
+            _console.WriteSuccess("\u2713 PHP version is compatible with Laravel/Composer.");
+        else
+            _console.WriteError("\u2717 PHP version may not be compatible with Laravel/Composer. Laravel 8+ requires PHP 7.3+.");
+
+        // Step 3: Check PHP extensions
+        _console.WriteInfo("\nStep 3: Checking required PHP extensions");
+        var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
+        if (extensionsCompatible)
+            _console.WriteSuccess("\u2713 All critical PHP extensions are present.");
+        else
+            _console.WriteError("\u2717 Missing critical PHP extensions required for Laravel/Composer.");
+        if (missingExtensions.Count > 0)
+        {
+            _console.WriteInfo("Missing extensions:");
+            foreach (var ext in missingExtensions) _console.WriteInfo($"  - {ext}");
+        }
+
+        // Step 4: Check PHP memory limit
+        _console.WriteInfo("\nStep 4: Checking PHP memory limit");
+        var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit(phpPath);
+        _console.WriteInfo($"Current memory_limit: {currentLimit} (Recommended: {recommendedLimit})");
+        if (hasEnoughMemory)
+            _console.WriteSuccess("\u2713 PHP memory limit is sufficient for Composer operations.");
+        else
+            _console.WriteError("\u2717 PHP memory limit may be too low for Composer. Set memory_limit to -1 or at least 1536M.");
+
+        // Step 5: Show environment variable recommendations
+        _console.WriteInfo("\nStep 5: Environment variable recommendations");
+        var envRecommendations = _processService.GetPhpEnvironmentRecommendations();
+        foreach (var (key, (currentValue, recommendedValue, needsUpdate)) in envRecommendations)
+        {
+            string status = needsUpdate ? "Not Optimal" : "OK";
+            _console.WriteInfo($"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})");
+        }
+
+        // Step 6: Recommendations
+        _console.WriteInfo("\nStep 6: Recommendations");
+        _console.WriteInfo("- If you encounter issues, ensure PHP is installed and in your PATH.");
+        _console.WriteInfo("- Enable all required extensions in your php.ini file.");
+        _console.WriteInfo("- Set memory_limit to -1 for Composer-heavy operations.");
+        _console.WriteInfo("- Restart your terminal or EasyKit after making changes.");
+        _console.WriteInfo("- Use the Tool Marketplace in EasyKit to check installation status or open the download page.");
+
+        _console.WriteInfo("\n===== End of PHP Configuration Diagnostics =====");
+        Console.ReadLine();
+    }
+
     public void ShowMenu()
     {
         // Get user settings
@@ -70,6 +144,7 @@ public class LaravelController
             .AddOption("11", "Check Laravel Configuration", () => CheckConfiguration())
             .AddOption("12", "Reset All Laravel Cache", () => ResetCache())
             .AddOption("13", "View Route List", () => ViewRouteList())
+            .AddOption("14", "Run PHP diagnostics", () => RunPhpDiagnostics())
             .AddOption("0", "Back to Main Menu", () =>
             {
                 /* Return to main menu */
