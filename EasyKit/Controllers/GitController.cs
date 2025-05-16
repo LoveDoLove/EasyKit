@@ -1,19 +1,31 @@
 namespace EasyKit.Controllers;
 
+using EasyKit.Views;
+
 public class GitController
 {
-    private readonly ConfirmationService _confirmation = new();
+    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly ProcessService _processService;
-    private readonly PromptView _prompt = new();
+    private readonly PromptView _prompt;
     private readonly Software _software;
+    private readonly NotificationView _notificationView;
 
-    public GitController(Software software, LoggerService logger, ConsoleService console)
+    public GitController(
+        Software software,
+        LoggerService logger,
+        ConsoleService console,
+        ConfirmationService confirmation,
+        PromptView prompt,
+        NotificationView notificationView)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _confirmation = confirmation;
+        _prompt = prompt;
+        _notificationView = notificationView;
         _processService = new ProcessService(logger, console, console.Config);
     }
 

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using EasyKit.Views;
 
 namespace EasyKit.Controllers;
 
@@ -9,12 +10,24 @@ public class NpmController
     private readonly LoggerService _logger;
     private readonly ProcessService _processService;
     private readonly Software _software;
+    private readonly ConfirmationService _confirmation;
+    private readonly PromptView _prompt;
+    private readonly NotificationView _notificationView;
 
-    public NpmController(Software software, LoggerService logger, ConsoleService console)
+    public NpmController(
+        Software software,
+        LoggerService logger,
+        ConsoleService console,
+        ConfirmationService confirmation,
+        PromptView prompt,
+        NotificationView notificationView)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _confirmation = confirmation;
+        _prompt = prompt;
+        _notificationView = notificationView;
         _processService = new ProcessService(logger, console, console.Config);
     }
 
@@ -128,8 +141,7 @@ public class NpmController
                 _console.WriteInfo("4. Restart any open command prompts or this application");
 
                 // Ask if user wants to open System Properties directly
-                var promptView = new PromptView();
-                if (promptView.ConfirmYesNo("Would you like to open Environment Variables settings now?"))
+                if (_prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?"))
                     try
                     {
                         Process.Start(new ProcessStartInfo
@@ -160,8 +172,7 @@ public class NpmController
             _console.WriteInfo("Please install Node.js from https://nodejs.org/");
 
             // Ask if the user wants to download Node.js now
-            var promptView = new PromptView();
-            if (promptView.ConfirmYesNo("Would you like to open the Node.js download page now?"))
+            if (_prompt.ConfirmYesNo("Would you like to open the Node.js download page now?"))
             {
                 OpenNodejsWebsite();
                 return; // The OpenNodejsWebsite method already has Console.ReadLine()
@@ -421,8 +432,7 @@ public class NpmController
             foreach (var script in scripts)
                 _console.WriteInfo($"- {script}");
 
-            var promptView = new PromptView();
-            var scriptName = promptView.PromptWithAutocomplete("Enter script name to run: ", scripts);
+            var scriptName = _prompt.PromptWithAutocomplete("Enter script name to run: ", scripts);
 
             if (string.IsNullOrWhiteSpace(scriptName))
             {
@@ -506,8 +516,7 @@ public class NpmController
         if (!string.IsNullOrEmpty(npmPath))
         {
             _console.WriteInfo($"Found npm at: {npmPath}");
-            var promptView = new PromptView();
-            bool useDetected = promptView.ConfirmYesNo("Use this detected npm location?");
+            var useDetected = _prompt.ConfirmYesNo("Use this detected npm location?");
 
             if (useDetected)
             {
@@ -529,8 +538,7 @@ public class NpmController
         else
             _console.WriteInfo("Example: /usr/local/bin/npm");
 
-        var promptView2 = new PromptView();
-        string? customPath = promptView2.Prompt("Enter npm path (or leave empty to cancel): ");
+        string? customPath = _prompt.Prompt("Enter npm path (or leave empty to cancel): ");
 
         if (string.IsNullOrWhiteSpace(customPath))
         {
@@ -671,9 +679,7 @@ public class NpmController
             if (npmPathSetting == null || string.IsNullOrWhiteSpace(npmPathSetting.ToString()) ||
                 !npmPathSetting.ToString()!.Equals(npmPath, StringComparison.OrdinalIgnoreCase))
             {
-                var promptView = new PromptView();
-                bool configureFoundPath =
-                    promptView.ConfirmYesNo("Would you like to configure EasyKit to use this npm path?");
+                var configureFoundPath = _prompt.ConfirmYesNo("Would you like to configure EasyKit to use this npm path?");
 
                 if (configureFoundPath)
                 {
@@ -754,9 +760,7 @@ public class NpmController
 
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
                 {
-                    var promptView = new PromptView();
-                    bool openEnvVars =
-                        promptView.ConfirmYesNo("Would you like to open Environment Variables settings now?");
+                    var openEnvVars = _prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?");
 
                     if (openEnvVars)
                         try
@@ -785,8 +789,7 @@ public class NpmController
                 _console.WriteInfo(
                     "3. Alternatively, download and install Node.js, then use 'Configure npm path' to set the path manually.");
 
-                var promptView = new PromptView();
-                bool openDownload = promptView.ConfirmYesNo("Would you like to open the Node.js download page now?");
+                var openDownload = _prompt.ConfirmYesNo("Would you like to open the Node.js download page now?");
 
                 if (openDownload)
                 {

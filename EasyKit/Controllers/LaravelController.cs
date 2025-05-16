@@ -1,20 +1,32 @@
 using System.Diagnostics;
+using EasyKit.Views;
 
 namespace EasyKit.Controllers;
 
 public class LaravelController
 {
-    private readonly ConfirmationService _confirmation = new();
+    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly ProcessService _processService;
     private readonly Software _software;
+    private readonly PromptView _prompt;
+    private readonly NotificationView _notificationView;
 
-    public LaravelController(Software software, LoggerService logger, ConsoleService console)
+    public LaravelController(
+        Software software,
+        LoggerService logger,
+        ConsoleService console,
+        ConfirmationService confirmation,
+        PromptView prompt,
+        NotificationView notificationView)
     {
         _software = software;
         _logger = logger;
         _console = console;
+        _confirmation = confirmation;
+        _prompt = prompt;
+        _notificationView = notificationView;
         _processService = new ProcessService(logger, console, console.Config);
     }
 

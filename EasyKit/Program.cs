@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using EasyKit.Views;
 
 namespace EasyKit;
 
@@ -10,19 +11,21 @@ internal class Program
     private static readonly ConsoleService ConsoleService = new(Config);
     private static readonly ConfirmationService ConfirmationService = new(ConsoleService, Config);
     private static readonly MenuView MenuView = new();
-    private static readonly NpmController NpmController = new(Software, Logger, ConsoleService);
-    private static readonly LaravelController LaravelController = new(Software, Logger, ConsoleService);
-    private static readonly ComposerController ComposerController = new(Software, Logger, ConsoleService);
-    private static readonly GitController GitController = new(Software, Logger, ConsoleService);
-    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService);
-    private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService);
+    private static readonly PromptView PromptView = new();
+    private static readonly NotificationView NotificationView = new();
+    private static readonly NpmController NpmController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+    private static readonly LaravelController LaravelController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+    private static readonly ComposerController ComposerController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+    private static readonly GitController GitController = new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
+    private static readonly ShortcutManagerController ShortcutManagerController = new(Config, Logger, ConsoleService, PromptView, NotificationView);
 
     private static void Main(string[] args)
     {
         try
         {
             // If launched from context menu, always use absolute path argument
-            string originalArg = args.Length > 0 ? args[0] : null;
+            string? originalArg = args.Length > 0 ? args[0] : null;
 
             // Check if the application is running as administrator
             if (!AdminService.IsRunningAsAdmin())

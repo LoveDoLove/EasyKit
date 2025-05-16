@@ -1,17 +1,22 @@
-﻿namespace EasyKit.Controllers;
+﻿using EasyKit.Views;
+
+namespace EasyKit.Controllers;
 
 internal class SettingsController
 {
     private readonly Config _config;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
-    private readonly PromptView _prompt = new();
+    private readonly PromptView _prompt;
+    private readonly NotificationView _notificationView;
 
-    public SettingsController(Config config, LoggerService logger, ConsoleService console)
+    public SettingsController(Config config, LoggerService logger, ConsoleService console, PromptView prompt, NotificationView notificationView)
     {
         _config = config;
         _logger = logger;
         _console = console;
+        _prompt = prompt;
+        _notificationView = notificationView;
     }
 
     public void ShowMenu()

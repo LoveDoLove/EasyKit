@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
+using EasyKit.Views;
 
 namespace EasyKit.Controllers;
 
@@ -10,13 +11,16 @@ internal class ShortcutManagerController
     private readonly Config _config;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
-    private readonly PromptView _prompt = new();
+    private readonly PromptView _prompt;
+    private readonly NotificationView _notificationView;
 
-    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console)
+    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt, NotificationView notificationView)
     {
         _config = config;
         _logger = logger;
         _console = console;
+        _prompt = prompt;
+        _notificationView = notificationView;
     }
 
     public void ShowMenu()
