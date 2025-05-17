@@ -16,6 +16,9 @@
   <p align="center">A C#/.NET 8.0 Console Toolkit for Modern Development Workflows</p>
 </div>
 
+<!-- ZMTO Acknowledgment -->
+> **Note:** This project is supported by [ZMTO](https://www.zmto.com) as part of their open-source VPS program. Special thanks to ZMTO for empowering open-source innovation!
+
 <!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
@@ -36,7 +39,13 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-EasyKit is a powerful C# console-based toolkit designed to streamline development workflows. It provides a suite of tools for managing various aspects of web and software development projects—including NPM, Laravel, Composer, and Git operations—through an intuitive menu interface.
+EasyKit is a powerful C# console-based toolkit designed to streamline modern development workflows. It provides a suite of tools for managing various aspects of web and software development projects—including NPM, Laravel, Composer, and Git operations—through an intuitive menu interface.
+
+**Latest Features:**
+- Modular architecture for easy extension and customization
+- Built-in logging and enhanced console management
+- Improved menu system with theme support
+- Support for .NET 8.0 and cross-platform compatibility
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -51,6 +60,7 @@ EasyKit is a powerful C# console-based toolkit designed to streamline developmen
 - Built-in logging and console management
 - Modular architecture: Controllers, Services, Models, and Views
 - Extensible: add your own tools and menu items
+- Planned: Docker integration, VS Code extensions management, project templates, and multi-language support
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -116,7 +126,7 @@ EasyKit provides a menu-driven interface for various development tools:
 
 Start EasyKit and follow the on-screen menu to access these features.
 
-_For more examples, see the [Documentation](https://github.com/LoveDoLove/EasyKit/wiki)_
+_See more examples and advanced usage in the [Documentation](https://github.com/LoveDoLove/EasyKit/wiki)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
