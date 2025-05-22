@@ -13,4 +13,8 @@
     <Content Include="www\images\icon.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\CommonUtilities\CommonUtilities\CommonUtilities.csproj" />
+  </ItemGroup>
+
 </Project>

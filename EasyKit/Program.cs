@@ -228,7 +228,18 @@ internal class Program
         {
             Console.Clear();
             string version = Config.Get("version", "1.0")?.ToString() ?? "1.0";
-            MenuView.ShowMainMenu(version);
+
+            // Use MenuView from CommonUtilities to show the main menu
+            MenuView.ShowMenu("EasyKit Main Menu v" + version, new[]
+            {
+                "0. Exit",
+                "1. NPM Tools",
+                "2. Laravel Tools",
+                "3. Composer Tools",
+                "4. Git Tools",
+                "5. Settings"
+            });
+
             Console.WriteLine("[T] Tool Marketplace");
             Console.WriteLine("[Q] Quit");
             var key = Console.ReadKey(true).Key;
