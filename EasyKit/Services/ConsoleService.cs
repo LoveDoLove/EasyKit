@@ -1,9 +1,12 @@
-using CommonUtilities.Models;
+using CommonUtilities.Config;
 namespace EasyKit.Services;
 
 public class ConsoleService
 {
     private readonly Config _config;
+    /// <summary>
+    /// ConsoleService constructor using the new Config class.
+    /// </summary>
     public ConsoleService(Config config)
     {
         _config = config;

@@ -1,5 +1,5 @@
 using CommonUtilities.Helpers;
-using CommonUtilities.Models;
+using CommonUtilities.Config;
 
 namespace CommonUtilities.Services;
 
@@ -8,9 +8,12 @@ namespace CommonUtilities.Services;
 /// </summary>
 public class ConfirmationService
 {
-    private readonly Config? _config;
+    private readonly CommonUtilities.Config.Config? _config;
 
-    public ConfirmationService(Config? config = null)
+    /// <summary>
+    /// ConfirmationService constructor using the new Config class.
+    /// </summary>
+    public ConfirmationService(CommonUtilities.Config.Config? config = null)
     {
         _config = config;
     }

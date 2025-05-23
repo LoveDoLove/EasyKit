@@ -1,28 +1,20 @@
 using System.Text.Json;
 
-namespace CommonUtilities.Config;
+namespace CommonUtilities.Models;
 
 /// <summary>
 /// Application configuration model with load/save and default management.
 /// </summary>
 public class Config
 {
+    private const string AppName = "EasyKit";
+    private const string AppAuthor = "LoveDoLove";
+    private const string AppVersion = "4.0.2";
     private readonly string _configFilePath;
-    private readonly string _appName;
-    private readonly string _appVersion;
 
-    /// <summary>
-    /// Initializes a new instance of the Config class.
-    /// </summary>
-    /// <param name="appName">Application name for config folder.</param>
-    /// <param name="appVersion">Application version for config management.</param>
-    /// <param name="configFilePath">Optional: Full path to config file. If null, uses default location.</param>
-    public Config(string appName, string appVersion, string? configFilePath = null)
+    public Config()
     {
-        _appName = appName;
-        _appVersion = appVersion;
-        _configFilePath = configFilePath ??
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), appName, "config.json");
+        _configFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppName, "config.json");
         Settings = new Dictionary<string, object>();
         LoadConfig();
     }
@@ -46,7 +38,16 @@ public class Config
             { "confirm_exit", true },
             { "confirm_destructive_actions", true },
             { "menu_width", 50 },
-            { "version", _appVersion }
+            { "version", AppVersion },
+            { "context_menu_name", "EasyKit" },
+            { "context_menu_registry_paths", new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                }
+            },
+            { "context_menu_scope", "user" }
         };
 
         if (File.Exists(_configFilePath))
@@ -60,9 +61,9 @@ public class Config
                     foreach (var kv in userConfig)
                         Settings[kv.Key] = kv.Value;
                 }
-                if (!Settings.TryGetValue("version", out var userVersion) || userVersion == null || userVersion.ToString() != _appVersion)
+                if (!Settings.TryGetValue("version", out var userVersion) || userVersion == null || userVersion.ToString() != AppVersion)
                 {
-                    Settings["version"] = _appVersion;
+                    Settings["version"] = AppVersion;
                     SaveConfig();
                 }
             }
@@ -107,9 +108,9 @@ public class Config
 
     private string GetLogPath()
     {
-        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), _appName, "logs");
+        var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppName, "logs");
         Directory.CreateDirectory(logDir);
-        return Path.Combine(logDir, $"{_appName.ToLowerInvariant()}.log");
+        return Path.Combine(logDir, "easykit.log");
     }
 
     /// <summary>
@@ -126,7 +127,16 @@ public class Config
             { "confirm_exit", true },
             { "confirm_destructive_actions", true },
             { "menu_width", 50 },
-            { "version", _appVersion }
+            { "version", AppVersion },
+            { "context_menu_name", "EasyKit" },
+            { "context_menu_registry_paths", new[]
+                {
+                    @"Software\Classes\*\shell\EasyKit",
+                    @"Software\Classes\Directory\shell\EasyKit",
+                    @"Software\Classes\Directory\Background\shell\EasyKit"
+                }
+            },
+            { "context_menu_scope", "user" }
         };
         SaveConfig();
     }

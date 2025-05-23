@@ -1,12 +1,15 @@
 ﻿using System.Reflection;
 using CommonUtilities.Services;
 using CommonUtilities.Models;
+using CommonUtilities.Config;
 
 namespace EasyKit;
 
 internal class Program
 {
-    private static readonly CommonUtilities.Models.Config Config = new();
+    // Updated for new Config.cs API: requires appName and appVersion
+    private static readonly Config Config =
+        new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
     private static readonly CommonUtilities.Models.Software Software = new();
     private static readonly LoggerService Logger = new();
     private static readonly ConsoleService ConsoleService = new(Config);

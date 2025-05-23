@@ -2,12 +2,15 @@
 
 internal class SettingsController
 {
-    private readonly CommonUtilities.Models.Config _config;
+    private readonly CommonUtilities.Config.Config _config;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly PromptView _prompt;
 
-    public SettingsController(CommonUtilities.Models.Config config, LoggerService logger, ConsoleService console, PromptView prompt)
+    /// <summary>
+    /// SettingsController constructor using the new Config class.
+    /// </summary>
+    public SettingsController(CommonUtilities.Config.Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;
         _logger = logger;

@@ -1,4 +1,4 @@
-﻿using CommonUtilities.Models;
+﻿using CommonUtilities.Config;
 
 namespace CommonUtilities.Helpers;
 
@@ -10,12 +10,12 @@ public static class ConsoleHelper
     /// <summary>
     /// Writes an info message to the console, using config for color scheme if provided.
     /// </summary>
-    public static void WriteInfo(string message, Config? config = null)
+    public static void WriteInfo(string message, CommonUtilities.Config.Config? config = null)
     {
         ConsoleColor? textColor = null;
         ConsoleColor? bgColor = null;
 
-        if (config != null)
+        if (config is not null)
         {
             var textColorObj = config.Get("text_color", "");
             var bgColorObj = config.Get("background_color", "");
@@ -50,10 +50,10 @@ public static class ConsoleHelper
     /// <summary>
     /// Writes an error message to the console, using config for color scheme if provided.
     /// </summary>
-    public static void WriteError(string message, Config? config = null)
+    public static void WriteError(string message, CommonUtilities.Config.Config? config = null)
     {
         ConsoleColor errorColor = ConsoleColor.Red;
-        if (config != null)
+        if (config is not null)
         {
             var errorColorObj = config.Get("error_color", "Red");
             if (errorColorObj != null && Enum.TryParse(errorColorObj.ToString(), true, out ConsoleColor parsedErrorColor))
@@ -67,10 +67,10 @@ public static class ConsoleHelper
     /// <summary>
     /// Writes a success message to the console, using config for color scheme if provided.
     /// </summary>
-    public static void WriteSuccess(string message, Config? config = null)
+    public static void WriteSuccess(string message, CommonUtilities.Config.Config? config = null)
     {
         ConsoleColor successColor = ConsoleColor.Green;
-        if (config != null)
+        if (config is not null)
         {
             var successColorObj = config.Get("success_color", "Green");
             if (successColorObj != null && Enum.TryParse(successColorObj.ToString(), true, out ConsoleColor parsedSuccessColor))
