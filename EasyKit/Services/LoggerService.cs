@@ -1,4 +1,3 @@
-using CommonUtilities.Utilities;
 using Serilog;
 
 namespace EasyKit.Services;

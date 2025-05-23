@@ -1,24 +1,25 @@
 using System.Diagnostics;
 using System.Text.Json;
-
 using CommonUtilities.Models;
+using CommonUtilities.Services;
+
 namespace EasyKit.Controllers;
 
 public class NpmController
 {
-    private readonly CommonUtilities.Services.ConfirmationService _confirmation;
+    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
-    private readonly CommonUtilities.Models.Software _software;
+    private readonly Software _software;
 
     public NpmController(
-        CommonUtilities.Models.Software software,
+        Software software,
         LoggerService logger,
         ConsoleService console,
-        CommonUtilities.Services.ConfirmationService confirmation,
+        ConfirmationService confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {

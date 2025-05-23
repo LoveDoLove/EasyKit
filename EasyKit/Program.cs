@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
-using CommonUtilities.Services;
-using CommonUtilities.Models;
 using CommonUtilities.Config;
+using CommonUtilities.Models;
+using CommonUtilities.Services;
 
 namespace EasyKit;
 
@@ -10,7 +10,8 @@ internal class Program
     // Updated for new Config.cs API: requires appName and appVersion
     private static readonly Config Config =
         new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
-    private static readonly CommonUtilities.Models.Software Software = new();
+
+    private static readonly Software Software = new();
     private static readonly LoggerService Logger = new();
     private static readonly ConsoleService ConsoleService = new(Config);
     private static readonly ConfirmationService ConfirmationService = new(Config);
@@ -126,7 +127,9 @@ internal class Program
                 Logger.Info($"Auto-detected {tool} path: {best} and saved to config.");
             }
         }
-    }    private static void Main(string[] args)
+    }
+
+    private static void Main(string[] args)
     {
         try
         {
@@ -214,7 +217,9 @@ internal class Program
                 }
 
                 return;
-            }            MainMenu();
+            }
+
+            MainMenu();
         }
         catch (Exception ex)
         {

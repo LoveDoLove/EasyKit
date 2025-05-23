@@ -2,8 +2,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-
 using CommonUtilities.Config;
+
 namespace EasyKit.Services;
 
 /// <summary>
@@ -16,7 +16,7 @@ public class ProcessService
     private readonly LoggerService _logger;
 
     /// <summary>
-    /// ProcessService constructor using the new Config class.
+    ///     ProcessService constructor using the new Config class.
     /// </summary>
     public ProcessService(LoggerService logger, ConsoleService console, Config? config = null)
     {
