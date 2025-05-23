@@ -1,4 +1,6 @@
-﻿namespace EasyKit.Controllers;
+﻿using CommonUtilities.Config;
+
+namespace EasyKit.Controllers;
 
 internal class SettingsController
 {
@@ -7,6 +9,9 @@ internal class SettingsController
     private readonly LoggerService _logger;
     private readonly PromptView _prompt;
 
+    /// <summary>
+    ///     SettingsController constructor using the new Config class.
+    /// </summary>
     public SettingsController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;

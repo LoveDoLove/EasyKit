@@ -1,14 +1,20 @@
 ﻿using System.Reflection;
+using CommonUtilities.Config;
+using CommonUtilities.Models;
+using CommonUtilities.Services;
 
 namespace EasyKit;
 
 internal class Program
 {
-    private static readonly Config Config = new();
+    // Updated for new Config.cs API: requires appName and appVersion
+    private static readonly Config Config =
+        new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
+
     private static readonly Software Software = new();
     private static readonly LoggerService Logger = new();
     private static readonly ConsoleService ConsoleService = new(Config);
-    private static readonly ConfirmationService ConfirmationService = new(ConsoleService, Config);
+    private static readonly ConfirmationService ConfirmationService = new(Config);
     private static readonly MenuView MenuView = new();
     private static readonly PromptView PromptView = new();
     private static readonly NotificationView NotificationView = new();
@@ -127,6 +133,10 @@ internal class Program
     {
         try
         {
+            // Initialize logging using CommonUtilities
+            LoggerUtilities.StartLog("EasyKit");
+            Logger.Info("EasyKit application started");
+
             AutoDetectAndSaveToolPaths();
 
             // If launched from context menu, always use absolute path argument
@@ -213,12 +223,19 @@ internal class Program
         }
         catch (Exception ex)
         {
+            Logger.Fatal(ex, "A fatal error occurred");
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("A fatal error occurred:");
             Console.WriteLine(ex.ToString());
             Console.ResetColor();
             NotificationView.Show("A fatal error occurred. See console for details.",
                 NotificationView.NotificationType.Error, requireKeyPress: true);
+        }
+        finally
+        {
+            // Clean up logging
+            Logger.Info("EasyKit application shutting down");
+            LoggerUtilities.StopLog();
         }
     }
 
@@ -228,7 +245,18 @@ internal class Program
         {
             Console.Clear();
             string version = Config.Get("version", "1.0")?.ToString() ?? "1.0";
-            MenuView.ShowMainMenu(version);
+
+            // Use MenuView from CommonUtilities to show the main menu
+            MenuView.ShowMenu("EasyKit Main Menu v" + version, new[]
+            {
+                "0. Exit",
+                "1. NPM Tools",
+                "2. Laravel Tools",
+                "3. Composer Tools",
+                "4. Git Tools",
+                "5. Settings"
+            });
+
             Console.WriteLine("[T] Tool Marketplace");
             Console.WriteLine("[Q] Quit");
             var key = Console.ReadKey(true).Key;

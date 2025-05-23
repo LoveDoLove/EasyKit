@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using CommonUtilities.Config;
 using Microsoft.Win32;
 
 namespace EasyKit.Controllers;
@@ -12,6 +13,9 @@ internal class ShortcutManagerController
     private readonly LoggerService _logger;
     private readonly PromptView _prompt;
 
+    /// <summary>
+    ///     ShortcutManagerController constructor using the new Config class.
+    /// </summary>
     public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;
