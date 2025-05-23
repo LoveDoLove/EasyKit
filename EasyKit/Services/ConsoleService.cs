@@ -1,20 +1,22 @@
+using CommonUtilities.Models;
 namespace EasyKit.Services;
 
 public class ConsoleService
 {
+    private readonly Config _config;
     public ConsoleService(Config config)
     {
-        Config = config;
+        _config = config;
     }
 
     // Add a public property to access the config
-    public Config Config { get; }
+    public Config Config => _config;
 
     public void WriteInfo(string message)
     {
         // Get text color from config
-        var textColorObj = Config.Get("text_color", "");
-        var bgColorObj = Config.Get("background_color", "");
+        var textColorObj = _config.Get("text_color", "");
+        var bgColorObj = _config.Get("background_color", "");
 
         // If specific colors are set, use them
         ConsoleColor? textColor = null;
@@ -38,7 +40,7 @@ public class ConsoleService
             }
             else
             {
-                var schemeObj = Config.Get("color_scheme", "dark");
+                var schemeObj = _config.Get("color_scheme", "dark");
                 string scheme = schemeObj?.ToString() ?? "dark";
                 Console.ForegroundColor = scheme == "light" ? ConsoleColor.Black : ConsoleColor.White;
             }
@@ -54,14 +56,14 @@ public class ConsoleService
     public void WriteError(string message)
     {
         // Get error text color from config or default to red
-        var errorColorObj = Config.Get("error_color", "Red");
+        var errorColorObj = _config.Get("error_color", "Red");
         if (errorColorObj != null && Enum.TryParse(errorColorObj.ToString(), true, out ConsoleColor errorColor))
             Console.ForegroundColor = errorColor;
         else
             Console.ForegroundColor = ConsoleColor.Red;
 
         // Use background color if specified
-        var bgColorObj = Config.Get("background_color", "");
+        var bgColorObj = _config.Get("background_color", "");
         if (bgColorObj != null && Enum.TryParse(bgColorObj.ToString(), true, out ConsoleColor bgColor))
             Console.BackgroundColor = bgColor;
 
@@ -72,14 +74,14 @@ public class ConsoleService
     public void WriteSuccess(string message)
     {
         // Get success text color from config or default to green
-        var successColorObj = Config.Get("success_color", "Green");
+        var successColorObj = _config.Get("success_color", "Green");
         if (successColorObj != null && Enum.TryParse(successColorObj.ToString(), true, out ConsoleColor successColor))
             Console.ForegroundColor = successColor;
         else
             Console.ForegroundColor = ConsoleColor.Green;
 
         // Use background color if specified
-        var bgColorObj = Config.Get("background_color", "");
+        var bgColorObj = _config.Get("background_color", "");
         if (bgColorObj != null && Enum.TryParse(bgColorObj.ToString(), true, out ConsoleColor bgColor))
             Console.BackgroundColor = bgColor;
 

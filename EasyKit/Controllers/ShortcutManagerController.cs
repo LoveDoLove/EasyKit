@@ -7,12 +7,12 @@ namespace EasyKit.Controllers;
 
 internal class ShortcutManagerController
 {
-    private readonly Config _config;
+    private readonly CommonUtilities.Models.Config _config;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly PromptView _prompt;
 
-    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
+    public ShortcutManagerController(CommonUtilities.Models.Config config, LoggerService logger, ConsoleService console, PromptView prompt)
     {
         _config = config;
         _logger = logger;

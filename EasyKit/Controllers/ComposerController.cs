@@ -6,19 +6,19 @@ namespace EasyKit.Controllers;
 
 public class ComposerController
 {
-    private readonly ConfirmationService _confirmation;
+    private readonly CommonUtilities.Services.ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly LoggerService _logger;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
-    private readonly Software _software;
+    private readonly CommonUtilities.Models.Software _software;
 
     public ComposerController(
-        Software software,
+        CommonUtilities.Models.Software software,
         LoggerService logger,
         ConsoleService console,
-        ConfirmationService confirmation,
+        CommonUtilities.Services.ConfirmationService confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {

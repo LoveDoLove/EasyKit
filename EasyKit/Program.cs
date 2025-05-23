@@ -1,15 +1,16 @@
 ﻿using System.Reflection;
 using CommonUtilities.Services;
+using CommonUtilities.Models;
 
 namespace EasyKit;
 
 internal class Program
 {
-    private static readonly Config Config = new();
-    private static readonly Software Software = new();
+    private static readonly CommonUtilities.Models.Config Config = new();
+    private static readonly CommonUtilities.Models.Software Software = new();
     private static readonly LoggerService Logger = new();
     private static readonly ConsoleService ConsoleService = new(Config);
-    private static readonly ConfirmationService ConfirmationService = new(ConsoleService, Config);
+    private static readonly ConfirmationService ConfirmationService = new(Config);
     private static readonly MenuView MenuView = new();
     private static readonly PromptView PromptView = new();
     private static readonly NotificationView NotificationView = new();
