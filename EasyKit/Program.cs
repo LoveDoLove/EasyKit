@@ -121,12 +121,14 @@ internal class Program
                 Logger.Info($"Auto-detected {tool} path: {best} and saved to config.");
             }
         }
-    }
-
-    private static void Main(string[] args)
+    }    private static void Main(string[] args)
     {
         try
         {
+            // Initialize logging using CommonUtilities
+            LoggerUtilities.StartLog("EasyKit");
+            Logger.Info("EasyKit application started");
+
             AutoDetectAndSaveToolPaths();
 
             // If launched from context menu, always use absolute path argument
@@ -207,18 +209,23 @@ internal class Program
                 }
 
                 return;
-            }
-
-            MainMenu();
+            }            MainMenu();
         }
         catch (Exception ex)
         {
+            Logger.Fatal(ex, "A fatal error occurred");
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("A fatal error occurred:");
             Console.WriteLine(ex.ToString());
             Console.ResetColor();
             NotificationView.Show("A fatal error occurred. See console for details.",
                 NotificationView.NotificationType.Error, requireKeyPress: true);
+        }
+        finally
+        {
+            // Clean up logging
+            Logger.Info("EasyKit application shutting down");
+            LoggerUtilities.StopLog();
         }
     }
 
