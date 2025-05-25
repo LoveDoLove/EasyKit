@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using CommonUtilities.Models;
 using CommonUtilities.Services;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Controllers;
 
@@ -10,7 +11,6 @@ public class ComposerController
 {
     private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
@@ -18,19 +18,17 @@ public class ComposerController
 
     public ComposerController(
         Software software,
-        LoggerService logger,
         ConsoleService console,
         ConfirmationService confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {
         _software = software;
-        _logger = logger;
         _console = console;
         _confirmation = confirmation;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService(logger, console, console.Config);
+        _processService = new ProcessService(console, console.Config);
     }
 
     public void ShowMenu()
@@ -104,7 +102,7 @@ public class ComposerController
         var (version, path, isGlobal) = _processService.GetComposerInfo();
         if (!string.IsNullOrEmpty(path) && !path.Equals("composer", StringComparison.OrdinalIgnoreCase))
         {
-            _logger.Info($"Found Composer {version} at {path} (Global: {isGlobal})");
+            LoggerUtilities.Info($"Found Composer {version} at {path} (Global: {isGlobal})");
             return path;
         }
 
@@ -399,7 +397,7 @@ public class ComposerController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error reading composer.json: {ex.Message}");
+            LoggerUtilities.Error($"Error reading composer.json: {ex.Message}");
             _console.WriteError("Invalid composer.json file");
         }
 

@@ -2,6 +2,7 @@
 using CommonUtilities.Config;
 using CommonUtilities.Models;
 using CommonUtilities.Services;
+using CommonUtilities.Utilities;
 
 namespace EasyKit;
 
@@ -12,7 +13,6 @@ internal class Program
         new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
 
     private static readonly Software Software = new();
-    private static readonly LoggerService Logger = new();
     private static readonly ConsoleService ConsoleService = new(Config);
     private static readonly ConfirmationService ConfirmationService = new(Config);
     private static readonly MenuView MenuView = new();
@@ -20,24 +20,24 @@ internal class Program
     private static readonly NotificationView NotificationView = new();
 
     private static readonly NpmController NpmController =
-        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+        new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
     private static readonly LaravelController LaravelController =
-        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+        new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
     private static readonly ComposerController ComposerController =
-        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+        new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
     private static readonly GitController GitController =
-        new(Software, Logger, ConsoleService, ConfirmationService, PromptView, NotificationView);
+        new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
-    private static readonly SettingsController SettingsController = new(Config, Logger, ConsoleService, PromptView);
+    private static readonly SettingsController SettingsController = new(Config, ConsoleService, PromptView);
 
     private static readonly ShortcutManagerController ShortcutManagerController =
-        new(Config, Logger, ConsoleService, PromptView);
+        new(Config, ConsoleService, PromptView);
 
     private static readonly ToolMarketplaceController ToolMarketplaceController = new(
-        new ProcessService(Logger, ConsoleService, Config),
+        new ProcessService(ConsoleService, Config),
         ConsoleService);
 
     // Helper to select the best executable for a tool on Windows
@@ -96,7 +96,7 @@ internal class Program
 
     private static void AutoDetectAndSaveToolPaths()
     {
-        var processService = new ProcessService(Logger, ConsoleService, Config);
+        var processService = new ProcessService(ConsoleService, Config);
         var tools = new[] { "npm", "node", "php", "composer", "git" };
         foreach (var tool in tools)
         {
@@ -121,10 +121,10 @@ internal class Program
             if (!string.IsNullOrEmpty(best))
             {
                 if (candidates.Count > 1 && !string.Equals(best, candidates[0], StringComparison.OrdinalIgnoreCase))
-                    Logger.Warning(
+                    LoggerUtilities.Warning(
                         $"Auto-detected {tool}: Found multiple candidates, selected '{best}' as the best match.");
                 Config.Set($"{tool}_path", best);
-                Logger.Info($"Auto-detected {tool} path: {best} and saved to config.");
+                LoggerUtilities.Info($"Auto-detected {tool} path: {best} and saved to config.");
             }
         }
     }
@@ -135,7 +135,7 @@ internal class Program
         {
             // Initialize logging using CommonUtilities
             LoggerUtilities.StartLog("EasyKit");
-            Logger.Info("EasyKit application started");
+            LoggerUtilities.Info("EasyKit application started");
 
             AutoDetectAndSaveToolPaths();
 
@@ -223,7 +223,7 @@ internal class Program
         }
         catch (Exception ex)
         {
-            Logger.Fatal(ex, "A fatal error occurred");
+            LoggerUtilities.Fatal(ex, "A fatal error occurred");
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("A fatal error occurred:");
             Console.WriteLine(ex.ToString());
@@ -234,7 +234,7 @@ internal class Program
         finally
         {
             // Clean up logging
-            Logger.Info("EasyKit application shutting down");
+            LoggerUtilities.Info("EasyKit application shutting down");
             LoggerUtilities.StopLog();
         }
     }

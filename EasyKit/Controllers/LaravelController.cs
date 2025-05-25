@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using CommonUtilities.Models;
 using CommonUtilities.Services;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Controllers;
 
@@ -8,7 +9,6 @@ public class LaravelController
 {
     private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
@@ -16,19 +16,17 @@ public class LaravelController
 
     public LaravelController(
         Software software,
-        LoggerService logger,
         ConsoleService console,
         ConfirmationService confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {
         _software = software;
-        _logger = logger;
         _console = console;
         _confirmation = confirmation;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService(logger, console, console.Config);
+        _processService = new ProcessService(console, console.Config);
     }
 
     public void RunPhpDiagnostics()
@@ -248,7 +246,7 @@ public class LaravelController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error running Composer command: {ex.Message}");
+            LoggerUtilities.Error($"Error running Composer command: {ex.Message}");
             if (showOutput) _console.WriteError($"Error: {ex.Message}");
             return false;
         }
@@ -301,7 +299,7 @@ public class LaravelController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error running Artisan command: {ex.Message}");
+            LoggerUtilities.Error($"Error running Artisan command: {ex.Message}");
             if (showOutput) _console.WriteError($"Error: {ex.Message}");
             return false;
         }
@@ -478,7 +476,7 @@ public class LaravelController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error starting dev server: {ex.Message}");
+            LoggerUtilities.Error($"Error starting dev server: {ex.Message}");
             _console.WriteError("✗ Failed to start development server.");
         }
 

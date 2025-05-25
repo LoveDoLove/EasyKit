@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using CommonUtilities.Config;
 using Microsoft.Win32;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Controllers;
 
@@ -10,16 +11,14 @@ internal class ShortcutManagerController
 {
     private readonly Config _config;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
     private readonly PromptView _prompt;
 
     /// <summary>
     ///     ShortcutManagerController constructor using the new Config class.
     /// </summary>
-    public ShortcutManagerController(Config config, LoggerService logger, ConsoleService console, PromptView prompt)
+    public ShortcutManagerController(Config config, ConsoleService console, PromptView prompt)
     {
         _config = config;
-        _logger = logger;
         _console = console;
         _prompt = prompt;
     }
@@ -262,15 +261,15 @@ internal class ShortcutManagerController
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to update desktop database: {ex.Message}");
+                LoggerUtilities.Error($"Failed to update desktop database: {ex.Message}");
             }
 
-            _logger.Info("Linux context menu entries created successfully");
+            LoggerUtilities.Info("Linux context menu entries created successfully");
         }
         catch (Exception ex)
         {
             _console.WriteInfo($"Failed to add context menu entry: {ex.Message}");
-            _logger.Error($"Failed to add Linux context menu entry: {ex.Message}");
+            LoggerUtilities.Error($"Failed to add Linux context menu entry: {ex.Message}");
         }
     }
 
@@ -309,15 +308,15 @@ internal class ShortcutManagerController
             }
             catch (Exception ex)
             {
-                _logger.Error($"Failed to update desktop database: {ex.Message}");
+                LoggerUtilities.Error($"Failed to update desktop database: {ex.Message}");
             }
 
-            _logger.Info("Linux context menu entries removed successfully");
+            LoggerUtilities.Info("Linux context menu entries removed successfully");
         }
         catch (Exception ex)
         {
             _console.WriteInfo($"Failed to remove context menu entry: {ex.Message}");
-            _logger.Error($"Failed to remove Linux context menu entry: {ex.Message}");
+            LoggerUtilities.Error($"Failed to remove Linux context menu entry: {ex.Message}");
         }
     }
 }

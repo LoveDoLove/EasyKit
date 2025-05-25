@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using CommonUtilities.Config;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Services;
 
@@ -13,14 +14,12 @@ public class ProcessService
 {
     private readonly Config? _config;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
 
     /// <summary>
     ///     ProcessService constructor using the new Config class.
     /// </summary>
-    public ProcessService(LoggerService logger, ConsoleService console, Config? config = null)
+    public ProcessService(ConsoleService console, Config? config = null)
     {
-        _logger = logger;
         _console = console;
         _config = config;
     }
@@ -52,7 +51,7 @@ public class ProcessService
                 if (!string.IsNullOrEmpty(explicitPath))
                 {
                     executablePath = explicitPath;
-                    _logger.Info($"Using explicit path for {file}: {explicitPath}");
+                    LoggerUtilities.Info($"Using explicit path for {file}: {explicitPath}");
 
                     // Special handling for composer.phar files - run them using PHP
                     if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
@@ -136,7 +135,7 @@ public class ProcessService
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
         {
-            _logger.Error($"Command not found: {file}. {ex.Message}");
+            LoggerUtilities.Error($"Command not found: {file}. {ex.Message}");
             if (showOutput)
             {
                 _console.WriteError("[ERROR] Unable to execute the selected option:");
@@ -178,7 +177,7 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error running process: {ex.Message}");
+            LoggerUtilities.Error($"Error running process: {ex.Message}");
             if (showOutput) _console.WriteError($"Error: {ex.Message}");
             return false;
         }
@@ -346,7 +345,7 @@ public class ProcessService
                 if (!string.IsNullOrEmpty(explicitPath))
                 {
                     executablePath = explicitPath;
-                    _logger.Info($"Using explicit path for {file}: {explicitPath}");
+                    LoggerUtilities.Info($"Using explicit path for {file}: {explicitPath}");
                 }
 
                 // Special handling for npm which might need .cmd extension on Windows
@@ -358,7 +357,7 @@ public class ProcessService
                     if (File.Exists(npmCmd))
                     {
                         executablePath = npmCmd;
-                        _logger.Info($"Using npm.cmd instead of npm: {npmCmd}");
+                        LoggerUtilities.Info($"Using npm.cmd instead of npm: {npmCmd}");
                     }
                 }
 
@@ -366,7 +365,7 @@ public class ProcessService
                 if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
                     executablePath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.Info($"Found Composer phar file at {executablePath}, using PHP to execute it");
+                    LoggerUtilities.Info($"Found Composer phar file at {executablePath}, using PHP to execute it");
                     return RunProcessWithOutput("php", executablePath + " " + args, workingDirectory);
                 }
             }
@@ -401,12 +400,12 @@ public class ProcessService
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
         {
-            _logger.Error($"Command not found: {file}. {ex.Message}");
+            LoggerUtilities.Error($"Command not found: {file}. {ex.Message}");
             return ("", $"Command not found: {file}. Ensure it is properly installed and in your PATH.", 1);
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error running process: {ex.Message}");
+            LoggerUtilities.Error($"Error running process: {ex.Message}");
             return ("", ex.Message, 1);
         }
     }
@@ -502,7 +501,7 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error displaying PATH diagnostics: {ex.Message}");
+            LoggerUtilities.Error($"Error displaying PATH diagnostics: {ex.Message}");
         }
     }
 
@@ -562,7 +561,7 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error searching PATH for {executableName}: {ex.Message}");
+            LoggerUtilities.Error($"Error searching PATH for {executableName}: {ex.Message}");
         }
 
         return null;
@@ -583,7 +582,7 @@ public class ProcessService
         if (!string.IsNullOrEmpty(explicitPath))
         {
             phpPath = explicitPath;
-            _logger.Info($"Using explicit path for PHP: {explicitPath}");
+            LoggerUtilities.Info($"Using explicit path for PHP: {explicitPath}");
         }
 
         // Run the PHP --version command
@@ -688,7 +687,7 @@ public class ProcessService
                 isGlobal = true;
             }
 
-            _logger.Info($"Using explicit path for Composer: {composerPath}");
+            LoggerUtilities.Info($"Using explicit path for Composer: {composerPath}");
         }
 
         // Check if composer.phar exists in the current directory
@@ -847,7 +846,7 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error checking for Composer package {packageName}: {ex.Message}");
+            LoggerUtilities.Error($"Error checking for Composer package {packageName}: {ex.Message}");
             return false;
         }
     }
@@ -900,7 +899,7 @@ public class ProcessService
             if (needsUpdate)
             {
                 Environment.SetEnvironmentVariable(key, recommended);
-                _logger.Info($"Set environment variable {key}={recommended}");
+                LoggerUtilities.Info($"Set environment variable {key}={recommended}");
                 updatedCount++;
             }
 
