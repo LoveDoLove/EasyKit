@@ -1,8 +1,14 @@
 ﻿using System.Reflection;
 using CommonUtilities.Config;
+using CommonUtilities.Interfaces;
 using CommonUtilities.Models;
 using CommonUtilities.Services;
+using CommonUtilities.Services.OSIntegration.Linux;
+using CommonUtilities.Services.OSIntegration.Windows;
 using CommonUtilities.Utilities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 
 namespace EasyKit;
 
@@ -12,6 +18,7 @@ internal class Program
     private static readonly Config Config =
         new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
 
+    private static readonly IServiceProvider ServiceProvider = ConfigureServices();
     private static readonly Software Software = new();
     private static readonly ConsoleService ConsoleService = new(Config);
     private static readonly ConfirmationService ConfirmationService = new(Config);
@@ -34,7 +41,7 @@ internal class Program
     private static readonly SettingsController SettingsController = new(Config, ConsoleService, PromptView);
 
     private static readonly ShortcutManagerController ShortcutManagerController =
-        new(Config, ConsoleService, PromptView);
+        new(Config, ConsoleService, PromptView, ServiceProvider.GetRequiredService<IContextMenuManager>());
 
     private static readonly ToolMarketplaceController ToolMarketplaceController = new(
         new ProcessService(ConsoleService, Config),
@@ -127,6 +134,53 @@ internal class Program
                 LoggerUtilities.Info($"Auto-detected {tool} path: {best} and saved to config.");
             }
         }
+    }
+
+    private static IServiceProvider ConfigureServices()
+    {
+        var services = new ServiceCollection();
+
+        // Add logging
+        services.AddLogging(configure =>
+        {
+            configure.AddConsole();
+            // Add other logging providers if needed
+        });
+
+        // Register IContextMenuManager
+        services.AddScoped<IContextMenuManager>(sp =>
+        {
+            var osPlatform = OSPlatform.Create("Unknown");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                osPlatform = OSPlatform.Windows;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                osPlatform = OSPlatform.Linux;
+            }
+            // Add other OS checks like OSPlatform.OSX if needed
+
+            if (osPlatform == OSPlatform.Windows)
+            {
+                return new WindowsContextMenuManager();
+            }
+            else if (osPlatform == OSPlatform.Linux)
+            {
+                return new LinuxContextMenuManager();
+            }
+            // Potentially add MacOS support or a default/null implementation
+            else
+            {
+                var logger = sp.GetRequiredService<ILogger<Program>>(); // Fallback logger for the warning
+                logger.LogWarning($"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}. Attempting to use it will result in an exception.");
+                // Return a NullContextMenuManager or throw if strict support is required.
+                // For now, let's throw as per the initial requirement.
+                throw new PlatformNotSupportedException($"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}.");
+            }
+        });
+
+        return services.BuildServiceProvider();
     }
 
     private static void Main(string[] args)
@@ -254,7 +308,8 @@ internal class Program
                 "2. Laravel Tools",
                 "3. Composer Tools",
                 "4. Git Tools",
-                "5. Settings"
+                "5. Settings",
+                "6. Shortcut Manager"
             });
 
             Console.WriteLine("[T] Tool Marketplace");
@@ -283,6 +338,55 @@ internal class Program
                     break;
                 case ConsoleKey.D5:
                     SettingsController.ShowMenu();
+                    break;
+                case ConsoleKey.D6:
+                    ShortcutManagerMenu();
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Displays and handles the Shortcut Manager menu.
+    /// This menu allows users to manage predefined application shortcuts.
+    /// </summary>
+    private static void ShortcutManagerMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            // Get current statuses
+            bool isOpenWithEasyKitEnabled = Config.Get("open_with_easykit", false) is bool bOpen && bOpen;
+            bool isLaunchDocEnabled = Config.Get("launch_documentation_enabled", true) is bool bDoc && bDoc;
+            bool isCheckUpdatesEnabled = Config.Get("check_for_updates_enabled", true) is bool bUpd && bUpd;
+
+            var menuItems = new List<string>
+            {
+                "0. Back",
+                $"1. Open with EasyKit       [Status: {(isOpenWithEasyKitEnabled ? "Enabled" : "Disabled")}] [Manage...]",
+                $"2. Launch Documentation    [{(isLaunchDocEnabled ? "ON" : "OFF")}]",
+                $"3. Check for Updates       [{(isCheckUpdatesEnabled ? "ON" : "OFF")}]"
+            };
+
+            MenuView.ShowMenu("Shortcut Manager", menuItems.ToArray());
+
+            var key = Console.ReadKey(true).Key;
+            switch (key)
+            {
+                case ConsoleKey.D0:
+                    return;
+                case ConsoleKey.D1: // Manage Open with EasyKit
+                    ShortcutManagerController.ManageContextMenuAsync().GetAwaiter().GetResult();
+                    break;
+                case ConsoleKey.D2: // Toggle Launch Documentation
+                    Config.Set("launch_documentation_enabled", !isLaunchDocEnabled);
+                    Config.SaveConfig();
+                    NotificationView.Show($"'Launch Documentation' {(Config.Get("launch_documentation_enabled", true) is bool b && b ? "Enabled" : "Disabled")}.", NotificationView.NotificationType.Success);
+                    break;
+                case ConsoleKey.D3: // Toggle Check for Updates
+                    Config.Set("check_for_updates_enabled", !isCheckUpdatesEnabled);
+                    Config.SaveConfig();
+                    NotificationView.Show($"'Check for Updates' {(Config.Get("check_for_updates_enabled", true) is bool bUpdates && bUpdates ? "Enabled" : "Disabled")}.", NotificationView.NotificationType.Success);
                     break;
             }
         }
