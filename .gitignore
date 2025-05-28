@@ -401,9 +401,9 @@ FodyWeavers.xsd
 *.sln.iml
 
 # No opensource folder
-CommonUtilities/
+# CommonUtilities/
 
 # Documentation files
-report.md
-spec.md
-todolist.md
+# report.md
+# spec.md
+# todolist.md
