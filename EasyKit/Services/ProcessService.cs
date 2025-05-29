@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using CommonUtilities.Config;
 using CommonUtilities.Utilities;
-using CommonUtilities.Helpers; // Added for new helpers
 
 namespace EasyKit.Services;
 
@@ -84,7 +83,7 @@ public class ProcessService
             // we still want to pass null to RunProcessWithStreaming to avoid issues.
             // However, the primary logic is to use _console methods if showOutput is true.
 
-            int exitCode = ProcessExecutionHelper.RunProcessWithStreaming(
+            int exitCode = ProcessExecutionUtilities.RunProcessWithStreaming(
                 executablePath,
                 args,
                 workingDirectory,
@@ -192,7 +191,7 @@ public class ProcessService
         IEnumerable<string> additionalSearchDirs = GetSearchPathsForExecutable(executableName);
 
         // Use the new helper to find the executable
-        return ExecutablePathHelper.FindExecutable(executableName, configuredPath, additionalSearchDirs);
+        return ExecutablePathUtilities.FindExecutable(executableName, configuredPath, additionalSearchDirs);
     }
 
     /// <summary>
@@ -351,7 +350,7 @@ public class ProcessService
             return RunProcessWithOutput(phpPath, $"{executablePath} {args}", workingDirectory);
         }
 
-        return ProcessExecutionHelper.RunProcessAndCaptureOutput(
+        return ProcessExecutionUtilities.RunProcessAndCaptureOutput(
             executablePath,
             args,
             workingDirectory
@@ -383,7 +382,7 @@ public class ProcessService
                     // Check if the command exists in this PATH directory
                     // Use ExecutablePathHelper.GetExecutableExtensions() for a more robust check
                     bool foundInDir = false;
-                    var extensionsToCheck = ExecutablePathHelper.GetExecutableExtensions();
+                    var extensionsToCheck = ExecutablePathUtilities.GetExecutableExtensions();
                     // Ensure an empty extension is checked for non-Windows or if the command itself has an extension
                     var checkList = extensionsToCheck.Contains(string.Empty) ? extensionsToCheck : extensionsToCheck.Concat(new[] { string.Empty }).ToArray();
 
