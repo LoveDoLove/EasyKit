@@ -16,8 +16,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/LoveDoLove/EasyKit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>4.0.7</AssemblyVersion>
-    <FileVersion>4.0.7</FileVersion>
+    <AssemblyVersion>4.0.8</AssemblyVersion>
+    <FileVersion>4.0.8</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
