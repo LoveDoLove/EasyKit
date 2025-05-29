@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using CommonUtilities.Config;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Services;
 
@@ -13,14 +14,12 @@ public class ProcessService
 {
     private readonly Config? _config;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
 
     /// <summary>
     ///     ProcessService constructor using the new Config class.
     /// </summary>
-    public ProcessService(LoggerService logger, ConsoleService console, Config? config = null)
+    public ProcessService(ConsoleService console, Config? config = null)
     {
-        _logger = logger;
         _console = console;
         _config = config;
     }
@@ -41,79 +40,66 @@ public class ProcessService
         try
         {
             // Try to get explicit path for common tools if direct call fails
-            string executablePath = file;
-            if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("node", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("ncu", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("php", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("composer", StringComparison.OrdinalIgnoreCase))
+            string? executablePath = FindExecutablePath(file); // Use refactored FindExecutablePath
+
+            if (string.IsNullOrEmpty(executablePath))
             {
-                var explicitPath = FindExecutablePath(file);
-                if (!string.IsNullOrEmpty(explicitPath))
+                LoggerUtilities.Error($"Executable not found: {file}. Cannot run process.");
+                if (showOutput)
                 {
-                    executablePath = explicitPath;
-                    _logger.Info($"Using explicit path for {file}: {explicitPath}");
-
-                    // Special handling for composer.phar files - run them using PHP
-                    if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
-                        explicitPath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Find PHP path
-                        string phpPath = "php";
-                        var phpExplicitPath = FindExecutablePath("php");
-                        if (!string.IsNullOrEmpty(phpExplicitPath)) phpPath = phpExplicitPath;
-
-                        return RunProcess(phpPath, $"{explicitPath} {args}", showOutput, workingDirectory);
-                    }
+                    _console.WriteError($"[ERROR] Executable '{file}' not found. Ensure it is installed and in your PATH or configured correctly.");
+                    DisplayPathDiagnostics(file); // Display diagnostics if not found
                 }
+                return false;
             }
 
-            var process = new Process();
-            process.StartInfo.FileName = executablePath;
-            process.StartInfo.Arguments = args;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            // On Windows, load user profile to ensure PATH is available
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            LoggerUtilities.Info($"Using resolved path for {file}: {executablePath}");
+
+            // Special handling for composer.phar files - run them using PHP
+            if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
+                executablePath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
             {
-#pragma warning disable CA1416 // Validate platform compatibility
-                process.StartInfo.LoadUserProfile = true;
-#pragma warning restore CA1416 // Validate platform compatibility
+                string? phpPath = FindExecutablePath("php");
+                if (string.IsNullOrEmpty(phpPath))
+                {
+                    LoggerUtilities.Error("PHP executable not found, cannot run composer.phar.");
+                    if (showOutput) _console.WriteError("[ERROR] PHP executable not found. Composer.phar requires PHP to run.");
+                    return false;
+                }
+                // Recursively call RunProcess with PHP as the main executable
+                return RunProcess(phpPath, $"{executablePath} {args}", showOutput, workingDirectory);
             }
 
-            if (!string.IsNullOrEmpty(workingDirectory))
-                process.StartInfo.WorkingDirectory = workingDirectory;
-            else
-                process.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
-
-            // Show diagnostic info if requested
             if (showOutput)
             {
                 _console.WriteInfo($"Running: {executablePath} {args}");
-                _console.WriteInfo($"Working directory: {process.StartInfo.WorkingDirectory}");
+                _console.WriteInfo($"Working directory: {workingDirectory ?? Environment.CurrentDirectory}");
             }
 
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
+            Action<string>? outputHandler = showOutput ? _console.WriteInfo : (Action<string>?)null;
+            Action<string>? errorHandler = showOutput ? _console.WriteError : (Action<string>?)null;
+            
+            // If showOutput is true but handlers are null (e.g. _console is null somehow, though unlikely),
+            // we still want to pass null to RunProcessWithStreaming to avoid issues.
+            // However, the primary logic is to use _console methods if showOutput is true.
 
-            if (showOutput)
-            {
-                if (!string.IsNullOrWhiteSpace(output)) _console.WriteInfo(output);
-                if (!string.IsNullOrWhiteSpace(error)) _console.WriteError(error);
-            }
+            int exitCode = ProcessExecutionUtilities.RunProcessWithStreaming(
+                executablePath,
+                args,
+                workingDirectory,
+                null, // loadUserProfile will be determined by helper
+                outputHandler,
+                errorHandler
+            );
 
-            if (process.ExitCode == 0) return true;
+            if (exitCode == 0) return true;
 
             if (showOutput && (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
                                file.Equals("node", StringComparison.OrdinalIgnoreCase) ||
                                file.Equals("php", StringComparison.OrdinalIgnoreCase) ||
                                file.Equals("composer", StringComparison.OrdinalIgnoreCase)))
             {
-                _console.WriteError($"\nThe {file} command failed with exit code {process.ExitCode}");
+                _console.WriteError($"\nThe {file} command failed with exit code {exitCode}");
 
                 if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
                     file.Equals("node", StringComparison.OrdinalIgnoreCase))
@@ -136,7 +122,7 @@ public class ProcessService
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
         {
-            _logger.Error($"Command not found: {file}. {ex.Message}");
+            LoggerUtilities.Error($"Command not found: {file}. {ex.Message}");
             if (showOutput)
             {
                 _console.WriteError("[ERROR] Unable to execute the selected option:");
@@ -178,7 +164,7 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error running process: {ex.Message}");
+            LoggerUtilities.Error($"Error running process: {ex.Message}");
             if (showOutput) _console.WriteError($"Error: {ex.Message}");
             return false;
         }
@@ -191,30 +177,21 @@ public class ProcessService
     /// <returns>The explicit path if found, otherwise null.</returns>
     public string? FindExecutablePath(string executableName)
     {
-        // If no config is available, return null
-        if (_config == null) return null;
-
-        // Check for explicitly configured paths in settings
-        var configPath = _config.Get($"{executableName.ToLower()}_path", "");
-        if (configPath != null && !string.IsNullOrWhiteSpace(configPath.ToString()) &&
-            File.Exists(configPath.ToString())) return configPath.ToString();
-
-        // For npm and node, try to find them directly in PATH first
-        if (executableName.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
-            executableName.Equals("node", StringComparison.OrdinalIgnoreCase))
+        string? configuredPath = null;
+        if (_config != null)
         {
-            var pathExecutable = FindExecutableInPath(executableName);
-            if (!string.IsNullOrEmpty(pathExecutable)) return pathExecutable;
+            var configValue = _config.Get($"{executableName.ToLower()}_path");
+            if (configValue != null && !string.IsNullOrWhiteSpace(configValue.ToString()))
+            {
+                configuredPath = configValue.ToString();
+            }
         }
 
-        // Common paths for executables depending on OS
-        string[] searchPaths = GetSearchPathsForExecutable(executableName);
+        // Get application-specific search paths
+        IEnumerable<string> additionalSearchDirs = GetSearchPathsForExecutable(executableName);
 
-        foreach (var path in searchPaths)
-            if (File.Exists(path))
-                return path;
-
-        return null;
+        // Use the new helper to find the executable
+        return ExecutablePathUtilities.FindExecutable(executableName, configuredPath, additionalSearchDirs);
     }
 
     /// <summary>
@@ -331,84 +308,54 @@ public class ProcessService
     public (string output, string error, int exitCode) RunProcessWithOutput(string file, string args,
         string? workingDirectory = null)
     {
-        try
+        string? executablePath = FindExecutablePath(file); // Use refactored FindExecutablePath
+
+        if (string.IsNullOrEmpty(executablePath))
         {
-            // Try to get explicit path for common tools if direct call fails
-            string executablePath = file;
-            if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("node", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("ncu", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("php", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("composer", StringComparison.OrdinalIgnoreCase) ||
-                file.Equals("git", StringComparison.OrdinalIgnoreCase))
+            string errorMessage = $"Command not found: {file}. Ensure it is properly installed and in your PATH or configured correctly.";
+            LoggerUtilities.Error(errorMessage);
+            // DisplayPathDiagnostics(file); // Consider if diagnostics should be shown here or handled by caller
+            return ("", errorMessage, -1); // Return a distinct exit code for "not found"
+        }
+
+        LoggerUtilities.Info($"Using resolved path for {file}: {executablePath}");
+
+        // Special handling for npm which might need .cmd extension on Windows
+        // This specific handling might still be relevant if FindExecutablePath doesn't inherently prefer .cmd for npm
+        if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) &&
+            Environment.OSVersion.Platform == PlatformID.Win32NT &&
+            !executablePath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
+        {
+            string npmCmdPath = executablePath + ".cmd";
+            if (File.Exists(npmCmdPath))
             {
-                var explicitPath = FindExecutablePath(file);
-                if (!string.IsNullOrEmpty(explicitPath))
-                {
-                    executablePath = explicitPath;
-                    _logger.Info($"Using explicit path for {file}: {explicitPath}");
-                }
-
-                // Special handling for npm which might need .cmd extension on Windows
-                if (file.Equals("npm", StringComparison.OrdinalIgnoreCase) &&
-                    Environment.OSVersion.Platform == PlatformID.Win32NT &&
-                    !executablePath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
-                {
-                    string npmCmd = executablePath + ".cmd";
-                    if (File.Exists(npmCmd))
-                    {
-                        executablePath = npmCmd;
-                        _logger.Info($"Using npm.cmd instead of npm: {npmCmd}");
-                    }
-                }
-
-                // Special handling for composer.phar files
-                if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
-                    executablePath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
-                {
-                    _logger.Info($"Found Composer phar file at {executablePath}, using PHP to execute it");
-                    return RunProcessWithOutput("php", executablePath + " " + args, workingDirectory);
-                }
+                LoggerUtilities.Info($"Preferring npm.cmd for '{file}': {npmCmdPath}");
+                executablePath = npmCmdPath;
             }
-
-            var process = new Process();
-            process.StartInfo.FileName = executablePath;
-            process.StartInfo.Arguments = args;
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.RedirectStandardError = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-
-            // On Windows, load user profile to ensure PATH is available
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        }
+        
+        // Special handling for composer.phar files - run them using PHP
+        if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
+            executablePath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
+        {
+            string? phpPath = FindExecutablePath("php");
+            if (string.IsNullOrEmpty(phpPath))
             {
-#pragma warning disable CA1416 // Validate platform compatibility
-                process.StartInfo.LoadUserProfile = true;
-#pragma warning restore CA1416 // Validate platform compatibility
+                string composerError = "PHP executable not found, cannot run composer.phar.";
+                LoggerUtilities.Error(composerError);
+                return ("", composerError, -1);
             }
-
-            if (!string.IsNullOrEmpty(workingDirectory))
-                process.StartInfo.WorkingDirectory = workingDirectory;
-            else
-                process.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
-
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            return (output, error, process.ExitCode);
+            // Recursively call RunProcessWithOutput with PHP as the main executable
+            // Note: The arguments for composer.phar should include the .phar path itself.
+            return RunProcessWithOutput(phpPath, $"{executablePath} {args}", workingDirectory);
         }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == 2) // File not found
-        {
-            _logger.Error($"Command not found: {file}. {ex.Message}");
-            return ("", $"Command not found: {file}. Ensure it is properly installed and in your PATH.", 1);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"Error running process: {ex.Message}");
-            return ("", ex.Message, 1);
-        }
+
+        return ProcessExecutionUtilities.RunProcessAndCaptureOutput(
+            executablePath,
+            args,
+            workingDirectory
+            // loadUserProfile will be determined by helper
+        );
     }
 
     /// <summary>
@@ -433,12 +380,23 @@ public class ProcessService
                     _console.WriteInfo($"  - {dir}");
 
                     // Check if the command exists in this PATH directory
-                    string cmdPath = Path.Combine(dir, command);
-                    string cmdPathWithExt = Path.Combine(dir, command + ".exe");
-                    if (File.Exists(cmdPath))
-                        _console.WriteInfo($"    ✓ {command} found in this location!");
-                    else if (File.Exists(cmdPathWithExt))
-                        _console.WriteInfo($"    ✓ {command}.exe found in this location!");
+                    // Use ExecutablePathHelper.GetExecutableExtensions() for a more robust check
+                    bool foundInDir = false;
+                    var extensionsToCheck = ExecutablePathUtilities.GetExecutableExtensions();
+                    // Ensure an empty extension is checked for non-Windows or if the command itself has an extension
+                    var checkList = extensionsToCheck.Contains(string.Empty) ? extensionsToCheck : extensionsToCheck.Concat(new[] { string.Empty }).ToArray();
+
+                    foreach (var ext in checkList)
+                    {
+                        // Path.Combine correctly handles if 'ext' is empty.
+                        var fullPath = Path.Combine(dir, command + ext);
+                        if (File.Exists(fullPath))
+                        {
+                            _console.WriteInfo($"    ✓ {Path.GetFileName(fullPath)} found in this location!");
+                            foundInDir = true;
+                            break;
+                        }
+                    }
                 }
 
             // Provide installation guidance based on the command
@@ -502,71 +460,11 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error displaying PATH diagnostics: {ex.Message}");
+            LoggerUtilities.Error($"Error displaying PATH diagnostics: {ex.Message}");
         }
     }
 
-    /// <summary>
-    ///     Searches the PATH environment variable for a specific executable.
-    /// </summary>
-    /// <param name="executableName">The name of the executable to find.</param>
-    /// <returns>The path to the executable if found, otherwise null.</returns>
-    private string? FindExecutableInPath(string executableName)
-    {
-        try
-        {
-            string extensions = Environment.OSVersion.Platform == PlatformID.Win32NT
-                ? ".exe;.cmd;.bat;"
-                : string.Empty;
-
-            string path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-
-            foreach (string directory in path.Split(Path.PathSeparator))
-            {
-                if (string.IsNullOrWhiteSpace(directory))
-                    continue;
-
-                if (!Directory.Exists(directory))
-                    continue;
-
-                // Check for the executable with various extensions
-                if (string.IsNullOrEmpty(extensions))
-                {
-                    string filePath = Path.Combine(directory, executableName);
-                    if (File.Exists(filePath))
-                        return filePath;
-                }
-                else
-                {
-                    foreach (string ext in extensions.Split(';'))
-                    {
-                        if (string.IsNullOrEmpty(ext))
-                            continue;
-
-                        // Check with the extension
-                        string filePathWithExt = Path.Combine(directory, executableName + ext);
-                        if (File.Exists(filePathWithExt))
-                            return filePathWithExt;
-
-                        // Also check without the extension for npm/node
-                        if (executableName.Equals("npm", StringComparison.OrdinalIgnoreCase) ||
-                            executableName.Equals("node", StringComparison.OrdinalIgnoreCase))
-                        {
-                            string filePathNoExt = Path.Combine(directory, executableName);
-                            if (File.Exists(filePathNoExt))
-                                return filePathNoExt;
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Error($"Error searching PATH for {executableName}: {ex.Message}");
-        }
-
-        return null;
-    }
+    // FindExecutableInPath method removed as its functionality is now in CommonUtilities.Helpers.ExecutablePathHelper
 
     /// <summary>
     ///     Gets information about the installed PHP version
@@ -578,15 +476,9 @@ public class ProcessService
         string version = "Unknown";
         bool isCompatible = false;
 
-        // Try to find the PHP executable path
-        var explicitPath = FindExecutablePath("php");
-        if (!string.IsNullOrEmpty(explicitPath))
-        {
-            phpPath = explicitPath;
-            _logger.Info($"Using explicit path for PHP: {explicitPath}");
-        }
-
-        // Run the PHP --version command
+        // RunProcessWithOutput will resolve "php" using FindExecutablePath.
+        // The phpPath variable here is effectively what RunProcessWithOutput will try to find or use.
+        // If a specific phpPath was intended to be forced, it would be passed directly to RunProcessWithOutput.
         var (output, error, exitCode) = RunProcessWithOutput(phpPath, "--version");
 
         if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
@@ -609,8 +501,12 @@ public class ProcessService
                     isCompatible = major > 7 || (major == 7 && minor >= 3);
             }
         }
-
-        return (version, phpPath, isCompatible);
+        // The actual path used by RunProcessWithOutput isn't directly returned by it.
+        // To show the path, we'd need to call FindExecutablePath separately if we want to display it.
+        // For now, returning the input phpPath (which might just be "php").
+        // Or, resolve it again for display:
+        string? resolvedPhpPath = FindExecutablePath(phpPath);
+        return (version, resolvedPhpPath ?? phpPath, isCompatible);
     }
 
     /// <summary>
@@ -638,6 +534,7 @@ public class ProcessService
         bool isCompatible = true;
 
         // Run PHP -m to get loaded extensions
+        // phpPath will be resolved by RunProcessWithOutput if it's "php" or an actual path.
         var (output, _, exitCode) = RunProcessWithOutput(phpPath, "-m");
 
         if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
@@ -671,47 +568,54 @@ public class ProcessService
     public (string version, string path, bool isGlobal) GetComposerInfo()
     {
         string version = "Unknown";
-        string composerPath = "composer";
-        bool isGlobal = false; // Try to find the Composer executable path
-        var explicitPath = FindExecutablePath("composer");
-        if (!string.IsNullOrEmpty(explicitPath))
-        {
-            // If it's a .phar file, we need to run it with PHP
-            if (explicitPath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
-            {
-                composerPath = "php " + explicitPath;
-                isGlobal = false;
-            }
-            else
-            {
-                composerPath = explicitPath;
-                isGlobal = true;
-            }
+        string displayPath = "composer"; // Default display path
+        bool isGlobal = false;
 
-            _logger.Info($"Using explicit path for Composer: {composerPath}");
-        }
-
-        // Check if composer.phar exists in the current directory
-        if (File.Exists("composer.phar"))
-        {
-            composerPath = "php composer.phar";
-            isGlobal = false;
-        }
-
-        // Run the Composer --version command
-        var (output, _, exitCode) = composerPath.StartsWith("php ")
-            ? RunProcessWithOutput("php", composerPath.Substring(4) + " --version")
-            : RunProcessWithOutput(composerPath, "--version");
+        // Execute the command. RunProcessWithOutput will find "composer"
+        // (which could be a phar that it runs via PHP, a .bat, or a direct executable).
+        var (output, error, exitCode) = RunProcessWithOutput("composer", "--version");
 
         if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
         {
-            // Parse the Composer version from the output
-            // Example output: "Composer version 2.3.5 2022-04-13 16:43:00"
             var versionMatch = Regex.Match(output, @"Composer version (\d+\.\d+\.\d+)");
-            if (versionMatch.Success) version = versionMatch.Groups[1].Value;
-        }
+            if (versionMatch.Success)
+            {
+                version = versionMatch.Groups[1].Value;
+            }
 
-        return (version, composerPath, isGlobal);
+            // Determine the path and global status based on how "composer" was likely found.
+            string? resolvedPath = FindExecutablePath("composer"); // This reflects what RunProcessWithOutput would have found.
+            if (!string.IsNullOrEmpty(resolvedPath))
+            {
+                displayPath = resolvedPath;
+                // A PHAR in a non-vendor location is considered global.
+                // A non-PHAR in a non-vendor location is global.
+                // Anything in vendor/bin is local.
+                if (resolvedPath.Contains(Path.Combine("vendor", "bin")))
+                {
+                    isGlobal = false;
+                }
+                else
+                {
+                    isGlobal = true;
+                }
+            }
+            else // Command succeeded, but FindExecutablePath (config/additional) didn't find it.
+            {
+                 // This implies "composer" was found directly in the system PATH by ProcessExecutionHelper.FindInPath.
+                displayPath = "composer (from PATH)";
+                isGlobal = true;
+            }
+        }
+        else
+        {
+            LoggerUtilities.Error($"Failed to get Composer version. Exit Code: {exitCode}, Error: {error}");
+            // Try to determine path for error reporting, even if command failed.
+            string? attemptedPath = FindExecutablePath("composer");
+            displayPath = attemptedPath ?? "composer (not found or error)";
+            isGlobal = false; // Default to false if command failed.
+        }
+        return (version, displayPath, isGlobal);
     }
 
     /// <summary>
@@ -729,7 +633,7 @@ public class ProcessService
         // Check if artisan file exists
         if (!File.Exists(Path.Combine(directory, "artisan"))) return (version, isCompatible);
 
-        // Run Laravel version command
+        // Run Laravel version command. "php" will be resolved by the call to RunProcessWithOutput.
         var (output, _, exitCode) = RunProcessWithOutput("php", "artisan --version", directory);
 
         if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
@@ -785,7 +689,8 @@ public class ProcessService
         string currentLimit = "Unknown";
         bool hasEnoughMemory = false;
 
-        // Run PHP to check memory_limit setting
+        // Run PHP to check memory_limit setting. The phpPath argument (defaulting to "php")
+        // will be resolved by RunProcessWithOutput.
         var (output, _, exitCode) = RunProcessWithOutput(phpPath, "-r \"echo ini_get('memory_limit');\"");
 
         if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
@@ -847,7 +752,7 @@ public class ProcessService
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error checking for Composer package {packageName}: {ex.Message}");
+            LoggerUtilities.Error($"Error checking for Composer package {packageName}: {ex.Message}");
             return false;
         }
     }
@@ -900,7 +805,7 @@ public class ProcessService
             if (needsUpdate)
             {
                 Environment.SetEnvironmentVariable(key, recommended);
-                _logger.Info($"Set environment variable {key}={recommended}");
+                LoggerUtilities.Info($"Set environment variable {key}={recommended}");
                 updatedCount++;
             }
 

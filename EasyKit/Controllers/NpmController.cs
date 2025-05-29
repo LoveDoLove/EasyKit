@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using CommonUtilities.Models;
 using CommonUtilities.Services;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Controllers;
 
@@ -9,7 +10,6 @@ public class NpmController
 {
     private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
@@ -17,19 +17,17 @@ public class NpmController
 
     public NpmController(
         Software software,
-        LoggerService logger,
         ConsoleService console,
         ConfirmationService confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {
         _software = software;
-        _logger = logger;
         _console = console;
         _confirmation = confirmation;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService(logger, console, console.Config);
+        _processService = new ProcessService(console, console.Config);
     }
 
     // Helper to get the detected npm path
@@ -132,7 +130,7 @@ public class NpmController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error opening browser: {ex.Message}");
+            LoggerUtilities.Error($"Error opening browser: {ex.Message}");
             _console.WriteError("Failed to open browser. Please visit https://nodejs.org/en/download/ manually.");
         }
 
@@ -173,7 +171,7 @@ public class NpmController
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error($"Error opening Environment Variables: {ex.Message}");
+                        LoggerUtilities.Error($"Error opening Environment Variables: {ex.Message}");
                         _console.WriteError("Failed to open Environment Variables dialog. Please open it manually.");
                     }
             }
@@ -406,7 +404,7 @@ public class NpmController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error starting dev server: {ex.Message}");
+            LoggerUtilities.Error($"Error starting dev server: {ex.Message}");
             _console.WriteError("✗ Failed to start development server.");
         }
 
@@ -481,7 +479,7 @@ public class NpmController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error running custom script: {ex.Message}");
+            LoggerUtilities.Error($"Error running custom script: {ex.Message}");
             _console.WriteError("Error reading package.json");
         }
 
@@ -504,7 +502,7 @@ public class NpmController
         }
         catch (Exception ex)
         {
-            _logger.Error($"Error reading package.json: {ex.Message}");
+            LoggerUtilities.Error($"Error reading package.json: {ex.Message}");
             _console.WriteError("Invalid package.json file");
         }
 
@@ -799,7 +797,7 @@ public class NpmController
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error($"Error opening Environment Variables: {ex.Message}");
+                            LoggerUtilities.Error($"Error opening Environment Variables: {ex.Message}");
                             _console.WriteError("Failed to open Environment Variables dialog.");
                         }
                 }

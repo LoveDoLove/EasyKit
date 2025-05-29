@@ -1,5 +1,6 @@
 using CommonUtilities.Models;
 using CommonUtilities.Services;
+using CommonUtilities.Utilities;
 
 namespace EasyKit.Controllers;
 
@@ -7,7 +8,6 @@ public class GitController
 {
     private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
-    private readonly LoggerService _logger;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
@@ -15,19 +15,17 @@ public class GitController
 
     public GitController(
         Software software,
-        LoggerService logger,
         ConsoleService console,
         ConfirmationService confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {
         _software = software;
-        _logger = logger;
         _console = console;
         _confirmation = confirmation;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService(logger, console, console.Config);
+        _processService = new ProcessService(console, console.Config);
     }
 
     // Helper to get the detected git path

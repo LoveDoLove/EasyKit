@@ -1,0 +1,3 @@
+[submodule "CommonUtilities"]
+	path = CommonUtilities
+	url = https://github.com/LoveDoLove/CS_CommonUtilities
