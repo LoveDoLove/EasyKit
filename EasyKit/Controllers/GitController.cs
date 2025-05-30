@@ -135,6 +135,10 @@ public class GitController
         // Create and configure the menu
         var menuView = new MenuView();
         menuView.CreateMenu("Git Tools", width: menuWidth)
+            .AddOption("0", "Back to main menu", () =>
+            {
+                /* Return to main menu */
+            })
             .AddOption("1", "Init repository", () => InitRepo())
             .AddOption("2", "Status", () => CheckStatus())
             .AddOption("3", "Add all changes", () => AddAll())
@@ -150,10 +154,9 @@ public class GitController
             .AddOption("13", "Create pull request (info)", () => CreatePullRequest())
             .AddOption("14", "List pull requests (info)", () => ListPullRequests())
             .AddOption("15", "Run git diagnostics", () => RunDiagnostics())
-            .AddOption("0", "Back to main menu", () =>
-            {
-                /* Return to main menu */
-            })
+            .AddOption("16", "Add submodule", () => AddSubmodule())
+            .AddOption("17", "Update submodule", () => UpdateSubmodule())
+            .AddOption("18", "Remove submodule", () => RemoveSubmodule())
             .WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
                 colorScheme.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
@@ -410,6 +413,66 @@ public class GitController
                            "For GitHub, you can also use the GitHub CLI tool if installed:\n" +
                            "gh pr list\n\n" +
                            "Press Enter to continue.");
+        WaitForUser();
+    }
+
+    private void AddSubmodule()
+    {
+        var url = _prompt.Prompt("Enter submodule URL: ") ?? "";
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            _console.WriteError("Submodule URL cannot be empty.");
+            WaitForUser();
+            return;
+        }
+
+        var path = _prompt.Prompt("Enter submodule path: ") ?? "";
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            _console.WriteError("Submodule path cannot be empty.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Adding submodule from '{url}' to '{path}'...");
+        if (RunGitCommand($"submodule add {url} {path}"))
+            _console.WriteSuccess($"✓ Submodule added successfully!");
+        else
+            _console.WriteError($"✗ Failed to add submodule.");
+        WaitForUser();
+    }
+
+    private void UpdateSubmodule()
+    {
+        _console.WriteInfo("Updating submodules...");
+        if (RunGitCommand("submodule update --init --recursive"))
+            _console.WriteSuccess("✓ Submodules updated successfully!");
+        else
+            _console.WriteError("✗ Failed to update submodules.");
+        WaitForUser();
+    }
+
+    private void RemoveSubmodule()
+    {
+        var path = _prompt.Prompt("Enter submodule path to remove: ") ?? "";
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            _console.WriteError("Submodule path cannot be empty.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Removing submodule '{path}'...");
+        // 1. Remove the submodule entry from .gitmodules
+        RunGitCommand($"submodule deinit -f {path}", false);
+        // 2. Remove the submodule directory from .git/modules
+        RunGitCommand($"rm -rf .git/modules/{path}", false);
+        // 3. Remove the submodule directory from the working tree
+        RunGitCommand($"git rm -f {path}", false);
+        // 4. Commit the changes
+        RunGitCommand("commit -m \"Remove submodule " + path + "\"", false);
+
+        _console.WriteSuccess($"✓ Submodule '{path}' removed successfully!");
         WaitForUser();
     }
 }
