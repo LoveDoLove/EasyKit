@@ -1,14 +1,16 @@
 ﻿using System.Reflection;
-using CommonUtilities.Config;
-using CommonUtilities.Interfaces;
-using CommonUtilities.Models;
-using CommonUtilities.Services;
+using System.Runtime.InteropServices;
+using CommonUtilities.Interfaces.UI;
+using CommonUtilities.Models.Core;
+using CommonUtilities.Services.Core;
 using CommonUtilities.Services.OSIntegration.Linux;
 using CommonUtilities.Services.OSIntegration.Windows;
-using CommonUtilities.Utilities;
+using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Utilities.System;
+using EasyKit.Controllers;
+using EasyKit.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Runtime.InteropServices;
 
 namespace EasyKit;
 
@@ -152,32 +154,21 @@ internal class Program
         {
             var osPlatform = OSPlatform.Create("Unknown");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
                 osPlatform = OSPlatform.Windows;
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                osPlatform = OSPlatform.Linux;
-            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) osPlatform = OSPlatform.Linux;
             // Add other OS checks like OSPlatform.OSX if needed
 
-            if (osPlatform == OSPlatform.Windows)
-            {
-                return new WindowsContextMenuManager();
-            }
-            else if (osPlatform == OSPlatform.Linux)
-            {
-                return new LinuxContextMenuManager();
-            }
+            if (osPlatform == OSPlatform.Windows) return new WindowsContextMenuManager();
+
+            if (osPlatform == OSPlatform.Linux) return new LinuxContextMenuManager();
             // Potentially add MacOS support or a default/null implementation
-            else
-            {
-                var logger = sp.GetRequiredService<ILogger<Program>>(); // Fallback logger for the warning
-                logger.LogWarning($"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}. Attempting to use it will result in an exception.");
-                // Return a NullContextMenuManager or throw if strict support is required.
-                // For now, let's throw as per the initial requirement.
-                throw new PlatformNotSupportedException($"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}.");
-            }
+            var logger = sp.GetRequiredService<ILogger<Program>>(); // Fallback logger for the warning
+            logger.LogWarning(
+                $"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}. Attempting to use it will result in an exception.");
+            // Return a NullContextMenuManager or throw if strict support is required.
+            // For now, let's throw as per the initial requirement.
+            throw new PlatformNotSupportedException(
+                $"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}.");
         });
 
         return services.BuildServiceProvider();
@@ -347,8 +338,8 @@ internal class Program
     }
 
     /// <summary>
-    /// Displays and handles the Shortcut Manager menu.
-    /// This menu allows users to manage predefined application shortcuts.
+    ///     Displays and handles the Shortcut Manager menu.
+    ///     This menu allows users to manage predefined application shortcuts.
     /// </summary>
     private static void ShortcutManagerMenu()
     {
@@ -381,12 +372,16 @@ internal class Program
                 case ConsoleKey.D2: // Toggle Launch Documentation
                     Config.Set("launch_documentation_enabled", !isLaunchDocEnabled);
                     Config.SaveConfig();
-                    NotificationView.Show($"'Launch Documentation' {(Config.Get("launch_documentation_enabled", true) is bool b && b ? "Enabled" : "Disabled")}.", NotificationView.NotificationType.Success);
+                    NotificationView.Show(
+                        $"'Launch Documentation' {(Config.Get("launch_documentation_enabled", true) is bool b && b ? "Enabled" : "Disabled")}.",
+                        NotificationView.NotificationType.Success);
                     break;
                 case ConsoleKey.D3: // Toggle Check for Updates
                     Config.Set("check_for_updates_enabled", !isCheckUpdatesEnabled);
                     Config.SaveConfig();
-                    NotificationView.Show($"'Check for Updates' {(Config.Get("check_for_updates_enabled", true) is bool bUpdates && bUpdates ? "Enabled" : "Disabled")}.", NotificationView.NotificationType.Success);
+                    NotificationView.Show(
+                        $"'Check for Updates' {(Config.Get("check_for_updates_enabled", true) is bool bUpdates && bUpdates ? "Enabled" : "Disabled")}.",
+                        NotificationView.NotificationType.Success);
                     break;
             }
         }

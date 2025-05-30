@@ -1,29 +1,30 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
-using CommonUtilities.Config;
-using CommonUtilities.Interfaces;
-using CommonUtilities.Models;
+using CommonUtilities.Interfaces.UI;
+using CommonUtilities.Models.Core;
 using CommonUtilities.Models.Enums;
-using CommonUtilities.Utilities; // Keep for LoggerUtilities if used, or remove if not
+using CommonUtilities.Models.UI;
+using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Utilities.System;
+using EasyKit.Models;
+using EasyKit.Services;
+
+// Keep for LoggerUtilities if used, or remove if not
 
 namespace EasyKit.Controllers;
 
 internal class ShortcutManagerController
 {
-    private readonly Config _config;
-    private readonly ConsoleService _console;
-    private readonly PromptView _prompt;
-    private readonly IContextMenuManager _contextMenuManager;
-
     private const string EasyKitOpenFileId = "EasyKitOpenFile";
     private const string EasyKitOpenFolderId = "EasyKitOpenFolder";
     private const string EasyKitOpenBackgroundId = "EasyKitOpenBackground";
     private const string EasyKitOpenText = "Open with EasyKit";
+    private readonly Config _config;
+    private readonly ConsoleService _console;
+    private readonly IContextMenuManager _contextMenuManager;
+    private readonly PromptView _prompt;
 
-    public ShortcutManagerController(Config config, ConsoleService console, PromptView prompt, IContextMenuManager contextMenuManager)
+    public ShortcutManagerController(Config config, ConsoleService console, PromptView prompt,
+        IContextMenuManager contextMenuManager)
     {
         _config = config;
         _console = console;
@@ -66,7 +67,8 @@ internal class ShortcutManagerController
             bool isOpenWithEasyKitEnabled = _config.Get("open_with_easykit", false) is bool b && b;
 
             _console.WriteInfo("\nContext Menu:");
-            _console.WriteInfo($"  1. {(isOpenWithEasyKitEnabled ? "Remove" : "Add")} 'Open with EasyKit' option (Files, Folders, Background)");
+            _console.WriteInfo(
+                $"  1. {(isOpenWithEasyKitEnabled ? "Remove" : "Add")} 'Open with EasyKit' option (Files, Folders, Background)");
             _console.WriteInfo("  0. Back");
 
             var choice = _prompt.Prompt("Select an option: ");
@@ -119,19 +121,18 @@ internal class ShortcutManagerController
                     };
                     await _contextMenuManager.AddEntryAsync(contextMenuEntry);
                 }
+
                 _config.Set("open_with_easykit", true);
                 _console.WriteSuccess("'Open with EasyKit' option added successfully.");
             }
             else // Remove the entries
             {
                 _console.WriteInfo("Removing 'Open with EasyKit' context menu entries...");
-                foreach (var entryDef in entriesToManage)
-                {
-                    await _contextMenuManager.RemoveEntryAsync(entryDef.Id);
-                }
+                foreach (var entryDef in entriesToManage) await _contextMenuManager.RemoveEntryAsync(entryDef.Id);
                 _config.Set("open_with_easykit", false);
                 _console.WriteSuccess("'Open with EasyKit' option removed successfully.");
             }
+
             _config.SaveConfig();
         }
         catch (PlatformNotSupportedException ex)
@@ -141,7 +142,8 @@ internal class ShortcutManagerController
         }
         catch (UnauthorizedAccessException ex)
         {
-            _console.WriteError($"Permission denied. Please ensure EasyKit has the necessary permissions (e.g., run as administrator for system-wide changes). Details: {ex.Message}");
+            _console.WriteError(
+                $"Permission denied. Please ensure EasyKit has the necessary permissions (e.g., run as administrator for system-wide changes). Details: {ex.Message}");
             LoggerUtilities.Error(ex, "ContextMenu operation failed due to UnauthorizedAccessException.");
         }
         catch (Exception ex)

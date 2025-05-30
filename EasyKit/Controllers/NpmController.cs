@@ -1,8 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json;
-using CommonUtilities.Models;
-using CommonUtilities.Services;
-using CommonUtilities.Utilities;
+using CommonUtilities.Models.Core;
+using CommonUtilities.Services.Core;
+using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Utilities.System;
+using EasyKit.Models;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 
