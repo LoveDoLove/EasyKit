@@ -1,9 +1,8 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CommonUtilities.Config;
-using CommonUtilities.Utilities;
+using CommonUtilities.Models.Core;
+using CommonUtilities.Utilities.System;
 
 namespace EasyKit.Services;
 
@@ -47,9 +46,11 @@ public class ProcessService
                 LoggerUtilities.Error($"Executable not found: {file}. Cannot run process.");
                 if (showOutput)
                 {
-                    _console.WriteError($"[ERROR] Executable '{file}' not found. Ensure it is installed and in your PATH or configured correctly.");
+                    _console.WriteError(
+                        $"[ERROR] Executable '{file}' not found. Ensure it is installed and in your PATH or configured correctly.");
                     DisplayPathDiagnostics(file); // Display diagnostics if not found
                 }
+
                 return false;
             }
 
@@ -63,9 +64,11 @@ public class ProcessService
                 if (string.IsNullOrEmpty(phpPath))
                 {
                     LoggerUtilities.Error("PHP executable not found, cannot run composer.phar.");
-                    if (showOutput) _console.WriteError("[ERROR] PHP executable not found. Composer.phar requires PHP to run.");
+                    if (showOutput)
+                        _console.WriteError("[ERROR] PHP executable not found. Composer.phar requires PHP to run.");
                     return false;
                 }
+
                 // Recursively call RunProcess with PHP as the main executable
                 return RunProcess(phpPath, $"{executablePath} {args}", showOutput, workingDirectory);
             }
@@ -76,9 +79,9 @@ public class ProcessService
                 _console.WriteInfo($"Working directory: {workingDirectory ?? Environment.CurrentDirectory}");
             }
 
-            Action<string>? outputHandler = showOutput ? _console.WriteInfo : (Action<string>?)null;
-            Action<string>? errorHandler = showOutput ? _console.WriteError : (Action<string>?)null;
-            
+            Action<string>? outputHandler = showOutput ? _console.WriteInfo : null;
+            Action<string>? errorHandler = showOutput ? _console.WriteError : null;
+
             // If showOutput is true but handlers are null (e.g. _console is null somehow, though unlikely),
             // we still want to pass null to RunProcessWithStreaming to avoid issues.
             // However, the primary logic is to use _console methods if showOutput is true.
@@ -182,9 +185,7 @@ public class ProcessService
         {
             var configValue = _config.Get($"{executableName.ToLower()}_path");
             if (configValue != null && !string.IsNullOrWhiteSpace(configValue.ToString()))
-            {
                 configuredPath = configValue.ToString();
-            }
         }
 
         // Get application-specific search paths
@@ -312,7 +313,8 @@ public class ProcessService
 
         if (string.IsNullOrEmpty(executablePath))
         {
-            string errorMessage = $"Command not found: {file}. Ensure it is properly installed and in your PATH or configured correctly.";
+            string errorMessage =
+                $"Command not found: {file}. Ensure it is properly installed and in your PATH or configured correctly.";
             LoggerUtilities.Error(errorMessage);
             // DisplayPathDiagnostics(file); // Consider if diagnostics should be shown here or handled by caller
             return ("", errorMessage, -1); // Return a distinct exit code for "not found"
@@ -333,7 +335,7 @@ public class ProcessService
                 executablePath = npmCmdPath;
             }
         }
-        
+
         // Special handling for composer.phar files - run them using PHP
         if (file.Equals("composer", StringComparison.OrdinalIgnoreCase) &&
             executablePath.EndsWith(".phar", StringComparison.OrdinalIgnoreCase))
@@ -345,6 +347,7 @@ public class ProcessService
                 LoggerUtilities.Error(composerError);
                 return ("", composerError, -1);
             }
+
             // Recursively call RunProcessWithOutput with PHP as the main executable
             // Note: The arguments for composer.phar should include the .phar path itself.
             return RunProcessWithOutput(phpPath, $"{executablePath} {args}", workingDirectory);
@@ -384,7 +387,9 @@ public class ProcessService
                     bool foundInDir = false;
                     var extensionsToCheck = ExecutablePathUtilities.GetExecutableExtensions();
                     // Ensure an empty extension is checked for non-Windows or if the command itself has an extension
-                    var checkList = extensionsToCheck.Contains(string.Empty) ? extensionsToCheck : extensionsToCheck.Concat(new[] { string.Empty }).ToArray();
+                    var checkList = extensionsToCheck.Contains(string.Empty)
+                        ? extensionsToCheck
+                        : extensionsToCheck.Concat(new[] { string.Empty }).ToArray();
 
                     foreach (var ext in checkList)
                     {
@@ -501,6 +506,7 @@ public class ProcessService
                     isCompatible = major > 7 || (major == 7 && minor >= 3);
             }
         }
+
         // The actual path used by RunProcessWithOutput isn't directly returned by it.
         // To show the path, we'd need to call FindExecutablePath separately if we want to display it.
         // For now, returning the input phpPath (which might just be "php").
@@ -578,13 +584,12 @@ public class ProcessService
         if (exitCode == 0 && !string.IsNullOrWhiteSpace(output))
         {
             var versionMatch = Regex.Match(output, @"Composer version (\d+\.\d+\.\d+)");
-            if (versionMatch.Success)
-            {
-                version = versionMatch.Groups[1].Value;
-            }
+            if (versionMatch.Success) version = versionMatch.Groups[1].Value;
 
             // Determine the path and global status based on how "composer" was likely found.
-            string? resolvedPath = FindExecutablePath("composer"); // This reflects what RunProcessWithOutput would have found.
+            string?
+                resolvedPath =
+                    FindExecutablePath("composer"); // This reflects what RunProcessWithOutput would have found.
             if (!string.IsNullOrEmpty(resolvedPath))
             {
                 displayPath = resolvedPath;
@@ -592,17 +597,13 @@ public class ProcessService
                 // A non-PHAR in a non-vendor location is global.
                 // Anything in vendor/bin is local.
                 if (resolvedPath.Contains(Path.Combine("vendor", "bin")))
-                {
                     isGlobal = false;
-                }
                 else
-                {
                     isGlobal = true;
-                }
             }
             else // Command succeeded, but FindExecutablePath (config/additional) didn't find it.
             {
-                 // This implies "composer" was found directly in the system PATH by ProcessExecutionHelper.FindInPath.
+                // This implies "composer" was found directly in the system PATH by ProcessExecutionHelper.FindInPath.
                 displayPath = "composer (from PATH)";
                 isGlobal = true;
             }
@@ -615,6 +616,7 @@ public class ProcessService
             displayPath = attemptedPath ?? "composer (not found or error)";
             isGlobal = false; // Default to false if command failed.
         }
+
         return (version, displayPath, isGlobal);
     }
 

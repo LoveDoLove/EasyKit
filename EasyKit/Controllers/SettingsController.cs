@@ -1,5 +1,7 @@
-﻿using CommonUtilities.Config;
-using CommonUtilities.Utilities;
+﻿using CommonUtilities.Models.Core;
+using CommonUtilities.UI.ConsoleUI;
+using EasyKit.Models;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 

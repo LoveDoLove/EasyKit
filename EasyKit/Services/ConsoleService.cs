@@ -1,4 +1,4 @@
-using CommonUtilities.Config;
+using CommonUtilities.Models.Core;
 
 namespace EasyKit.Services;
 
