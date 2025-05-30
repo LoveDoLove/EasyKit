@@ -400,10 +400,9 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
-# No opensource folder
-# CommonUtilities/
-
-# Documentation files
-# report.md
-# spec.md
-# todolist.md
+# Hide
+.roo
+.roomodes
+memory-bank
+install_rooflow.cmd
+generate_mcp_yaml.py
