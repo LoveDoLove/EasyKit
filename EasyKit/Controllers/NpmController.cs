@@ -1,19 +1,18 @@
-using System.Diagnostics;
-using System.Text.Json;
-using CommonUtilities.Models.Share;
-using CommonUtilities.Services.Shared;
-using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace EasyKit.Controllers;
 
 public class NpmController
 {
-    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
+    private readonly ConfirmationHelper _confirmationHelper;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;
@@ -21,13 +20,13 @@ public class NpmController
     public NpmController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmationHelper,
         PromptView prompt,
         NotificationView notificationView)
     {
         _software = software;
         _console = console;
-        _confirmation = confirmation;
+        _confirmationHelper = confirmationHelper;
         _prompt = prompt;
         _notificationView = notificationView;
         _processService = new ProcessService(console, console.Config);

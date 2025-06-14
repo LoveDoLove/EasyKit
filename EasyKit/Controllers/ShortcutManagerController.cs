@@ -1,11 +1,10 @@
-using System.Diagnostics;
-using CommonUtilities.Models.Enums;
+using CommonUtilities.Helpers.ContextMenuManager;
 using CommonUtilities.Models.Share;
-using CommonUtilities.Services.ContextMenuManager;
-using CommonUtilities.UI.ConsoleUI;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
+using MenuScope = CommonUtilities.Helpers.ContextMenuManager.MenuScope;
 
 // Keep for LoggerUtilities if used, or remove if not
 

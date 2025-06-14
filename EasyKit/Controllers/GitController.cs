@@ -1,14 +1,14 @@
+using CommonUtilities.Helpers.Console;
 using CommonUtilities.Models.Share;
-using CommonUtilities.Services.Shared;
-using CommonUtilities.UI.ConsoleUI;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
 
 public class GitController
 {
-    private readonly ConfirmationService _confirmation;
+    private readonly ConfirmationHelper _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
@@ -18,7 +18,7 @@ public class GitController
     public GitController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {

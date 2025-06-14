@@ -1,18 +1,17 @@
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using CommonUtilities.Models.Share;
-using CommonUtilities.Services.Shared;
-using CommonUtilities.UI.ConsoleUI;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using CommonUtilities.Helpers.Console;
+using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
 
 public class ComposerController
 {
-    private readonly ConfirmationService _confirmation;
+    private readonly ConfirmationHelper _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
@@ -22,7 +21,7 @@ public class ComposerController
     public ComposerController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {

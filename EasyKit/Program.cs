@@ -1,15 +1,13 @@
-﻿using System.Reflection;
-using System.Runtime.InteropServices;
-using CommonUtilities.Models.Share;
-using CommonUtilities.Services.Admin;
-using CommonUtilities.Services.ContextMenuManager;
-using CommonUtilities.Services.Shared;
-using CommonUtilities.UI.ConsoleUI;
+﻿using CommonUtilities.Helpers.Admin;
+using CommonUtilities.Helpers.Console;
+using CommonUtilities.Helpers.ContextMenuManager;
 using CommonUtilities.Utilities.System;
 using EasyKit.Controllers;
+using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace EasyKit;
 
@@ -19,10 +17,10 @@ internal class Program
     private static readonly Config Config =
         new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
 
-    private static readonly IServiceProvider ServiceProvider = ConfigureServices();
+    private static readonly IServiceProvider ServiceProvider = ConfigureServicesHelper.ConfigureServices();
     private static readonly Software Software = new();
     private static readonly ConsoleService ConsoleService = new(Config);
-    private static readonly ConfirmationService ConfirmationService = new(Config);
+    private static readonly ConfirmationHelper ConfirmationService = new();
     private static readonly MenuView MenuView = new();
     private static readonly PromptView PromptView = new();
     private static readonly NotificationView NotificationView = new();
@@ -137,43 +135,6 @@ internal class Program
         }
     }
 
-    private static IServiceProvider ConfigureServices()
-    {
-        var services = new ServiceCollection();
-
-        // Add logging
-        services.AddLogging(configure =>
-        {
-            configure.AddConsole();
-            // Add other logging providers if needed
-        });
-
-        // Register IContextMenuManager
-        services.AddScoped<IContextMenuManager>(sp =>
-        {
-            var osPlatform = OSPlatform.Create("Unknown");
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                osPlatform = OSPlatform.Windows;
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) osPlatform = OSPlatform.Linux;
-            // Add other OS checks like OSPlatform.OSX if needed
-
-            if (osPlatform == OSPlatform.Windows)
-                return new WindowsContextMenuManager(@"Software\\EasyKit\\ContextMenuEntries");
-
-            if (osPlatform == OSPlatform.Linux) return new LinuxContextMenuManager();
-            // Potentially add MacOS support or a default/null implementation
-            var logger = sp.GetRequiredService<ILogger<Program>>(); // Fallback logger for the warning
-            logger.LogWarning(
-                $"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}. Attempting to use it will result in an exception.");
-            // Return a NullContextMenuManager or throw if strict support is required.
-            // For now, let's throw as per the initial requirement.
-            throw new PlatformNotSupportedException(
-                $"Context menu management is not supported on this OS: {RuntimeInformation.OSDescription}.");
-        });
-
-        return services.BuildServiceProvider();
-    }
-
     private static void Main(string[] args)
     {
         try
@@ -188,13 +149,13 @@ internal class Program
             string? originalArg = args.Length > 0 ? args[0] : null;
 
             // Check if the application is running as administrator
-            if (!AdminService.IsRunningAsAdmin())
+            if (!AdminHelper.IsRunningAsAdmin())
             {
                 if (ConfirmationService.ConfirmAdminElevation())
                 {
                     Console.WriteLine("Restarting with administrator privileges...");
                     // Relaunch with original argument if present
-                    if (AdminService.RestartAsAdmin(originalArg))
+                    if (AdminHelper.RestartAsAdmin(originalArg))
                         return;
 
                     Console.WriteLine();

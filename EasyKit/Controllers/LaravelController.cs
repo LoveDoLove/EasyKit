@@ -1,18 +1,17 @@
-using System.Diagnostics;
-using CommonUtilities.Models.Share;
-using CommonUtilities.Services.Shared;
-using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
+using System.Diagnostics;
 
 namespace EasyKit.Controllers;
 
 public class LaravelController
 {
-    private readonly ConfirmationService _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
+    private readonly ConfirmationHelper _confirmation;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;
@@ -20,7 +19,7 @@ public class LaravelController
     public LaravelController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {

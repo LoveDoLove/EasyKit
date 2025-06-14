@@ -1,7 +1,7 @@
 ﻿using CommonUtilities.Models.Share;
-using CommonUtilities.UI.ConsoleUI;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
 
