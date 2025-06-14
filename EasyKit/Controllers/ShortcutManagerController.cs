@@ -1,5 +1,4 @@
 using CommonUtilities.Helpers.ContextMenuManager;
-using CommonUtilities.Models.Share;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
@@ -30,25 +29,37 @@ internal class ShortcutManagerController
         _contextMenuManager = contextMenuManager;
     }
 
-    // Note: ShowMenu is not part of the current refactoring task's scope for changes.
-    // It currently calls ManageContextMenu which will be refactored.
-    private void ShowMenu()
+
+    /// <summary>
+    ///     Displays and handles the Shortcut Manager menu.
+    ///     This menu allows users to manage predefined application shortcuts.
+    /// </summary>
+    public void ShowMenu()
     {
-        // Get user settings
-        int menuWidth = 100;
-        var menuWidthObj = _console.Config.Get("menu_width", 100);
-        if (menuWidthObj is int mw)
-            menuWidth = mw;
-        // Remove color_scheme logic
-        var menuView = new MenuView();
-        menuView.CreateMenu("Shortcut Manager", width: menuWidth)
-            .AddOption("1", "View Shortcuts", () => _console.WriteInfo("View Shortcuts - Not Implemented"))
-            .AddOption("2", "Manage Context Menu", () => ManageContextMenuAsync().GetAwaiter().GetResult())
-            .AddOption("0", "Back", () => { })
-            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight, MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
-            .WithHelpText("Manage your keyboard shortcuts and context menu. Press 0 to return.")
-            .WithSubtitle("Shortcut Manager")
-            .Show();
+        while (true)
+        {
+            Console.Clear();
+            // Get current statuses
+            bool isOpenWithEasyKitEnabled = _config.Get("open_with_easykit", false) is bool bOpen && bOpen;
+
+            var menuItems = new List<string>
+            {
+                "0. Back",
+                $"1. Open with EasyKit       [Status: {(isOpenWithEasyKitEnabled ? "Enabled" : "Disabled")}] [Manage...]"
+            };
+
+            var menuView = new MenuView();
+            menuView.ShowMenu("Shortcut Manager", menuItems.ToArray());
+            var key = Console.ReadKey(true).Key;
+            switch (key)
+            {
+                case ConsoleKey.D0:
+                    return;
+                case ConsoleKey.D1: // Manage Open with EasyKit
+                    ManageContextMenuAsync().GetAwaiter().GetResult();
+                    break;
+            }
+        }
     }
 
     public async Task ManageContextMenuAsync() // Changed to async
@@ -81,7 +92,7 @@ internal class ShortcutManagerController
     private async Task ToggleOpenWithEasyKitAsync(bool currentlyEnabled)
     {
         // Use Environment.ProcessPath (preferred in .NET 6+) for the executable path
-        string exePath = System.Environment.ProcessPath ?? "EasyKit.exe";
+        string exePath = Environment.ProcessPath ?? "EasyKit.exe";
         // Prefer a dedicated icon file if available, otherwise fallback to exePath
         string iconPath = exePath;
         string iconCandidate = Path.Combine(AppContext.BaseDirectory, "icon.ico");
@@ -110,7 +121,8 @@ internal class ShortcutManagerController
                         Id = entryDef.Id,
                         Text = EasyKitOpenText,
                         Command = exePath,
-                        Arguments = string.Empty, // No additional arguments beyond the path placeholder handled by the manager
+                        Arguments = string
+                            .Empty, // No additional arguments beyond the path placeholder handled by the manager
                         IconPath = iconPath,
                         Scope = scope,
                         TargetType = entryDef.TargetType

@@ -289,41 +289,10 @@ internal class Program
                     LaravelController.ShowMenu();
                     break;
                 case ConsoleKey.D5:
-                    ShortcutManagerMenu();
+                    ShortcutManagerController.ShowMenu();
                     break;
                 case ConsoleKey.D6:
                     SettingsController.ShowMenu();
-                    break;
-            }
-        }
-    }
-
-    /// <summary>
-    ///     Displays and handles the Shortcut Manager menu.
-    ///     This menu allows users to manage predefined application shortcuts.
-    /// </summary>
-    private static void ShortcutManagerMenu()
-    {
-        while (true)
-        {
-            Console.Clear();
-            // Get current statuses
-            bool isOpenWithEasyKitEnabled = Config.Get("open_with_easykit", false) is bool bOpen && bOpen;
-
-            var menuItems = new List<string>
-            {
-                "0. Back",
-                $"1. Open with EasyKit       [Status: {(isOpenWithEasyKitEnabled ? "Enabled" : "Disabled")}] [Manage...]"
-            };
-
-            MenuView.ShowMenu("Shortcut Manager", menuItems.ToArray());
-            var key = Console.ReadKey(true).Key;
-            switch (key)
-            {
-                case ConsoleKey.D0:
-                    return;
-                case ConsoleKey.D1: // Manage Open with EasyKit
-                    ShortcutManagerController.ManageContextMenuAsync().GetAwaiter().GetResult();
                     break;
             }
         }
