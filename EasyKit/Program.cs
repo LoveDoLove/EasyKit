@@ -1,10 +1,9 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
-using CommonUtilities.Interfaces.UI;
-using CommonUtilities.Models.Core;
-using CommonUtilities.Services.Core;
-using CommonUtilities.Services.OSIntegration.Linux;
-using CommonUtilities.Services.OSIntegration.Windows;
+using CommonUtilities.Models.Share;
+using CommonUtilities.Services.Admin;
+using CommonUtilities.Services.ContextMenuManager;
+using CommonUtilities.Services.Shared;
 using CommonUtilities.UI.ConsoleUI;
 using CommonUtilities.Utilities.System;
 using EasyKit.Controllers;
@@ -158,7 +157,8 @@ internal class Program
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) osPlatform = OSPlatform.Linux;
             // Add other OS checks like OSPlatform.OSX if needed
 
-            if (osPlatform == OSPlatform.Windows) return new WindowsContextMenuManager();
+            if (osPlatform == OSPlatform.Windows)
+                return new WindowsContextMenuManager(@"Software\\EasyKit\\ContextMenuEntries");
 
             if (osPlatform == OSPlatform.Linux) return new LinuxContextMenuManager();
             // Potentially add MacOS support or a default/null implementation

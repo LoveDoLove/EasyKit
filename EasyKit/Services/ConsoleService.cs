@@ -1,4 +1,4 @@
-using CommonUtilities.Models.Core;
+using CommonUtilities.Models.Share;
 
 namespace EasyKit.Services;
 

@@ -1,5 +1,5 @@
-using CommonUtilities.Models.Core;
-using CommonUtilities.Services.Core;
+using CommonUtilities.Models.Share;
+using CommonUtilities.Services.Shared;
 using CommonUtilities.UI.ConsoleUI;
 using EasyKit.Models;
 using EasyKit.Services;
@@ -436,9 +436,9 @@ public class GitController
 
         _console.WriteInfo($"Adding submodule from '{url}' to '{path}'...");
         if (RunGitCommand($"submodule add {url} {path}"))
-            _console.WriteSuccess($"✓ Submodule added successfully!");
+            _console.WriteSuccess("\u2713 Submodule added successfully!");
         else
-            _console.WriteError($"✗ Failed to add submodule.");
+            _console.WriteError("\u2717 Failed to add submodule.");
         WaitForUser();
     }
 

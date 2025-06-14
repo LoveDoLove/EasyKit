@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CommonUtilities.Models.Core;
+using CommonUtilities.Models.Share;
 using CommonUtilities.Utilities.System;
 
 namespace EasyKit.Services;

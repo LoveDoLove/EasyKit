@@ -1,4 +1,4 @@
-﻿using CommonUtilities.Models.Core;
+﻿using CommonUtilities.Models.Share;
 using CommonUtilities.UI.ConsoleUI;
 using EasyKit.Models;
 using EasyKit.Services;
@@ -69,7 +69,6 @@ internal class SettingsController
             _console.WriteInfo($"{kv.Key}: {kv.Value}");
         Console.ReadLine();
     }
-
 
 
     private void ToggleSetting(string key)

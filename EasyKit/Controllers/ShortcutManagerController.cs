@@ -1,8 +1,7 @@
 using System.Diagnostics;
-using CommonUtilities.Interfaces.UI;
-using CommonUtilities.Models.Core;
 using CommonUtilities.Models.Enums;
-using CommonUtilities.Models.UI;
+using CommonUtilities.Models.Share;
+using CommonUtilities.Services.ContextMenuManager;
 using CommonUtilities.UI.ConsoleUI;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;

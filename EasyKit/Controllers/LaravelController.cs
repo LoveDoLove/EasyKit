@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using CommonUtilities.Models.Core;
-using CommonUtilities.Services.Core;
+using CommonUtilities.Models.Share;
+using CommonUtilities.Services.Shared;
 using CommonUtilities.UI.ConsoleUI;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
