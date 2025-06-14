@@ -444,11 +444,12 @@ public class GitController
 
     private void UpdateSubmodule()
     {
-        _console.WriteInfo("Updating submodules...");
-        if (RunGitCommand("submodule update --init --recursive"))
-            _console.WriteSuccess("✓ Submodules updated successfully!");
+        _console.WriteInfo("Updating submodules to the latest remote commits...");
+        // Use --remote to fetch and update to the latest commit on the configured branch
+        if (RunGitCommand("submodule update --remote --init --recursive"))
+            _console.WriteSuccess("✓ Submodules updated to the latest remote commits successfully!");
         else
-            _console.WriteError("✗ Failed to update submodules.");
+            _console.WriteError("✗ Failed to update submodules to the latest remote commits.");
         WaitForUser();
     }
 
