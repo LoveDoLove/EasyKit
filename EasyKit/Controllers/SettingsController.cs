@@ -52,6 +52,7 @@ internal class SettingsController
             .AddOption("6", "Toggle destructive action confirmations",
                 () => ToggleSetting("confirm_destructive_actions"))
             .AddOption("7", "Reset all settings to defaults", () => ResetToDefaults())
+            .AddOption("8", "Check for Updates", CheckForUpdates)
             .AddOption("0", "Back to main menu", () =>
             {
                 /* Return to main menu */
@@ -122,5 +123,86 @@ internal class SettingsController
         }
 
         Console.ReadLine();
+    }
+
+    private void CheckForUpdates()
+    {
+        _console.WriteInfo("Checking for updates...");
+        try
+        {
+            string latestVersion = GetLatestReleaseVersion();
+            string localVersion = _config.Get("version", "1.0")?.ToString() ?? "1.0";
+            _console.WriteInfo($"Current version: {localVersion}");
+            _console.WriteInfo($"Latest version: {latestVersion}");
+
+            int compareResult = CompareVersions(localVersion, latestVersion);
+            if (compareResult < 0)
+            {
+                _console.WriteSuccess($"A new version ({latestVersion}) is available!");
+                if (_prompt.ConfirmYesNo("Would you like to open the download page?"))
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "https://github.com/LoveDoLove/EasyKit/releases/latest",
+                            UseShellExecute = true
+                        });
+                        _console.WriteInfo("Browser opened to the latest release page.");
+                    }
+                    catch (Exception ex)
+                    {
+                        _console.WriteError($"Failed to open browser: {ex.Message}");
+                    }
+                }
+            }
+            else if (compareResult == 0)
+            {
+                _console.WriteSuccess("You are using the latest version.");
+            }
+            else // compareResult > 0
+            {
+                _console.WriteInfo("You are using a newer version than the official release.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _console.WriteError($"Update check failed: {ex.Message}");
+        }
+        Console.ReadLine();
+    }
+
+    private string GetLatestReleaseVersion()
+    {
+        // This is a simple implementation using HttpClient and regex to extract the latest version from GitHub releases page
+        using (var client = new System.Net.Http.HttpClient())
+        {
+            var html = client.GetStringAsync("https://github.com/LoveDoLove/EasyKit/releases").Result;
+            var match = System.Text.RegularExpressions.Regex.Match(html, @"Release ([0-9]+\.[0-9]+\.[0-9]+)");
+            if (match.Success)
+                return match.Groups[1].Value;
+            // Fallback: try vX.Y.Z
+            match = System.Text.RegularExpressions.Regex.Match(html, @"Tag v([0-9]+\.[0-9]+\.[0-9]+)");
+            if (match.Success)
+                return match.Groups[1].Value;
+            throw new Exception("Could not determine latest version.");
+        }
+    }
+
+    // Returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2
+    private int CompareVersions(string v1, string v2)
+    {
+        if (string.IsNullOrWhiteSpace(v1) || string.IsNullOrWhiteSpace(v2)) return 0;
+        var v1Parts = v1.Split('.');
+        var v2Parts = v2.Split('.');
+        int maxLen = Math.Max(v1Parts.Length, v2Parts.Length);
+        for (int i = 0; i < maxLen; i++)
+        {
+            int v1Num = i < v1Parts.Length && int.TryParse(v1Parts[i], out var n1) ? n1 : 0;
+            int v2Num = i < v2Parts.Length && int.TryParse(v2Parts[i], out var n2) ? n2 : 0;
+            if (v1Num > v2Num) return 1;
+            if (v1Num < v2Num) return -1;
+        }
+        return 0;
     }
 }
