@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace EasyKit;
 
-internal static class ConfigureServicesHelper
+internal static class ConfigureService
 {
     public static IServiceProvider ConfigureServices()
     {
