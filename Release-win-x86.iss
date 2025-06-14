@@ -24,7 +24,7 @@ DisableProgramGroupPage=yes
 LicenseFile=D:\Projects\CSharpProjects\EasyKit\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
-OutputBaseFilename=EasyKit-x86
+OutputBaseFilename=EasyKit-{#MyAppVersion}-x86
 SolidCompression=yes
 WizardStyle=modern
 
