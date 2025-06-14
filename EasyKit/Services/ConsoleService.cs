@@ -43,9 +43,8 @@ public class ConsoleService
             }
             else
             {
-                var schemeObj = Config.Get("color_scheme", "dark");
-                string scheme = schemeObj?.ToString() ?? "dark";
-                Console.ForegroundColor = scheme == "light" ? ConsoleColor.Black : ConsoleColor.White;
+                // Removed color_scheme logic, default to White
+                Console.ForegroundColor = ConsoleColor.White;
             }
 
             if (bgColor.HasValue)
