@@ -1,4 +1,5 @@
-﻿using CommonUtilities.Models.Share;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
@@ -107,10 +108,9 @@ internal class SettingsController
             {
                 _console.WriteSuccess($"A new version ({latestVersion}) is available!");
                 if (_prompt.ConfirmYesNo("Would you like to open the download page?"))
-                {
                     try
                     {
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        Process.Start(new ProcessStartInfo
                         {
                             FileName = "https://github.com/LoveDoLove/EasyKit/releases/latest",
                             UseShellExecute = true
@@ -121,7 +121,6 @@ internal class SettingsController
                     {
                         _console.WriteError($"Failed to open browser: {ex.Message}");
                     }
-                }
             }
             else if (compareResult == 0)
             {
@@ -136,20 +135,21 @@ internal class SettingsController
         {
             _console.WriteError($"Update check failed: {ex.Message}");
         }
+
         Console.ReadLine();
     }
 
     private string GetLatestReleaseVersion()
     {
         // This is a simple implementation using HttpClient and regex to extract the latest version from GitHub releases page
-        using (var client = new System.Net.Http.HttpClient())
+        using (var client = new HttpClient())
         {
             var html = client.GetStringAsync("https://github.com/LoveDoLove/EasyKit/releases").Result;
-            var match = System.Text.RegularExpressions.Regex.Match(html, @"Release ([0-9]+\.[0-9]+\.[0-9]+)");
+            var match = Regex.Match(html, @"Release ([0-9]+\.[0-9]+\.[0-9]+)");
             if (match.Success)
                 return match.Groups[1].Value;
             // Fallback: try vX.Y.Z
-            match = System.Text.RegularExpressions.Regex.Match(html, @"Tag v([0-9]+\.[0-9]+\.[0-9]+)");
+            match = Regex.Match(html, @"Tag v([0-9]+\.[0-9]+\.[0-9]+)");
             if (match.Success)
                 return match.Groups[1].Value;
             throw new Exception("Could not determine latest version.");
@@ -170,6 +170,7 @@ internal class SettingsController
             if (v1Num > v2Num) return 1;
             if (v1Num < v2Num) return -1;
         }
+
         return 0;
     }
 }

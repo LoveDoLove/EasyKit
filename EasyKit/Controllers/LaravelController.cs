@@ -1,17 +1,17 @@
+using System.Diagnostics;
 using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
-using System.Diagnostics;
 
 namespace EasyKit.Controllers;
 
 public class LaravelController
 {
+    private readonly ConfirmationHelper _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
-    private readonly ConfirmationHelper _confirmation;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;
@@ -141,7 +141,10 @@ public class LaravelController
             .AddOption("12", "Run Database Seeding (migrate:fresh --seed)", () => RunDatabaseSeeding())
             .AddOption("13", "Create Storage Link", () => CreateStorageLink())
             .AddOption("14", "Reset All Laravel Cache", () => ResetCache())
-            .AddOption("0", "Back to Main Menu", () => { /* Return to main menu */ })
+            .AddOption("0", "Back to Main Menu", () =>
+            {
+                /* Return to main menu */
+            })
             .WithColors(ConsoleColor.DarkRed, ConsoleColor.Red, ConsoleColor.White)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .WithDoubleBorder()

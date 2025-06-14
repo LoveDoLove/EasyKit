@@ -1,5 +1,5 @@
-using EasyKit.Services;
 using System.Diagnostics;
+using EasyKit.Services;
 
 namespace EasyKit.Controllers;
 

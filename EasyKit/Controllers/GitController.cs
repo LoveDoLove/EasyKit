@@ -1,5 +1,4 @@
 using CommonUtilities.Helpers.Console;
-using CommonUtilities.Models.Share;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
@@ -125,7 +124,10 @@ public class GitController
         // Create and configure the menu
         var menuView = new MenuView();
         menuView.CreateMenu("Git Tools", width: menuWidth)
-            .AddOption("0", "Back to main menu", () => { /* Return to main menu */ })
+            .AddOption("0", "Back to main menu", () =>
+            {
+                /* Return to main menu */
+            })
             .AddOption("1", "Status", () => CheckStatus())
             .AddOption("2", "Init repository", () => InitRepo())
             .AddOption("3", "Add all changes", () => AddAll())
@@ -144,7 +146,8 @@ public class GitController
             .AddOption("16", "Create pull request (info)", () => CreatePullRequest())
             .AddOption("17", "List pull requests (info)", () => ListPullRequests())
             .AddOption("18", "Run git diagnostics", () => RunDiagnostics())
-            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight, MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
+            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight,
+                MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .WithRoundedBorder()
             .Show();

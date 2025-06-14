@@ -1,18 +1,18 @@
+using System.Diagnostics;
+using System.Text.Json;
 using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
-using System.Diagnostics;
-using System.Text.Json;
 
 namespace EasyKit.Controllers;
 
 public class NpmController
 {
+    private readonly ConfirmationHelper _confirmationHelper;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
-    private readonly ConfirmationHelper _confirmationHelper;
     private readonly ProcessService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;

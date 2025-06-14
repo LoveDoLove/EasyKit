@@ -1,10 +1,10 @@
-using CommonUtilities.Utilities.System;
-using EasyKit.Models;
-using EasyKit.Services;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using CommonUtilities.Helpers.Console;
+using CommonUtilities.Utilities.System;
+using EasyKit.Models;
+using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
@@ -59,7 +59,8 @@ public class ComposerController
             {
                 /* Return to main menu */
             })
-            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight, MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
+            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight,
+                MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .Show();
     }
