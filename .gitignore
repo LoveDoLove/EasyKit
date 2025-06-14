@@ -401,6 +401,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Hide
+Output
 install_rooflow.cmd
 generate_mcp_yaml.py
 .vscode
