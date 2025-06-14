@@ -46,14 +46,14 @@ public class ComposerController
         // Create and configure the menu
         var menuView = new MenuView();
         menuView.CreateMenu("Composer Tools", width: menuWidth)
-            .AddOption("1", "Install packages (composer install)", () => InstallPackages())
-            .AddOption("2", "Update packages (composer update)", () => UpdatePackages())
-            .AddOption("3", "Regenerate autoload files (composer dump-autoload)", () => RegenerateAutoload())
+            .AddOption("1", "Create new project", () => CreateProject())
+            .AddOption("2", "Install packages (composer install)", () => InstallPackages())
+            .AddOption("3", "Update packages (composer update)", () => UpdatePackages())
             .AddOption("4", "Require a new package", () => RequirePackage())
-            .AddOption("5", "Create new project", () => CreateProject())
+            .AddOption("5", "Regenerate autoload files (composer dump-autoload)", () => RegenerateAutoload())
             .AddOption("6", "Validate composer.json", () => ValidateJson())
-            .AddOption("7", "Clear Composer cache", () => ClearCache())
-            .AddOption("8", "Show composer.json info", () => ShowPackageInfo())
+            .AddOption("7", "Show composer.json info", () => ShowPackageInfo())
+            .AddOption("8", "Clear Composer cache", () => ClearCache())
             .AddOption("9", "Run diagnostics", () => RunDiagnostics())
             .AddOption("0", "Back to main menu", () =>
             {
