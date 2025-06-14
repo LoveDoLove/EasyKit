@@ -1,16 +1,15 @@
 using System.Diagnostics;
-using CommonUtilities.Models.Core;
-using CommonUtilities.Services.Core;
-using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
 
 public class LaravelController
 {
-    private readonly ConfirmationService _confirmation;
+    private readonly ConfirmationHelper _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
@@ -20,7 +19,7 @@ public class LaravelController
     public LaravelController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {
@@ -115,22 +114,12 @@ public class LaravelController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-
-        // Apply the appropriate color scheme based on user settings
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
 
         // Display current directory
         string currentDirectory = Environment.CurrentDirectory;
@@ -138,20 +127,20 @@ public class LaravelController
         // Create and configure the menu with a Laravel-specific theme
         var menuView = new MenuView();
         menuView.CreateMenu("Laravel Toolkit", width: menuWidth)
-            .AddOption("1", "Quick Setup (env, install, key, cache)", () => QuickSetup())
-            .AddOption("2", "Install Composer Packages", () => InstallPackages())
-            .AddOption("3", "Update Composer Packages", () => UpdatePackages())
-            .AddOption("4", "Regenerate Autoload Files", () => RegenerateAutoload())
-            .AddOption("5", "Build for Production", () => BuildProduction())
-            .AddOption("6", "Start Development Server", () => RunDevServer())
-            .AddOption("7", "Create Storage Link", () => CreateStorageLink())
-            .AddOption("8", "Run Database Seeding (migrate:fresh --seed)", () => RunDatabaseSeeding())
-            .AddOption("9", "Test Database Connection", () => TestDatabase())
-            .AddOption("10", "Check PHP Version", () => CheckPhpVersion())
-            .AddOption("11", "Check Laravel Configuration", () => CheckConfiguration())
-            .AddOption("12", "Reset All Laravel Cache", () => ResetCache())
-            .AddOption("13", "View Route List", () => ViewRouteList())
-            .AddOption("14", "Run PHP diagnostics", () => RunPhpDiagnostics())
+            .AddOption("1", "Run PHP diagnostics", () => RunPhpDiagnostics())
+            .AddOption("2", "Quick Setup (env, install, key, cache)", () => QuickSetup())
+            .AddOption("3", "Check PHP Version", () => CheckPhpVersion())
+            .AddOption("4", "Check Laravel Configuration", () => CheckConfiguration())
+            .AddOption("5", "Install Composer Packages", () => InstallPackages())
+            .AddOption("6", "Update Composer Packages", () => UpdatePackages())
+            .AddOption("7", "Regenerate Autoload Files", () => RegenerateAutoload())
+            .AddOption("8", "Build for Production", () => BuildProduction())
+            .AddOption("9", "Start Development Server", () => RunDevServer())
+            .AddOption("10", "View Route List", () => ViewRouteList())
+            .AddOption("11", "Test Database Connection", () => TestDatabase())
+            .AddOption("12", "Run Database Seeding (migrate:fresh --seed)", () => RunDatabaseSeeding())
+            .AddOption("13", "Create Storage Link", () => CreateStorageLink())
+            .AddOption("14", "Reset All Laravel Cache", () => ResetCache())
             .AddOption("0", "Back to Main Menu", () =>
             {
                 /* Return to main menu */

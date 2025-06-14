@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CommonUtilities.Models.Core;
 using CommonUtilities.Utilities.System;
+using EasyKit.Models;
 
 namespace EasyKit.Services;
 

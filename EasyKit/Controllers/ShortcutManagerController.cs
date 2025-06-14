@@ -1,12 +1,9 @@
-using System.Diagnostics;
-using CommonUtilities.Interfaces.UI;
-using CommonUtilities.Models.Core;
-using CommonUtilities.Models.Enums;
-using CommonUtilities.Models.UI;
-using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Helpers.ContextMenuManager;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
+using MenuScope = CommonUtilities.Helpers.ContextMenuManager.MenuScope;
 
 // Keep for LoggerUtilities if used, or remove if not
 
@@ -32,31 +29,37 @@ internal class ShortcutManagerController
         _contextMenuManager = contextMenuManager;
     }
 
-    // Note: ShowMenu is not part of the current refactoring task's scope for changes.
-    // It currently calls ManageContextMenu which will be refactored.
-    private void ShowMenu()
+
+    /// <summary>
+    ///     Displays and handles the Shortcut Manager menu.
+    ///     This menu allows users to manage predefined application shortcuts.
+    /// </summary>
+    public void ShowMenu()
     {
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
-        if (menuWidthObj is int mw)
-            menuWidth = mw;
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
-        var menuView = new MenuView();
-        menuView.CreateMenu("Shortcut Manager", width: menuWidth)
-            .AddOption("1", "View Shortcuts", () => _console.WriteInfo("View Shortcuts - Not Implemented"))
-            .AddOption("2", "Manage Context Menu", () => ManageContextMenuAsync().GetAwaiter().GetResult())
-            .AddOption("0", "Back", () => { })
-            .WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
-                colorScheme.help)
-            .WithHelpText("Manage your keyboard shortcuts and context menu. Press 0 to return.")
-            .WithSubtitle("Shortcut Manager")
-            .Show();
+        while (true)
+        {
+            Console.Clear();
+            // Get current statuses
+            bool isOpenWithEasyKitEnabled = _config.Get("open_with_easykit", false) is bool bOpen && bOpen;
+
+            var menuItems = new List<string>
+            {
+                "0. Back",
+                $"1. Open with EasyKit       [Status: {(isOpenWithEasyKitEnabled ? "Enabled" : "Disabled")}] [Manage...]"
+            };
+
+            var menuView = new MenuView();
+            menuView.ShowMenu("Shortcut Manager", menuItems.ToArray());
+            var key = Console.ReadKey(true).Key;
+            switch (key)
+            {
+                case ConsoleKey.D0:
+                    return;
+                case ConsoleKey.D1: // Manage Open with EasyKit
+                    ManageContextMenuAsync().GetAwaiter().GetResult();
+                    break;
+            }
+        }
     }
 
     public async Task ManageContextMenuAsync() // Changed to async
@@ -88,9 +91,13 @@ internal class ShortcutManagerController
 
     private async Task ToggleOpenWithEasyKitAsync(bool currentlyEnabled)
     {
-        string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "EasyKit.exe";
-        // Use exePath itself as the icon source, or specify a dedicated .ico/.png if available
+        // Use Environment.ProcessPath (preferred in .NET 6+) for the executable path
+        string exePath = Environment.ProcessPath ?? "EasyKit.exe";
+        // Prefer a dedicated icon file if available, otherwise fallback to exePath
         string iconPath = exePath;
+        string iconCandidate = Path.Combine(AppContext.BaseDirectory, "icon.ico");
+        if (File.Exists(iconCandidate))
+            iconPath = iconCandidate;
 
         var scopeString = _config.Get("context_menu_scope", "user")?.ToString()?.ToLowerInvariant() ?? "user";
         MenuScope scope = scopeString == "system" ? MenuScope.System : MenuScope.User;
@@ -114,7 +121,8 @@ internal class ShortcutManagerController
                         Id = entryDef.Id,
                         Text = EasyKitOpenText,
                         Command = exePath,
-                        Arguments = null, // No additional arguments beyond the path placeholder handled by the manager
+                        Arguments = string
+                            .Empty, // No additional arguments beyond the path placeholder handled by the manager
                         IconPath = iconPath,
                         Scope = scope,
                         TargetType = entryDef.TargetType

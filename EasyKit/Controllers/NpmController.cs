@@ -1,17 +1,16 @@
 using System.Diagnostics;
 using System.Text.Json;
-using CommonUtilities.Models.Core;
-using CommonUtilities.Services.Core;
-using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
 
 public class NpmController
 {
-    private readonly ConfirmationService _confirmation;
+    private readonly ConfirmationHelper _confirmationHelper;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
@@ -21,13 +20,13 @@ public class NpmController
     public NpmController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmationHelper,
         PromptView prompt,
         NotificationView notificationView)
     {
         _software = software;
         _console = console;
-        _confirmation = confirmation;
+        _confirmationHelper = confirmationHelper;
         _prompt = prompt;
         _notificationView = notificationView;
         _processService = new ProcessService(console, console.Config);
@@ -54,24 +53,15 @@ public class NpmController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config if available
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
 
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-        // Apply the appropriate color scheme based on user settings
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
         // Use a custom theme for NPM - purple with double border
-        else
-            colorScheme = MenuTheme.ColorScheme.Purple;
+        var colorScheme = MenuTheme.ColorScheme.Purple;
 
         // Check if npm is installed first
         bool npmInstalled = IsNpmInstalled();
@@ -91,14 +81,14 @@ public class NpmController
                     /* Return to main menu */
                 });
         else
-            // Regular menu when npm is installed
+            // User-friendly, logical order for NPM menu
             menu.AddOption("1", "Install packages (npm install)", () => InstallPackages())
                 .AddOption("2", "Update packages (npm-check-updates)", () => UpdatePackages())
-                .AddOption("3", "Build for production (npm run build)", () => BuildProduction())
-                .AddOption("4", "Start development server (npm run dev)", () => BuildDevelopment())
-                .AddOption("5", "Security audit (npm audit)", () => SecurityAudit())
+                .AddOption("3", "Show package.json info", () => ShowPackageInfo())
+                .AddOption("4", "Build for production (npm run build)", () => BuildProduction())
+                .AddOption("5", "Start development server (npm run dev)", () => BuildDevelopment())
                 .AddOption("6", "Run custom npm script", () => RunCustomScript())
-                .AddOption("7", "Show package.json info", () => ShowPackageInfo())
+                .AddOption("7", "Security audit (npm audit)", () => SecurityAudit())
                 .AddOption("8", "Reset npm cache", () => ResetCache())
                 .AddOption("9", "Configure npm path", () => ConfigureNpmPath())
                 .AddOption("D", "Run npm diagnostics", () => RunNpmDiagnostics())

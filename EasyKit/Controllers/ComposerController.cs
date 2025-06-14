@@ -1,18 +1,17 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CommonUtilities.Models.Core;
-using CommonUtilities.Services.Core;
-using CommonUtilities.UI.ConsoleUI;
+using CommonUtilities.Helpers.Console;
 using CommonUtilities.Utilities.System;
 using EasyKit.Models;
 using EasyKit.Services;
+using EasyKit.UI.ConsoleUI;
 
 namespace EasyKit.Controllers;
 
 public class ComposerController
 {
-    private readonly ConfirmationService _confirmation;
+    private readonly ConfirmationHelper _confirmation;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly ProcessService _processService;
@@ -22,7 +21,7 @@ public class ComposerController
     public ComposerController(
         Software software,
         ConsoleService console,
-        ConfirmationService confirmation,
+        ConfirmationHelper confirmation,
         PromptView prompt,
         NotificationView notificationView)
     {
@@ -37,40 +36,31 @@ public class ComposerController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorScheme = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config if available
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorScheme = colorSchemeObj.ToString() ?? "dark";
-
-        // Apply the appropriate color scheme based on user settings
-        var (border, highlight, title, text, help) = colorScheme.ToLower() == "light"
-            ? MenuTheme.ColorScheme.Light
-            : MenuTheme.ColorScheme.Dark;
 
         // Create and configure the menu
         var menuView = new MenuView();
         menuView.CreateMenu("Composer Tools", width: menuWidth)
-            .AddOption("1", "Install packages (composer install)", () => InstallPackages())
-            .AddOption("2", "Update packages (composer update)", () => UpdatePackages())
-            .AddOption("3", "Regenerate autoload files (composer dump-autoload)", () => RegenerateAutoload())
+            .AddOption("1", "Create new project", () => CreateProject())
+            .AddOption("2", "Install packages (composer install)", () => InstallPackages())
+            .AddOption("3", "Update packages (composer update)", () => UpdatePackages())
             .AddOption("4", "Require a new package", () => RequirePackage())
-            .AddOption("5", "Create new project", () => CreateProject())
+            .AddOption("5", "Regenerate autoload files (composer dump-autoload)", () => RegenerateAutoload())
             .AddOption("6", "Validate composer.json", () => ValidateJson())
-            .AddOption("7", "Clear Composer cache", () => ClearCache())
-            .AddOption("8", "Show composer.json info", () => ShowPackageInfo())
+            .AddOption("7", "Show composer.json info", () => ShowPackageInfo())
+            .AddOption("8", "Clear Composer cache", () => ClearCache())
             .AddOption("9", "Run diagnostics", () => RunDiagnostics())
             .AddOption("0", "Back to main menu", () =>
             {
                 /* Return to main menu */
             })
-            .WithColors(border, highlight, title, text, help)
+            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight,
+                MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .Show();
     }

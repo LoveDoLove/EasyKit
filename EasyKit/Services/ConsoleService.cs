@@ -1,4 +1,4 @@
-using CommonUtilities.Models.Core;
+using EasyKit.Models;
 
 namespace EasyKit.Services;
 
@@ -38,15 +38,10 @@ public class ConsoleService
         else
         {
             if (textColor.HasValue)
-            {
                 Console.ForegroundColor = textColor.Value;
-            }
             else
-            {
-                var schemeObj = Config.Get("color_scheme", "dark");
-                string scheme = schemeObj?.ToString() ?? "dark";
-                Console.ForegroundColor = scheme == "light" ? ConsoleColor.Black : ConsoleColor.White;
-            }
+                // Removed color_scheme logic, default to White
+                Console.ForegroundColor = ConsoleColor.White;
 
             if (bgColor.HasValue)
                 Console.BackgroundColor = bgColor.Value;
