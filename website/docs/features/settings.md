@@ -8,7 +8,6 @@ Customize the application's behavior through the Settings menu.
 - **Menu Width:** Modify the menu width.
 - **Toggle Logging:** Enable/disable application logging.
 - **Toggle Tips:** Show/hide helpful tips.
-- **Exit Confirmation:** Enable/disable exit confirmation prompts.
 - **Destructive Action Confirmation:** Enable/disable confirmation prompts for destructive actions.
 - **Reset Defaults:** Resets all settings to their default values.
 
