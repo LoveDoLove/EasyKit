@@ -36,8 +36,8 @@ internal class SettingsController
         menuView.CreateMenu("Settings", width: menuWidth)
             .AddOption("1", "View current configuration", () => ViewConfig())
             .AddOption("2", "Change menu width", () => ChangeMenuWidth())
-            .AddOption("3", "Reset all settings to defaults", () => ResetToDefaults())
-            .AddOption("4", "Check for Updates", CheckForUpdates)
+            .AddOption("3", "Check for Updates", CheckForUpdates)
+            .AddOption("4", "Reset all settings to defaults", () => ResetToDefaults())
             .AddOption("0", "Back to main menu", () =>
             {
                 /* Return to main menu */
