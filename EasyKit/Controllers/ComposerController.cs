@@ -37,22 +37,12 @@ public class ComposerController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorScheme = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config if available
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorScheme = colorSchemeObj.ToString() ?? "dark";
-
-        // Apply the appropriate color scheme based on user settings
-        var (border, highlight, title, text, help) = colorScheme.ToLower() == "light"
-            ? MenuTheme.ColorScheme.Light
-            : MenuTheme.ColorScheme.Dark;
 
         // Create and configure the menu
         var menuView = new MenuView();
@@ -70,7 +60,7 @@ public class ComposerController
             {
                 /* Return to main menu */
             })
-            .WithColors(border, highlight, title, text, help)
+            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight, MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .Show();
     }

@@ -54,24 +54,15 @@ public class NpmController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config if available
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
 
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-        // Apply the appropriate color scheme based on user settings
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
         // Use a custom theme for NPM - purple with double border
-        else
-            colorScheme = MenuTheme.ColorScheme.Purple;
+        var colorScheme = MenuTheme.ColorScheme.Purple;
 
         // Check if npm is installed first
         bool npmInstalled = IsNpmInstalled();

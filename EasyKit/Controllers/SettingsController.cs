@@ -24,35 +24,20 @@ internal class SettingsController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config
-        var menuWidthObj = _config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-
-        // Apply the appropriate color scheme based on user settings
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
 
         // Create and configure the menu for Settings
         var menuView = new MenuView();
         menuView.CreateMenu("Settings", width: menuWidth)
             .AddOption("1", "View current configuration", () => ViewConfig())
             .AddOption("2", "Change menu width", () => ChangeMenuWidth())
-            .AddOption("3", "Toggle logging", () => ToggleSetting("enable_logging"))
-            .AddOption("4", "Toggle tips", () => ToggleSetting("show_tips"))
-            .AddOption("5", "Toggle exit confirmation", () => ToggleSetting("confirm_exit"))
-            .AddOption("6", "Toggle destructive action confirmations",
-                () => ToggleSetting("confirm_destructive_actions"))
-            .AddOption("7", "Reset all settings to defaults", () => ResetToDefaults())
-            .AddOption("8", "Check for Updates", CheckForUpdates)
+            .AddOption("3", "Reset all settings to defaults", () => ResetToDefaults())
+            .AddOption("4", "Check for Updates", CheckForUpdates)
             .AddOption("0", "Back to main menu", () =>
             {
                 /* Return to main menu */
@@ -68,24 +53,6 @@ internal class SettingsController
         _console.WriteInfo("Current Configuration:");
         foreach (var kv in _config.Settings)
             _console.WriteInfo($"{kv.Key}: {kv.Value}");
-        Console.ReadLine();
-    }
-
-
-    private void ToggleSetting(string key)
-    {
-        if (_config.Settings.ContainsKey(key))
-        {
-            var current = _config.Settings[key] is bool b ? b : false;
-            _config.Settings[key] = !current;
-            _config.SaveConfig();
-            _console.WriteSuccess($"{key} set to {!current}.");
-        }
-        else
-        {
-            _console.WriteError($"Setting {key} not found.");
-        }
-
         Console.ReadLine();
     }
 

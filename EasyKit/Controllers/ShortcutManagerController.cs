@@ -35,24 +35,18 @@ internal class ShortcutManagerController
     // It currently calls ManageContextMenu which will be refactored.
     private void ShowMenu()
     {
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        // Get user settings
+        int menuWidth = 100;
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
+        // Remove color_scheme logic
         var menuView = new MenuView();
         menuView.CreateMenu("Shortcut Manager", width: menuWidth)
             .AddOption("1", "View Shortcuts", () => _console.WriteInfo("View Shortcuts - Not Implemented"))
             .AddOption("2", "Manage Context Menu", () => ManageContextMenuAsync().GetAwaiter().GetResult())
             .AddOption("0", "Back", () => { })
-            .WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
-                colorScheme.help)
+            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight, MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
             .WithHelpText("Manage your keyboard shortcuts and context menu. Press 0 to return.")
             .WithSubtitle("Shortcut Manager")
             .Show();

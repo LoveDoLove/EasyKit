@@ -115,30 +115,17 @@ public class GitController
     public void ShowMenu()
     {
         // Get user settings
-        int menuWidth = 50;
-        string colorSchemeStr = "dark";
+        int menuWidth = 100;
 
         // Try to get user preferences from config
-        var menuWidthObj = _console.Config.Get("menu_width", 50);
+        var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        var colorSchemeObj = _console.Config.Get("color_scheme", "dark");
-        if (colorSchemeObj != null)
-            colorSchemeStr = colorSchemeObj.ToString() ?? "dark";
-
-        // Apply the appropriate color scheme based on user settings
-        var colorScheme = MenuTheme.ColorScheme.Dark;
-        if (colorSchemeStr.ToLower() == "light")
-            colorScheme = MenuTheme.ColorScheme.Light;
 
         // Create and configure the menu
         var menuView = new MenuView();
         menuView.CreateMenu("Git Tools", width: menuWidth)
-            .AddOption("0", "Back to main menu", () =>
-            {
-                /* Return to main menu */
-            })
+            .AddOption("0", "Back to main menu", () => { /* Return to main menu */ })
             .AddOption("1", "Init repository", () => InitRepo())
             .AddOption("2", "Status", () => CheckStatus())
             .AddOption("3", "Add all changes", () => AddAll())
@@ -157,8 +144,7 @@ public class GitController
             .AddOption("16", "Add submodule", () => AddSubmodule())
             .AddOption("17", "Update submodule", () => UpdateSubmodule())
             .AddOption("18", "Remove submodule", () => RemoveSubmodule())
-            .WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
-                colorScheme.help)
+            .WithColors(MenuTheme.ColorScheme.Dark.border, MenuTheme.ColorScheme.Dark.highlight, MenuTheme.ColorScheme.Dark.title, MenuTheme.ColorScheme.Dark.text, MenuTheme.ColorScheme.Dark.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .WithRoundedBorder()
             .Show();
