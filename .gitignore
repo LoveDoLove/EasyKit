@@ -401,8 +401,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 # Hide
-.roo
-.roomodes
-memory-bank
 install_rooflow.cmd
 generate_mcp_yaml.py
+.vscode
