@@ -87,9 +87,13 @@ internal class ShortcutManagerController
 
     private async Task ToggleOpenWithEasyKitAsync(bool currentlyEnabled)
     {
-        string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "EasyKit.exe";
-        // Use exePath itself as the icon source, or specify a dedicated .ico/.png if available
+        // Use Environment.ProcessPath (preferred in .NET 6+) for the executable path
+        string exePath = System.Environment.ProcessPath ?? "EasyKit.exe";
+        // Prefer a dedicated icon file if available, otherwise fallback to exePath
         string iconPath = exePath;
+        string iconCandidate = Path.Combine(AppContext.BaseDirectory, "icon.ico");
+        if (File.Exists(iconCandidate))
+            iconPath = iconCandidate;
 
         var scopeString = _config.Get("context_menu_scope", "user")?.ToString()?.ToLowerInvariant() ?? "user";
         MenuScope scope = scopeString == "system" ? MenuScope.System : MenuScope.User;
@@ -113,7 +117,7 @@ internal class ShortcutManagerController
                         Id = entryDef.Id,
                         Text = EasyKitOpenText,
                         Command = exePath,
-                        Arguments = null, // No additional arguments beyond the path placeholder handled by the manager
+                        Arguments = string.Empty, // No additional arguments beyond the path placeholder handled by the manager
                         IconPath = iconPath,
                         Scope = scope,
                         TargetType = entryDef.TargetType
