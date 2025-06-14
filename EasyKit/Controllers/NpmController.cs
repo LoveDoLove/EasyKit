@@ -81,14 +81,14 @@ public class NpmController
                     /* Return to main menu */
                 });
         else
-            // Regular menu when npm is installed
+            // User-friendly, logical order for NPM menu
             menu.AddOption("1", "Install packages (npm install)", () => InstallPackages())
                 .AddOption("2", "Update packages (npm-check-updates)", () => UpdatePackages())
-                .AddOption("3", "Build for production (npm run build)", () => BuildProduction())
-                .AddOption("4", "Start development server (npm run dev)", () => BuildDevelopment())
-                .AddOption("5", "Security audit (npm audit)", () => SecurityAudit())
+                .AddOption("3", "Show package.json info", () => ShowPackageInfo())
+                .AddOption("4", "Build for production (npm run build)", () => BuildProduction())
+                .AddOption("5", "Start development server (npm run dev)", () => BuildDevelopment())
                 .AddOption("6", "Run custom npm script", () => RunCustomScript())
-                .AddOption("7", "Show package.json info", () => ShowPackageInfo())
+                .AddOption("7", "Security audit (npm audit)", () => SecurityAudit())
                 .AddOption("8", "Reset npm cache", () => ResetCache())
                 .AddOption("9", "Configure npm path", () => ConfigureNpmPath())
                 .AddOption("D", "Run npm diagnostics", () => RunNpmDiagnostics())
