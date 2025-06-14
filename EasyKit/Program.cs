@@ -256,12 +256,12 @@ internal class Program
             MenuView.ShowMenu("EasyKit Main Menu v" + version, new[]
             {
                 "0. Exit",
-                "1. NPM Tools",
-                "2. Laravel Tools",
+                "1. Git Tools",
+                "2. NPM Tools",
                 "3. Composer Tools",
-                "4. Git Tools",
-                "5. Settings",
-                "6. Shortcut Manager"
+                "4. Laravel Tools",
+                "5. Shortcut Manager",
+                "6. Settings"
             });
 
             Console.WriteLine("[T] Tool Marketplace");
@@ -277,22 +277,22 @@ internal class Program
                     if (ExitProgram()) return;
                     break;
                 case ConsoleKey.D1:
-                    NpmController.ShowMenu();
+                    GitController.ShowMenu();
                     break;
                 case ConsoleKey.D2:
-                    LaravelController.ShowMenu();
+                    NpmController.ShowMenu();
                     break;
                 case ConsoleKey.D3:
                     ComposerController.ShowMenu();
                     break;
                 case ConsoleKey.D4:
-                    GitController.ShowMenu();
+                    LaravelController.ShowMenu();
                     break;
                 case ConsoleKey.D5:
-                    SettingsController.ShowMenu();
+                    ShortcutManagerMenu();
                     break;
                 case ConsoleKey.D6:
-                    ShortcutManagerMenu();
+                    SettingsController.ShowMenu();
                     break;
             }
         }
