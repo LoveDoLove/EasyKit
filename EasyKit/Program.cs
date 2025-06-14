@@ -348,19 +348,14 @@ internal class Program
             Console.Clear();
             // Get current statuses
             bool isOpenWithEasyKitEnabled = Config.Get("open_with_easykit", false) is bool bOpen && bOpen;
-            bool isLaunchDocEnabled = Config.Get("launch_documentation_enabled", true) is bool bDoc && bDoc;
-            bool isCheckUpdatesEnabled = Config.Get("check_for_updates_enabled", true) is bool bUpd && bUpd;
 
             var menuItems = new List<string>
             {
                 "0. Back",
-                $"1. Open with EasyKit       [Status: {(isOpenWithEasyKitEnabled ? "Enabled" : "Disabled")}] [Manage...]",
-                $"2. Launch Documentation    [{(isLaunchDocEnabled ? "ON" : "OFF")}]",
-                $"3. Check for Updates       [{(isCheckUpdatesEnabled ? "ON" : "OFF")}]"
+                $"1. Open with EasyKit       [Status: {(isOpenWithEasyKitEnabled ? "Enabled" : "Disabled")}] [Manage...]"
             };
 
             MenuView.ShowMenu("Shortcut Manager", menuItems.ToArray());
-
             var key = Console.ReadKey(true).Key;
             switch (key)
             {
@@ -368,20 +363,6 @@ internal class Program
                     return;
                 case ConsoleKey.D1: // Manage Open with EasyKit
                     ShortcutManagerController.ManageContextMenuAsync().GetAwaiter().GetResult();
-                    break;
-                case ConsoleKey.D2: // Toggle Launch Documentation
-                    Config.Set("launch_documentation_enabled", !isLaunchDocEnabled);
-                    Config.SaveConfig();
-                    NotificationView.Show(
-                        $"'Launch Documentation' {(Config.Get("launch_documentation_enabled", true) is bool b && b ? "Enabled" : "Disabled")}.",
-                        NotificationView.NotificationType.Success);
-                    break;
-                case ConsoleKey.D3: // Toggle Check for Updates
-                    Config.Set("check_for_updates_enabled", !isCheckUpdatesEnabled);
-                    Config.SaveConfig();
-                    NotificationView.Show(
-                        $"'Check for Updates' {(Config.Get("check_for_updates_enabled", true) is bool bUpdates && bUpdates ? "Enabled" : "Disabled")}.",
-                        NotificationView.NotificationType.Success);
                     break;
             }
         }
