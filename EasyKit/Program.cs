@@ -370,17 +370,6 @@ internal class Program
 
     private static bool ExitProgram()
     {
-        // Check if confirm_exit is enabled
-        var confirmExitObj = Config.Get("confirm_exit", true);
-        bool confirmExit = confirmExitObj is bool b && b;
-
-        if (confirmExit)
-        {
-            var promptView = new PromptView();
-            bool confirm = promptView.ConfirmYesNo("Are you sure you want to exit?", false);
-            if (!confirm) return false;
-        }
-
         // Clear the screen for a clean exit
         Console.Clear();
 
