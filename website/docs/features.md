@@ -11,10 +11,6 @@ EasyKit is a modern toolkit for web developers, built on **.NET 8.0** and design
 - **Settings:** Customize EasyKit to fit your workflow, including menu width, logging, tips, and confirmations. [Learn more](./features/settings.md)
 - **Tool Marketplace:** Discover, check, and install essential tools (Node.js, npm, PHP, Composer, Git) directly from EasyKit. The Tool Marketplace checks for installed tools, lists missing ones, and opens download pages for easy installation. [Learn more](./features/toolmarketplace.md)
 
-## Removed Features
-
-- **Shortcut Manager:** This feature has been removed and is no longer available. [See details](./features/shortcutmanager.md)
-
 ## Logging & Configuration
 
 EasyKit uses [Serilog](https://serilog.net/) for structured logging and [System.Text.Json](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-overview) for fast, modern JSON serialization. Logs are written to both the console and rolling files by default. Example setup:
