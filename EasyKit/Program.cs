@@ -1,13 +1,10 @@
-﻿using CommonUtilities.Helpers.Admin;
-using CommonUtilities.Helpers.Console;
-using CommonUtilities.Helpers.ContextMenuManager;
+﻿using System.Reflection;
 using CommonUtilities.Utilities.System;
 using EasyKit.Controllers;
+using EasyKit.Helpers.Console;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
-using Microsoft.Extensions.DependencyInjection;
-using System.Reflection;
 
 namespace EasyKit;
 
@@ -38,9 +35,6 @@ internal class Program
         new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
     private static readonly SettingsController SettingsController = new(Config, ConsoleService, PromptView);
-
-    private static readonly ShortcutManagerController ShortcutManagerController =
-        new(Config, ConsoleService, PromptView, ServiceProvider.GetRequiredService<IContextMenuManager>());
 
     private static readonly ToolMarketplaceController ToolMarketplaceController = new(
         new ProcessService(ConsoleService, Config),
@@ -149,25 +143,7 @@ internal class Program
             string? originalArg = args.Length > 0 ? args[0] : null;
 
             // Check if the application is running as administrator
-            if (!AdminHelper.IsRunningAsAdmin())
-            {
-                if (ConfirmationService.ConfirmAdminElevation())
-                {
-                    Console.WriteLine("Restarting with administrator privileges...");
-                    // Relaunch with original argument if present
-                    if (AdminHelper.RestartAsAdmin(originalArg))
-                        return;
-
-                    Console.WriteLine();
-                    NotificationView.Show("Failed to restart with admin rights. Some features may be limited.",
-                        NotificationView.NotificationType.Warning, requireKeyPress: true);
-                }
-                else
-                {
-                    NotificationView.Show("Continuing without admin rights. Some features may be limited.",
-                        NotificationView.NotificationType.Warning, requireKeyPress: true);
-                }
-            }
+            // (Manual admin privilege check and prompt removed; now handled by manifest)
 
             // If an argument is provided, open the folder or file directly
             if (!string.IsNullOrEmpty(originalArg))
@@ -260,8 +236,7 @@ internal class Program
                 "2. NPM Tools",
                 "3. Composer Tools",
                 "4. Laravel Tools",
-                "5. Shortcut Manager",
-                "6. Settings"
+                "5. Settings"
             });
 
             Console.WriteLine("[T] Tool Marketplace");
@@ -289,9 +264,6 @@ internal class Program
                     LaravelController.ShowMenu();
                     break;
                 case ConsoleKey.D5:
-                    ShortcutManagerController.ShowMenu();
-                    break;
-                case ConsoleKey.D6:
                     SettingsController.ShowMenu();
                     break;
             }

@@ -1,0 +1,15 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\*\shell\EasyKit]
+@="Open with EasyKit"
+"Icon"="C:\\Program Files (x86)\\EasyKit\\EasyKit.exe"
+
+[HKEY_CLASSES_ROOT\*\shell\EasyKit\command]
+@="C:\\Program Files (x86)\\EasyKit\\EasyKit.exe \"%1\""
+
+[HKEY_CLASSES_ROOT\Directory\shell\EasyKit]
+@="Open with EasyKit"
+"Icon"="C:\\Program Files (x86)\\EasyKit\\EasyKit.exe"
+
+[HKEY_CLASSES_ROOT\Directory\shell\EasyKit\command]
+@="C:\\Program Files (x86)\\EasyKit\\EasyKit.exe \"%1\""

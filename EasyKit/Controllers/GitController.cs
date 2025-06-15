@@ -1,4 +1,4 @@
-using CommonUtilities.Helpers.Console;
+using EasyKit.Helpers.Console;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
