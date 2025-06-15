@@ -1,8 +1,7 @@
-using CommonUtilities.Helpers.Console;
+using EasyKit.Helpers.Console;
 using EasyKit.Models;
 using EasyKit.Services;
 using EasyKit.UI.ConsoleUI;
-using ConfirmationHelper = EasyKit.Helpers.Console.ConfirmationHelper;
 
 namespace EasyKit.Controllers;
 
