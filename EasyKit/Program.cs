@@ -144,25 +144,7 @@ internal class Program
             string? originalArg = args.Length > 0 ? args[0] : null;
 
             // Check if the application is running as administrator
-            if (!AdminHelper.IsRunningAsAdmin())
-            {
-                if (ConfirmationService.ConfirmAdminElevation())
-                {
-                    Console.WriteLine("Restarting with administrator privileges...");
-                    // Relaunch with original argument if present
-                    if (AdminHelper.RestartAsAdmin(originalArg))
-                        return;
-
-                    Console.WriteLine();
-                    NotificationView.Show("Failed to restart with admin rights. Some features may be limited.",
-                        NotificationView.NotificationType.Warning, requireKeyPress: true);
-                }
-                else
-                {
-                    NotificationView.Show("Continuing without admin rights. Some features may be limited.",
-                        NotificationView.NotificationType.Warning, requireKeyPress: true);
-                }
-            }
+            // (Manual admin privilege check and prompt removed; now handled by manifest)
 
             // If an argument is provided, open the folder or file directly
             if (!string.IsNullOrEmpty(originalArg))
