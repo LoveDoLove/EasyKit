@@ -1,27 +1,40 @@
 # Settings
 
-Customize the application's behavior through the Settings menu.
+EasyKit allows you to customize its behavior through a flexible Settings menu, making it easy to tailor the application to your workflow.
+
+## Introduction
+
+The Settings feature lets you adjust application preferences, such as menu width, logging, and confirmation prompts. All changes are applied instantly, and you can always reset to defaults if needed.
 
 ## Key Features
 
 - **View Configuration:** Displays current settings.
-- **Menu Width:** Modify the menu width.
-- **Toggle Logging:** Enable/disable application logging.
-- **Toggle Tips:** Show/hide helpful tips.
-- **Destructive Action Confirmation:** Enable/disable confirmation prompts for destructive actions.
+- **Menu Width:** Modify the menu width (choose a value between 20 and 120).
+- **Toggle Logging:** Enable or disable application logging.
+- **Toggle Tips:** Show or hide helpful tips.
+- **Destructive Action Confirmation:** Enable or disable confirmation prompts for destructive actions.
 - **Reset Defaults:** Resets all settings to their default values.
 
 ## Usage
 
-Access the Settings menu from the main menu to view and modify settings.
+Access the Settings menu from the main menu to view and modify settings. You can:
 
-### Configuration Details
-
-- **View Configuration:** Review current settings.
-- **Menu Width:** Enter a new width (20-120).
-- **Toggle Settings:** Enable/disable settings. A confirmation message is displayed.
-- **Reset Defaults:** Confirm to reset all settings.
+- **View current configuration:**
+  - See all current settings and their values.
+- **Change menu width:**
+  - Enter a new width value (20-120) to adjust the menu size.
+- **Toggle settings:**
+  - Enable or disable logging, tips, and confirmations. A confirmation message is displayed for each change.
+- **Reset to defaults:**
+  - Confirm to reset all settings to their original values.
 
 ## Code Overview
 
-The `SettingsController` manages the settings feature. Methods include: `ShowMenu`, `ViewConfig`, `ChangeMenuWidth`, `ToggleSetting`, and `ResetToDefaults`.
+The `SettingsController` manages the settings feature. Key methods include:
+- `ShowMenu`
+- `ViewConfig`
+- `ChangeMenuWidth`
+- `ToggleSetting`
+- `ResetToDefaults`
+
+For more details, refer to the EasyKit documentation or explore the Settings menu in the application.

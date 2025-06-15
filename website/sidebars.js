@@ -30,7 +30,6 @@ const sidebars = {
         "features/laravel",
         "features/composer",
         "features/settings",
-        "features/shortcutmanager",
         "features/toolmarketplace",
       ],
     },
