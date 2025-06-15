@@ -18,7 +18,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={pf32}\EasyKit
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
 LicenseFile=D:\Projects\CSharpProjects\EasyKit\LICENSE
@@ -35,6 +35,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
+Source: "D:\Projects\CSharpProjects\EasyKit\ISS\ContextMenu-win-x86.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Source: "D:\Projects\CSharpProjects\EasyKit\EasyKit\bin\Release\net8.0\win-x86\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -44,4 +45,5 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "regedit.exe"; Parameters: "/s \"{tmp}\ContextMenu-win-x86.reg\""; StatusMsg: "Adding context menu..."; Flags: runhidden
 
