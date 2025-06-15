@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "EasyKit"
-#define MyAppVersion "4.1.2"
+#define MyAppVersion "4.1.3"
 #define MyAppPublisher "LoveDoLove, Inc."
 #define MyAppURL "https://lovedolove.hidns.co/"
 #define MyAppExeName "EasyKit.exe"
@@ -36,7 +36,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "D:\Projects\CSharpProjects\EasyKit\ISS\ContextMenu-win-x64.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
-Source: "D:\Projects\CSharpProjects\EasyKit\EasyKit\bin\Release\net8.0\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\Projects\CSharpProjects\EasyKit\EasyKit\bin\Release\net8.0\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
