@@ -18,7 +18,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={pf32}\EasyKit
+DefaultDirName={commonpf32}\EasyKit
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
 LicenseFile=D:\Projects\CSharpProjects\EasyKit\LICENSE
@@ -45,5 +45,5 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-Filename: "regedit.exe"; Parameters: "/s \"{tmp}\ContextMenu-win-x86.reg\""; StatusMsg: "Adding context menu..."; Flags: runhidden
+Filename: "regedit.exe"; Parameters: "/s ""{tmp}\ContextMenu-win-x86.reg"""; StatusMsg: "Adding context menu..."; Flags: runhidden
 
