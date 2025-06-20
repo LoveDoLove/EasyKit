@@ -45,4 +45,3 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "regedit.exe"; Parameters: "/s ""{tmp}\ContextMenu-win-x64.reg"""; StatusMsg: "Adding context menu..."; Flags: runhidden
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
