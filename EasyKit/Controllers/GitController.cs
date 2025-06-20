@@ -407,6 +407,7 @@ public class GitController
 
     private void AddSubmodule()
     {
+        // Get the submodule URL
         var url = _prompt.Prompt("Enter submodule URL: ") ?? "";
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -415,35 +416,221 @@ public class GitController
             return;
         }
 
+        // Get the submodule path
         var path = _prompt.Prompt("Enter submodule path: ") ?? "";
         if (string.IsNullOrWhiteSpace(path))
         {
             _console.WriteError("Submodule path cannot be empty.");
             WaitForUser();
             return;
+        }        // Check if the path already exists as a directory
+        if (Directory.Exists(path))
+        {
+            if (!_confirmation.ConfirmAction($"Directory '{path}' already exists. Continue anyway?"))
+            {
+                _console.WriteInfo("Submodule addition cancelled.");
+                WaitForUser();
+                return;
+            }
+        }
+
+        // Check if the path already exists in .gitmodules
+        if (File.Exists(".gitmodules"))
+        {
+            try
+            {
+                string gitmodulesContent = File.ReadAllText(".gitmodules");
+                if (gitmodulesContent.Contains($"path = {path}"))
+                {
+                    _console.WriteError($"A submodule already exists at path '{path}'. Use 'Update submodule' to update it.");
+                    WaitForUser();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _console.WriteError($"Error checking .gitmodules file: {ex.Message}");
+                // Continue with the operation, as the check is precautionary
+            }
         }
 
         _console.WriteInfo($"Adding submodule from '{url}' to '{path}'...");
-        if (RunGitCommand($"submodule add {url} {path}"))
-            _console.WriteSuccess("\u2713 Submodule added successfully!");
+
+        // Run the git submodule add command and capture detailed output
+        var (output, error, exitCode) = RunGitCommandWithOutput($"submodule add {url} {path}");
+
+        if (exitCode == 0)
+        {
+            _console.WriteSuccess("✓ Submodule added successfully!");
+
+            // Additional information about the submodule
+            _console.WriteInfo("\nSubmodule Information:");
+            RunGitCommand("submodule status", true);
+
+            // Inform user about initialization and updating
+            _console.WriteInfo("\nYou can update this submodule later using 'Update submodule' option.");
+        }
         else
-            _console.WriteError("\u2717 Failed to add submodule.");
+        {
+            _console.WriteError($"✗ Failed to add submodule. Error details:");
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _console.WriteError(error);
+
+                // Provide helpful guidance based on common error patterns
+                if (error.Contains("already exists") && error.Contains("is not a valid repository"))
+                {
+                    _console.WriteInfo("Suggestion: The directory may already exist but is not a valid repository.");
+                    _console.WriteInfo("Try removing the directory first or choosing a different path.");
+                }
+                else if (error.Contains("remote: Repository not found"))
+                {
+                    _console.WriteInfo("Suggestion: The repository URL may be incorrect or you might not have access to it.");
+                    _console.WriteInfo("Verify the URL and ensure you have proper access permissions.");
+                }
+                else if (error.Contains("Permission denied"))
+                {
+                    _console.WriteInfo("Suggestion: You may not have permission to access this repository.");
+                    _console.WriteInfo("Check your credentials or try using HTTPS instead of SSH or vice versa.");
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(output))
+            {
+                _console.WriteInfo(output);
+            }
+        }
+
         WaitForUser();
     }
 
     private void UpdateSubmodule()
     {
-        _console.WriteInfo("Updating submodules to the latest remote commits...");
-        // Use --remote to fetch and update to the latest commit on the configured branch
-        if (RunGitCommand("submodule update --remote --init --recursive"))
-            _console.WriteSuccess("✓ Submodules updated to the latest remote commits successfully!");
+        // Check if there are any submodules first
+        var (statusOutput, statusError, statusExitCode) = RunGitCommandWithOutput("submodule status");
+        if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
+        {
+            _console.WriteError("No submodules found in this repository.");
+            if (!string.IsNullOrWhiteSpace(statusError))
+            {
+                _console.WriteError("Error details: " + statusError);
+            }
+            WaitForUser();
+            return;
+        }
+
+        // Show available submodules
+        _console.WriteInfo("Available submodules:");
+        RunGitCommand("submodule status");
+
+        // Ask if user wants to update a specific submodule or all submodules
+        var specificPath = _prompt.Prompt("Enter submodule path to update (leave empty to update all): ") ?? "";
+        
+        string updateCommand;
+        string operationDescription;
+        
+        if (string.IsNullOrWhiteSpace(specificPath))
+        {
+            // Update all submodules
+            updateCommand = "submodule update --remote --init --recursive";
+            operationDescription = "all submodules";
+        }
         else
-            _console.WriteError("✗ Failed to update submodules to the latest remote commits.");
+        {
+            // Check if the specified submodule exists
+            bool submoduleExists = false;
+            var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var submodule in submodules)
+            {
+                if (submodule.Contains(specificPath))
+                {
+                    submoduleExists = true;
+                    break;
+                }
+            }
+            
+            if (!submoduleExists)
+            {
+                _console.WriteError($"No submodule found at path '{specificPath}'.");
+                WaitForUser();
+                return;
+            }
+            
+            // Update specific submodule
+            updateCommand = $"submodule update --remote --init --recursive {specificPath}";
+            operationDescription = $"submodule at '{specificPath}'";
+        }
+        
+        _console.WriteInfo($"Updating {operationDescription} to the latest remote commits...");
+
+        // Run the update command and capture detailed output
+        var (output, error, exitCode) = RunGitCommandWithOutput(updateCommand);
+        
+        if (exitCode == 0)
+        {
+            _console.WriteSuccess($"✓ {operationDescription} updated successfully!");
+            
+            // Show updated submodule status
+            _console.WriteInfo("\nCurrent submodule status:");
+            RunGitCommand("submodule status");
+            
+            // Inform user about additional steps if needed
+            _console.WriteInfo("\nNote: The updates have been fetched, but not yet committed.");
+            _console.WriteInfo("If you want to commit these changes, use 'Commit staged changes' option.");
+        }
+        else
+        {
+            _console.WriteError($"✗ Failed to update {operationDescription}. Error details:");
+            
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _console.WriteError(error);
+                
+                // Provide helpful guidance based on common error patterns
+                if (error.Contains("Please make sure you have the correct access rights"))
+                {
+                    _console.WriteInfo("Suggestion: Access rights issue. Check your credentials for the submodule repository.");
+                }
+                else if (error.Contains("did not match any file(s) known to git"))
+                {
+                    _console.WriteInfo("Suggestion: The submodule path may be incorrect or not initialized.");
+                    _console.WriteInfo("Try using the 'Init repository' option first, or check the path name.");
+                }
+                else if (error.Contains("fatal: Unable to update"))
+                {
+                    _console.WriteInfo("Suggestion: There may be uncommitted changes in the submodule.");
+                    _console.WriteInfo("Commit or stash changes in the submodule before updating.");
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(output))
+            {
+                _console.WriteInfo(output);
+            }
+        }
+        
         WaitForUser();
     }
 
     private void RemoveSubmodule()
     {
+        // Check if there are any submodules first
+        var (statusOutput, statusError, statusExitCode) = RunGitCommandWithOutput("submodule status");
+        if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
+        {
+            _console.WriteError("No submodules found in this repository.");
+            if (!string.IsNullOrWhiteSpace(statusError))
+            {
+                _console.WriteError("Error details: " + statusError);
+            }
+            WaitForUser();
+            return;
+        }
+
+        // Show available submodules
+        _console.WriteInfo("Available submodules:");
+        RunGitCommand("submodule status");
+
+        // Get the submodule path to remove
         var path = _prompt.Prompt("Enter submodule path to remove: ") ?? "";
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -452,17 +639,110 @@ public class GitController
             return;
         }
 
-        _console.WriteInfo($"Removing submodule '{path}'...");
-        // 1. Remove the submodule entry from .gitmodules
-        RunGitCommand($"submodule deinit -f {path}", false);
-        // 2. Remove the submodule directory from .git/modules
-        RunGitCommand($"rm -rf .git/modules/{path}", false);
-        // 3. Remove the submodule directory from the working tree
-        RunGitCommand($"git rm -f {path}", false);
-        // 4. Commit the changes
-        RunGitCommand("commit -m \"Remove submodule " + path + "\"", false);
+        // Check if specified submodule exists
+        bool submoduleExists = false;
+        var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var submodule in submodules)
+        {
+            if (submodule.Contains(path))
+            {
+                submoduleExists = true;
+                break;
+            }
+        }
+        
+        if (!submoduleExists)
+        {
+            _console.WriteError($"No submodule found at path '{path}'.");
+            WaitForUser();
+            return;
+        }
 
-        _console.WriteSuccess($"✓ Submodule '{path}' removed successfully!");
+        // Confirm removal
+        if (!_confirmation.ConfirmAction($"Are you sure you want to remove submodule at '{path}'?", false))
+        {
+            _console.WriteInfo("Submodule removal cancelled.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Removing submodule '{path}'...");
+
+        bool success = true;
+        string errorDetails = "";
+
+        // 1. Deinitialize the submodule
+        _console.WriteInfo("Step 1/4: Deinitializing submodule...");
+        var (output1, error1, exitCode1) = RunGitCommandWithOutput($"submodule deinit -f {path}");
+        if (exitCode1 != 0)
+        {
+            success = false;
+            errorDetails += "Error deinitializing submodule:\n" + error1 + "\n";
+        }
+
+        // 2. Remove submodule from index (tracked files in .git)
+        _console.WriteInfo("Step 2/4: Removing from Git index...");
+        var (output2, error2, exitCode2) = RunGitCommandWithOutput($"rm -f {path}");
+        if (exitCode2 != 0)
+        {
+            success = false;
+            errorDetails += "Error removing from Git index:\n" + error2 + "\n";
+        }
+
+        // 3. Remove the submodule directory from .git/modules
+        _console.WriteInfo("Step 3/4: Cleaning up .git/modules...");
+        // Use cross-platform approach to remove directory
+        string gitModulesPath = Path.Combine(".git", "modules", path);
+        try
+        {
+            if (Directory.Exists(gitModulesPath))
+            {
+                Directory.Delete(gitModulesPath, true); // true for recursive
+            }
+        }
+        catch (Exception ex)
+        {
+            success = false;
+            errorDetails += $"Error removing .git/modules/{path}: {ex.Message}\n";
+        }
+
+        // 4. Commit the changes
+        if (success)
+        {
+            _console.WriteInfo("Step 4/4: Committing changes...");
+            var commitMessage = $"Remove submodule {path}";
+            var (output3, error3, exitCode3) = RunGitCommandWithOutput($"commit -m \"{commitMessage}\"");
+            if (exitCode3 != 0)
+            {
+                // This might happen if there's nothing staged - don't treat as complete failure
+                _console.WriteInfo("Note: No changes were committed. This is normal if the submodule was already removed.");
+                _console.WriteInfo("You may need to manually commit these changes.");
+            }
+        }
+
+        // Output results
+        if (success)
+        {
+            _console.WriteSuccess($"✓ Submodule '{path}' removed successfully!");
+            
+            // Show updated submodule status
+            _console.WriteInfo("\nCurrent submodule status:");
+            RunGitCommand("submodule status");
+        }
+        else
+        {
+            _console.WriteError($"✗ There were errors removing submodule '{path}':");
+            _console.WriteError(errorDetails);
+            _console.WriteInfo("\nYou may need to manually complete the removal process.");
+            
+            // Provide recovery guidance
+            _console.WriteInfo("Recovery steps:");
+            _console.WriteInfo("1. Check if the submodule still exists: git submodule status");
+            _console.WriteInfo("2. If needed, manually edit the .gitmodules file to remove the entry");
+            _console.WriteInfo("3. Run: git add .gitmodules");
+            _console.WriteInfo("4. Commit the changes: git commit -m \"Remove submodule " + path + "\"");
+        }
+        
         WaitForUser();
     }
 }
