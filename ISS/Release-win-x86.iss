@@ -33,7 +33,6 @@ SetupIconFile=D:\Projects\CSharpProjects\EasyKit\images\icon.ico
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "D:\Projects\CSharpProjects\EasyKit\ISS\ContextMenu-win-x86.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
@@ -42,7 +41,7 @@ Source: "D:\Projects\CSharpProjects\EasyKit\EasyKit\bin\Release\net8.0\publish\w
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
