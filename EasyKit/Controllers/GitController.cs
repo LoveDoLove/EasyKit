@@ -1,3 +1,25 @@
+// MIT License
+// 
+// Copyright (c) 2025 LoveDoLove
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 using EasyKit.Helpers.Console;
 using EasyKit.Models;
 using EasyKit.Services;
@@ -423,26 +445,17 @@ public class GitController
             _console.WriteError("Submodule path cannot be empty.");
             WaitForUser();
             return;
-        }        // Check if the path already exists as a directory
-        if (Directory.Exists(path))
-        {
-            if (!_confirmation.ConfirmAction($"Directory '{path}' already exists. Continue anyway?"))
-            {
-                _console.WriteInfo("Submodule addition cancelled.");
-                WaitForUser();
-                return;
-            }
         }
 
         // Check if the path already exists in .gitmodules
         if (File.Exists(".gitmodules"))
-        {
             try
             {
                 string gitmodulesContent = File.ReadAllText(".gitmodules");
                 if (gitmodulesContent.Contains($"path = {path}"))
                 {
-                    _console.WriteError($"A submodule already exists at path '{path}'. Use 'Update submodule' to update it.");
+                    _console.WriteError(
+                        $"A submodule already exists at path '{path}'. Use 'Update submodule' to update it.");
                     WaitForUser();
                     return;
                 }
@@ -451,6 +464,59 @@ public class GitController
             {
                 _console.WriteError($"Error checking .gitmodules file: {ex.Message}");
                 // Continue with the operation, as the check is precautionary
+            }
+
+        // Check if the path already exists as a directory
+        bool directoryExists = Directory.Exists(path);
+        if (directoryExists)
+        {
+            // Get directory contents to determine if it's empty or not
+            bool isEmpty = !Directory.EnumerateFileSystemEntries(path).Any();
+
+            if (!isEmpty)
+            {
+                _console.WriteInfo($"[Warning] Directory '{path}' already exists and contains files.");
+                _console.WriteInfo("Options:");
+                _console.WriteInfo("1. Remove the directory and create submodule");
+                _console.WriteInfo("2. Force add submodule (may fail if directory is not empty)");
+                _console.WriteInfo("3. Cancel operation");
+
+                var choice = _prompt.Prompt("Enter your choice (1-3): ");
+
+                switch (choice)
+                {
+                    case "1":
+                        try
+                        {
+                            _console.WriteInfo($"Removing directory '{path}'...");
+                            Directory.Delete(path, true);
+                            directoryExists = false;
+                            _console.WriteSuccess($"Directory '{path}' removed successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            _console.WriteError($"Failed to remove directory: {ex.Message}");
+                            _console.WriteInfo("Please remove the directory manually and try again.");
+                            WaitForUser();
+                            return;
+                        }
+
+                        break;
+                    case "2":
+                        _console.WriteInfo(
+                            "[Warning] Proceeding with force add. This may fail if the directory is not empty.");
+                        break;
+                    default:
+                        _console.WriteInfo("Submodule addition cancelled.");
+                        WaitForUser();
+                        return;
+                }
+            }
+            else if (!_confirmation.ConfirmAction($"Directory '{path}' already exists but is empty. Continue anyway?"))
+            {
+                _console.WriteInfo("Submodule addition cancelled.");
+                WaitForUser();
+                return;
             }
         }
 
@@ -465,14 +531,14 @@ public class GitController
 
             // Additional information about the submodule
             _console.WriteInfo("\nSubmodule Information:");
-            RunGitCommand("submodule status", true);
+            RunGitCommand("submodule status");
 
             // Inform user about initialization and updating
             _console.WriteInfo("\nYou can update this submodule later using 'Update submodule' option.");
         }
         else
         {
-            _console.WriteError($"✗ Failed to add submodule. Error details:");
+            _console.WriteError("✗ Failed to add submodule. Error details:");
             if (!string.IsNullOrWhiteSpace(error))
             {
                 _console.WriteError(error);
@@ -480,18 +546,63 @@ public class GitController
                 // Provide helpful guidance based on common error patterns
                 if (error.Contains("already exists") && error.Contains("is not a valid repository"))
                 {
-                    _console.WriteInfo("Suggestion: The directory may already exist but is not a valid repository.");
-                    _console.WriteInfo("Try removing the directory first or choosing a different path.");
+                    _console.WriteInfo("Suggestion: The directory exists but is not a valid repository.");
+
+                    if (_confirmation.ConfirmAction("Do you want to remove the directory and try again?"))
+                        try
+                        {
+                            _console.WriteInfo($"Removing directory '{path}'...");
+                            Directory.Delete(path, true);
+                            _console.WriteSuccess($"Directory '{path}' removed successfully.");
+
+                            // Try adding the submodule again
+                            _console.WriteInfo($"Retrying: Adding submodule from '{url}' to '{path}'...");
+                            var (retryOutput, retryError, retryExitCode) =
+                                RunGitCommandWithOutput($"submodule add {url} {path}");
+
+                            if (retryExitCode == 0)
+                            {
+                                _console.WriteSuccess("✓ Submodule added successfully on retry!");
+
+                                // Additional information about the submodule
+                                _console.WriteInfo("\nSubmodule Information:");
+                                RunGitCommand("submodule status");
+
+                                // Inform user about initialization and updating
+                                _console.WriteInfo(
+                                    "\nYou can update this submodule later using 'Update submodule' option.");
+                                WaitForUser();
+                                return;
+                            }
+
+                            _console.WriteError("✗ Failed to add submodule on retry. Error details:");
+                            _console.WriteError(retryError);
+                        }
+                        catch (Exception ex)
+                        {
+                            _console.WriteError($"Failed to remove directory: {ex.Message}");
+                            _console.WriteInfo("Please remove the directory manually and try again.");
+                        }
+                    else
+                        _console.WriteInfo("You can manually remove the directory and try again.");
                 }
                 else if (error.Contains("remote: Repository not found"))
                 {
-                    _console.WriteInfo("Suggestion: The repository URL may be incorrect or you might not have access to it.");
+                    _console.WriteInfo(
+                        "Suggestion: The repository URL may be incorrect or you might not have access to it.");
                     _console.WriteInfo("Verify the URL and ensure you have proper access permissions.");
                 }
                 else if (error.Contains("Permission denied"))
                 {
                     _console.WriteInfo("Suggestion: You may not have permission to access this repository.");
                     _console.WriteInfo("Check your credentials or try using HTTPS instead of SSH or vice versa.");
+                }
+                else if (error.Contains("already exists in the index"))
+                {
+                    _console.WriteInfo("Suggestion: Git is tracking this path already.");
+                    _console.WriteInfo(
+                        "If you want to replace it with a submodule, first remove it from git tracking with 'git rm -r --cached " +
+                        path + "'");
                 }
             }
             else if (!string.IsNullOrWhiteSpace(output))
@@ -510,10 +621,7 @@ public class GitController
         if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
         {
             _console.WriteError("No submodules found in this repository.");
-            if (!string.IsNullOrWhiteSpace(statusError))
-            {
-                _console.WriteError("Error details: " + statusError);
-            }
+            if (!string.IsNullOrWhiteSpace(statusError)) _console.WriteError("Error details: " + statusError);
             WaitForUser();
             return;
         }
@@ -524,10 +632,10 @@ public class GitController
 
         // Ask if user wants to update a specific submodule or all submodules
         var specificPath = _prompt.Prompt("Enter submodule path to update (leave empty to update all): ") ?? "";
-        
+
         string updateCommand;
         string operationDescription;
-        
+
         if (string.IsNullOrWhiteSpace(specificPath))
         {
             // Update all submodules
@@ -539,41 +647,39 @@ public class GitController
             // Check if the specified submodule exists
             bool submoduleExists = false;
             var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
+
             foreach (var submodule in submodules)
-            {
                 if (submodule.Contains(specificPath))
                 {
                     submoduleExists = true;
                     break;
                 }
-            }
-            
+
             if (!submoduleExists)
             {
                 _console.WriteError($"No submodule found at path '{specificPath}'.");
                 WaitForUser();
                 return;
             }
-            
+
             // Update specific submodule
             updateCommand = $"submodule update --remote --init --recursive {specificPath}";
             operationDescription = $"submodule at '{specificPath}'";
         }
-        
+
         _console.WriteInfo($"Updating {operationDescription} to the latest remote commits...");
 
         // Run the update command and capture detailed output
         var (output, error, exitCode) = RunGitCommandWithOutput(updateCommand);
-        
+
         if (exitCode == 0)
         {
             _console.WriteSuccess($"✓ {operationDescription} updated successfully!");
-            
+
             // Show updated submodule status
             _console.WriteInfo("\nCurrent submodule status:");
             RunGitCommand("submodule status");
-            
+
             // Inform user about additional steps if needed
             _console.WriteInfo("\nNote: The updates have been fetched, but not yet committed.");
             _console.WriteInfo("If you want to commit these changes, use 'Commit staged changes' option.");
@@ -581,15 +687,16 @@ public class GitController
         else
         {
             _console.WriteError($"✗ Failed to update {operationDescription}. Error details:");
-            
+
             if (!string.IsNullOrWhiteSpace(error))
             {
                 _console.WriteError(error);
-                
+
                 // Provide helpful guidance based on common error patterns
                 if (error.Contains("Please make sure you have the correct access rights"))
                 {
-                    _console.WriteInfo("Suggestion: Access rights issue. Check your credentials for the submodule repository.");
+                    _console.WriteInfo(
+                        "Suggestion: Access rights issue. Check your credentials for the submodule repository.");
                 }
                 else if (error.Contains("did not match any file(s) known to git"))
                 {
@@ -607,7 +714,7 @@ public class GitController
                 _console.WriteInfo(output);
             }
         }
-        
+
         WaitForUser();
     }
 
@@ -618,10 +725,7 @@ public class GitController
         if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
         {
             _console.WriteError("No submodules found in this repository.");
-            if (!string.IsNullOrWhiteSpace(statusError))
-            {
-                _console.WriteError("Error details: " + statusError);
-            }
+            if (!string.IsNullOrWhiteSpace(statusError)) _console.WriteError("Error details: " + statusError);
             WaitForUser();
             return;
         }
@@ -643,14 +747,12 @@ public class GitController
         bool submoduleExists = false;
         var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         foreach (var submodule in submodules)
-        {
             if (submodule.Contains(path))
             {
                 submoduleExists = true;
                 break;
             }
-        }
-        
+
         if (!submoduleExists)
         {
             _console.WriteError($"No submodule found at path '{path}'.");
@@ -695,10 +797,7 @@ public class GitController
         string gitModulesPath = Path.Combine(".git", "modules", path);
         try
         {
-            if (Directory.Exists(gitModulesPath))
-            {
-                Directory.Delete(gitModulesPath, true); // true for recursive
-            }
+            if (Directory.Exists(gitModulesPath)) Directory.Delete(gitModulesPath, true); // true for recursive
         }
         catch (Exception ex)
         {
@@ -715,7 +814,8 @@ public class GitController
             if (exitCode3 != 0)
             {
                 // This might happen if there's nothing staged - don't treat as complete failure
-                _console.WriteInfo("Note: No changes were committed. This is normal if the submodule was already removed.");
+                _console.WriteInfo(
+                    "Note: No changes were committed. This is normal if the submodule was already removed.");
                 _console.WriteInfo("You may need to manually commit these changes.");
             }
         }
@@ -724,7 +824,7 @@ public class GitController
         if (success)
         {
             _console.WriteSuccess($"✓ Submodule '{path}' removed successfully!");
-            
+
             // Show updated submodule status
             _console.WriteInfo("\nCurrent submodule status:");
             RunGitCommand("submodule status");
@@ -734,7 +834,7 @@ public class GitController
             _console.WriteError($"✗ There were errors removing submodule '{path}':");
             _console.WriteError(errorDetails);
             _console.WriteInfo("\nYou may need to manually complete the removal process.");
-            
+
             // Provide recovery guidance
             _console.WriteInfo("Recovery steps:");
             _console.WriteInfo("1. Check if the submodule still exists: git submodule status");
@@ -742,7 +842,7 @@ public class GitController
             _console.WriteInfo("3. Run: git add .gitmodules");
             _console.WriteInfo("4. Commit the changes: git commit -m \"Remove submodule " + path + "\"");
         }
-        
+
         WaitForUser();
     }
 }
