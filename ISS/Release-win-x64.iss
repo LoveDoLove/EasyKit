@@ -2,47 +2,16 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "EasyKit"
-#define MyAppVersion "4.1.3"
+#define MyAppVersion "4.1.4"
 #define MyAppPublisher "LoveDoLove, Inc."
 #define MyAppURL "https://lovedolove.hidns.co/"
 #define MyAppExeName "EasyKit.exe"
 
-[Setup]
-; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
-; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{434B4C62-695E-4C3C-889C-1F745FB22A8C}
-AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-;AppVerName={#MyAppName} {#MyAppVersion}
-AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
-DefaultDirName={commonpf64}\EasyKit
-UninstallDisplayIcon={app}\{#MyAppExeName}
-DisableProgramGroupPage=yes
-LicenseFile=D:\Projects\CSharpProjects\EasyKit\LICENSE
-; Uncomment the following line to run in non administrative install mode (install for current user only).
-;PrivilegesRequired=lowest
-OutputBaseFilename=EasyKit-{#MyAppVersion}-x64
-SolidCompression=yes
-WizardStyle=modern
+; x64 Release Inno Setup Script
+#define MyArch "x64"
+#define MyDefaultDir "{commonpf64}\\EasyKit"
+#define MyRegFile "D:\\Projects\\CSharpProjects\\EasyKit\\ISS\\ContextMenu-win-x64.reg"
+#define MyRegFileName "ContextMenu-win-x64.reg"
+#define MyPublishFolder "D:\\Projects\\CSharpProjects\\EasyKit\\EasyKit\\bin\\Release\\net8.0\\publish\\win-x64\\"
 
-[Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-
-[Files]
-Source: "D:\Projects\CSharpProjects\EasyKit\ISS\ContextMenu-win-x64.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
-Source: "D:\Projects\CSharpProjects\EasyKit\EasyKit\bin\Release\net8.0\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-
-[Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
-[Run]
-Filename: "regedit.exe"; Parameters: "/s ""{tmp}\ContextMenu-win-x64.reg"""; StatusMsg: "Adding context menu..."; Flags: runhidden
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+#include "Common.iss"
