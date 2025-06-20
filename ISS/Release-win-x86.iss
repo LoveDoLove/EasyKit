@@ -27,6 +27,7 @@ LicenseFile=D:\Projects\CSharpProjects\EasyKit\LICENSE
 OutputBaseFilename=EasyKit-{#MyAppVersion}-x86
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=D:\Projects\CSharpProjects\EasyKit\images\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
