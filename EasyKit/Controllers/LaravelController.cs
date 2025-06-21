@@ -21,7 +21,6 @@
 // THE SOFTWARE.
 
 using System.Diagnostics;
-using CommonUtilities.Utilities.System;
 using EasyKit.Helpers.Console;
 using EasyKit.Models;
 using EasyKit.Services;
@@ -108,18 +107,40 @@ public class LaravelController
 
     private bool RunComposerCommand(string args, bool showOutput = true)
     {
-        // Always open a new cmd window for Composer commands
-        _processService.RunProcess("composer", args, Environment.CurrentDirectory);
-        _console.WriteInfo($"Opened new command window for: composer {args}");
-        return true; // Assume success for MVP
+        // Use a new cmd window for install/update, streaming for others
+        if (args.StartsWith("install") || args.StartsWith("update") || args.Contains("--no-dev"))
+        {
+            _processService.RunProcessInNewCmdWindow("composer", args, Environment.CurrentDirectory);
+            // Can't get exit code, so assume success for UX
+            return true;
+        }
+
+        if (showOutput)
+        {
+            int exitCode = _processService.RunProcessWithStreaming("composer", args, Environment.CurrentDirectory);
+            return exitCode == 0;
+        }
+        else
+        {
+            var (output, error, exitCode) = _processService.RunProcess("composer", args, Environment.CurrentDirectory);
+            return exitCode == 0;
+        }
     }
 
     private bool RunArtisanCommand(string args, bool showOutput = true)
     {
-        // Always open a new cmd window for Artisan commands
-        _processService.RunProcess("php", $"artisan {args}", Environment.CurrentDirectory);
-        _console.WriteInfo($"Opened new command window for: php artisan {args}");
-        return true; // Assume success for MVP
+        if (showOutput)
+        {
+            int exitCode =
+                _processService.RunProcessWithStreaming("php", $"artisan {args}", Environment.CurrentDirectory);
+            return exitCode == 0;
+        }
+        else
+        {
+            var (output, error, exitCode) =
+                _processService.RunProcess("php", $"artisan {args}", Environment.CurrentDirectory);
+            return exitCode == 0;
+        }
     }
 
     public void ShowMenu()
@@ -186,23 +207,16 @@ public class LaravelController
             }
         }
 
-        if (RunComposerCommand("install", false))
-        {
-            _console.WriteSuccess("✓ Installed Composer dependencies");
-        }
-        else
-        {
-            _console.WriteError("✗ Failed to install dependencies");
-            Console.ReadLine();
-            return;
-        }
+        // Use new cmd window for composer install
+        _processService.RunProcessInNewCmdWindow("composer", "install", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Installed Composer dependencies (see new window for details)");
 
-        if (RunArtisanCommand("key:generate", false))
+        if (RunArtisanCommand("key:generate"))
             _console.WriteSuccess("✓ Generated application key");
         else
             _console.WriteError("✗ Failed to generate key");
-        RunArtisanCommand("config:clear", false);
-        RunArtisanCommand("cache:clear", false);
+        RunArtisanCommand("config:clear");
+        RunArtisanCommand("cache:clear");
         _console.WriteSuccess("✓ Cleared configuration and cache");
         _console.WriteSuccess("\nSetup completed successfully!");
         Console.ReadLine();
@@ -211,30 +225,24 @@ public class LaravelController
     private void InstallPackages()
     {
         _console.WriteInfo("Installing Composer packages...");
-        if (RunComposerCommand("install"))
-            _console.WriteSuccess("✓ Packages installed successfully!");
-        else
-            _console.WriteError("✗ Failed to install packages.");
+        _processService.RunProcessInNewCmdWindow("composer", "install", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Packages install command started in new window!");
         Console.ReadLine();
     }
 
     private void UpdatePackages()
     {
         _console.WriteInfo("Updating Composer packages...");
-        if (RunComposerCommand("update"))
-            _console.WriteSuccess("✓ Packages updated successfully!");
-        else
-            _console.WriteError("✗ Failed to update packages.");
+        _processService.RunProcessInNewCmdWindow("composer", "update", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Packages update command started in new window!");
         Console.ReadLine();
     }
 
     private void RegenerateAutoload()
     {
         _console.WriteInfo("Regenerating autoload files...");
-        if (RunComposerCommand("dump-autoload"))
-            _console.WriteSuccess("✓ Autoload files regenerated!");
-        else
-            _console.WriteError("✗ Failed to regenerate autoload files.");
+        RunComposerCommand("dump-autoload");
+        _console.WriteSuccess("✓ Autoload files regenerated!");
         Console.ReadLine();
     }
 
@@ -286,18 +294,13 @@ public class LaravelController
         foreach (var (msg, cmd) in steps)
         {
             _console.WriteInfo(msg);
-            bool success = cmd.StartsWith("artisan ")
-                ? RunArtisanCommand(cmd.Substring(8), false)
-                : RunComposerCommand(cmd, false);
-            if (!success)
-            {
-                _console.WriteError($"✗ {msg} failed");
-                Console.ReadLine();
-                return;
-            }
+            if (cmd.StartsWith("artisan "))
+                RunArtisanCommand(cmd.Substring(8));
+            else
+                _processService.RunProcessInNewCmdWindow("composer", cmd, Environment.CurrentDirectory);
         }
 
-        _console.WriteSuccess("✓ Production build completed!");
+        _console.WriteSuccess("✓ Production build steps started (see new window for composer install)");
         Console.ReadLine();
     }
 
@@ -317,26 +320,10 @@ public class LaravelController
             return;
         }
 
-        try
-        {
-            var phpPath = "php";
-            var quotedPhp = phpPath.Contains(" ") ? $"\"{phpPath}\"" : phpPath;
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/c start cmd /k \"{quotedPhp} artisan serve\"",
-                UseShellExecute = true,
-                WorkingDirectory = Environment.CurrentDirectory
-            });
-            _console.WriteInfo(
-                "✓ Development server started in a new terminal window. Press Ctrl+C in that window to stop the server.");
-        }
-        catch (Exception ex)
-        {
-            LoggerUtilities.Error($"Error starting dev server: {ex.Message}");
-            _console.WriteError("✗ Failed to start development server.");
-        }
-
+        // Use new cmd window for dev server
+        _processService.RunProcessInNewCmdWindow("php", "artisan serve", Environment.CurrentDirectory);
+        _console.WriteInfo(
+            "✓ Development server started in a new terminal window. Press Ctrl+C in that window to stop the server.");
         Console.ReadLine();
     }
 

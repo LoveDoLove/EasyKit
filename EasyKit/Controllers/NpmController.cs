@@ -116,9 +116,8 @@ public class NpmController
 
     private bool EnsureNpmInstalled()
     {
-        // Always open a new cmd window for npm version check
-        _processService.RunProcess(NPM, "--version", Environment.CurrentDirectory);
-        _console.WriteInfo("Opened new command window for: npm --version");
+        // Use streaming for version check (quick, but user sees output)
+        _processService.RunProcessWithStreaming(NPM, "--version", Environment.CurrentDirectory);
         return true; // Assume success for MVP
     }
 
@@ -127,8 +126,8 @@ public class NpmController
         _console.WriteInfo("Installing npm packages...");
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcess(NPM, "install", Environment.CurrentDirectory);
-            _console.WriteInfo("Opened new command window for: npm install");
+            _processService.RunProcessInNewCmdWindow(NPM, "install", Environment.CurrentDirectory);
+            _console.WriteInfo("Started 'npm install' in a new command window.");
         }
 
         Console.ReadLine();
@@ -143,12 +142,12 @@ public class NpmController
             return;
         }
 
-        _processService.RunProcess(NCU, "--version");
-        _console.WriteInfo("Opened new command window for: ncu --version");
-        _processService.RunProcess(NPM, "install -g npm-check-updates");
-        _console.WriteInfo("Opened new command window for: npm install -g npm-check-updates");
-        _processService.RunProcess(NCU, "-i");
-        _console.WriteInfo("Opened new command window for: ncu -i");
+        _processService.RunProcessInNewCmdWindow(NCU, "--version", Environment.CurrentDirectory);
+        _console.WriteInfo("Started 'ncu --version' in a new command window.");
+        _processService.RunProcessInNewCmdWindow(NPM, "install -g npm-check-updates", Environment.CurrentDirectory);
+        _console.WriteInfo("Started 'npm install -g npm-check-updates' in a new command window.");
+        _processService.RunProcessInNewCmdWindow(NCU, "-i", Environment.CurrentDirectory);
+        _console.WriteInfo("Started 'ncu -i' in a new command window.");
         Console.ReadLine();
     }
 
@@ -156,8 +155,8 @@ public class NpmController
     {
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcess(NPM, "run build", Environment.CurrentDirectory);
-            _console.WriteInfo("Opened new command window for: npm run build");
+            _processService.RunProcessInNewCmdWindow(NPM, "run build", Environment.CurrentDirectory);
+            _console.WriteInfo("Started 'npm run build' in a new command window.");
         }
 
         Console.ReadLine();
@@ -167,8 +166,8 @@ public class NpmController
     {
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcess(NPM, "run dev", Environment.CurrentDirectory);
-            _console.WriteInfo("Opened new command window for: npm run dev");
+            _processService.RunProcessInNewCmdWindow(NPM, "run dev", Environment.CurrentDirectory);
+            _console.WriteInfo("Started 'npm run dev' in a new command window.");
         }
 
         Console.ReadLine();
@@ -178,8 +177,8 @@ public class NpmController
     {
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcess(NPM, "audit", Environment.CurrentDirectory);
-            _console.WriteInfo("Opened new command window for: npm audit");
+            _processService.RunProcessWithStreaming(NPM, "audit", Environment.CurrentDirectory);
+            _console.WriteInfo("Ran 'npm audit' with streaming output.");
         }
 
         Console.ReadLine();
@@ -201,8 +200,8 @@ public class NpmController
         }
 
         var script = _prompt.Prompt("Enter npm script name (e.g. 'start'): ");
-        _processService.RunProcess(NPM, $"run {script}", Environment.CurrentDirectory);
-        _console.WriteInfo($"Opened new command window for: npm run {script}");
+        _processService.RunProcessInNewCmdWindow(NPM, $"run {script}", Environment.CurrentDirectory);
+        _console.WriteInfo($"Started 'npm run {script}' in a new command window.");
         Console.ReadLine();
     }
 
@@ -235,8 +234,8 @@ public class NpmController
         {
             if (EnsureNpmInstalled())
             {
-                _processService.RunProcess(NPM, "cache clean --force", Environment.CurrentDirectory);
-                _console.WriteInfo("Opened new command window for: npm cache clean --force");
+                _processService.RunProcessWithStreaming(NPM, "cache clean --force", Environment.CurrentDirectory);
+                _console.WriteInfo("Ran 'npm cache clean --force' with streaming output.");
             }
             else
             {

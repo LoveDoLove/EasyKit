@@ -125,11 +125,26 @@ public class ProcessService
 
     /// <summary>
     ///     Runs a process in a new cmd.exe window (best for interactive or environment-sensitive commands on Windows).
+    ///     This method is NOT obsolete anymore. It opens a new visible window and does not block the current process.
     /// </summary>
-    [Obsolete("This method is deprecated. Use RunProcess instead.")]
     public void RunProcessInNewCmdWindow(string command, string args, string? workingDirectory = null)
     {
-        // Deprecated: No longer opens a new window
-        RunProcess(command, args, workingDirectory);
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/k \"{command} {args}\"",
+                UseShellExecute = true,
+                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
+                CreateNoWindow = false
+            };
+            Process.Start(psi);
+            Console.WriteLine($"[ProcessService] Opened new cmd window: {command} {args}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[ProcessService] Error opening new cmd window: {ex.Message}");
+        }
     }
 }

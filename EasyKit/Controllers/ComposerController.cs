@@ -89,24 +89,16 @@ public class ComposerController
     private void InstallPackages()
     {
         _console.WriteInfo("Installing Composer packages...");
-        _processService.RunProcess("composer", "install", Environment.CurrentDirectory);
-        _console.WriteSuccess("✓ Packages installed successfully!");
+        _processService.RunProcessInNewCmdWindow("composer", "install", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Composer install launched in new window!");
         Console.ReadLine();
     }
 
     private void UpdatePackages()
     {
         _console.WriteInfo("Updating Composer packages...");
-        _processService.RunProcess("composer", "update", Environment.CurrentDirectory);
-        _console.WriteSuccess("✓ Packages updated successfully!");
-        Console.ReadLine();
-    }
-
-    private void RegenerateAutoload()
-    {
-        _console.WriteInfo("Regenerating autoload files...");
-        _processService.RunProcess("composer", "dump-autoload", Environment.CurrentDirectory);
-        _console.WriteSuccess("✓ Autoload files regenerated!");
+        _processService.RunProcessInNewCmdWindow("composer", "update", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Composer update launched in new window!");
         Console.ReadLine();
     }
 
@@ -116,8 +108,8 @@ public class ComposerController
         var dev = _confirmation.ConfirmAction("Is this a development dependency?", false);
         var args = dev ? $"require --dev {package}" : $"require {package}";
         _console.WriteInfo($"Installing {package}...");
-        _processService.RunProcess("composer", args, Environment.CurrentDirectory);
-        _console.WriteSuccess($"✓ Package {package} installed successfully!");
+        _processService.RunProcessInNewCmdWindow("composer", args, Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Composer require launched in new window!");
         Console.ReadLine();
     }
 
@@ -126,8 +118,17 @@ public class ComposerController
         var package = _prompt.Prompt("Enter project package (e.g. 'laravel/laravel'): ");
         var directory = _prompt.Prompt("Enter project directory name: ");
         _console.WriteInfo($"Creating new project from {package}...");
-        _processService.RunProcess("composer", $"create-project {package} {directory}", Environment.CurrentDirectory);
-        _console.WriteSuccess($"✓ Project created successfully in {directory}!");
+        _processService.RunProcessInNewCmdWindow("composer", $"create-project {package} {directory}",
+            Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Composer create-project launched in new window!");
+        Console.ReadLine();
+    }
+
+    private void RegenerateAutoload()
+    {
+        _console.WriteInfo("Regenerating autoload files...");
+        _processService.RunProcessWithStreaming("composer", "dump-autoload", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Autoload files regenerated!");
         Console.ReadLine();
     }
 
@@ -151,7 +152,7 @@ public class ComposerController
         if (_confirmation.ConfirmAction("Are you sure you want to clear Composer cache?", false))
         {
             _console.WriteInfo("Clearing Composer cache...");
-            _processService.RunProcess("composer", "clear-cache", Environment.CurrentDirectory);
+            _processService.RunProcessWithStreaming("composer", "clear-cache", Environment.CurrentDirectory);
             _console.WriteSuccess("✓ Cache cleared successfully!");
         }
         else
