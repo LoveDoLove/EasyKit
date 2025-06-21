@@ -1,3 +1,25 @@
+// MIT License
+// 
+// Copyright (c) 2025 LoveDoLove
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 using System.Diagnostics;
 using System.Text.Json;
 using CommonUtilities.Utilities.System;
@@ -54,64 +76,56 @@ public class NpmController
     {
         // Get user settings
         int menuWidth = 100;
-
-        // Try to get user preferences from config if available
         var menuWidthObj = _console.Config.Get("menu_width", 100);
         if (menuWidthObj is int mw)
             menuWidth = mw;
-
-        // Use a custom theme for NPM - purple with double border
         var colorScheme = MenuTheme.ColorScheme.Purple;
 
         // Check if npm is installed first
         bool npmInstalled = IsNpmInstalled();
 
-        // Create and configure the menu
+        // If not installed, immediately open website and return
+        if (!npmInstalled)
+        {
+            OpenNodejsWebsite();
+            return;
+        }
+
+        // User-friendly, logical order for NPM menu
         var menuView = new MenuView();
         var menu = menuView.CreateMenu("NPM Tools", width: menuWidth);
-
-        if (!npmInstalled)
-            // If npm is not installed, show a simplified menu with installation options
-            menu.AddOption("1", "Download Node.js (open browser)", () => OpenNodejsWebsite())
-                .AddOption("2", "Check Node.js installation", () => CheckNodeInstallation())
-                .AddOption("3", "Configure npm path manually", () => ConfigureNpmPath())
-                .AddOption("4", "Run npm diagnostics", () => RunNpmDiagnostics())
-                .AddOption("0", "Back to main menu", () =>
-                {
-                    /* Return to main menu */
-                });
-        else
-            // User-friendly, logical order for NPM menu
-            menu.AddOption("1", "Install packages (npm install)", () => InstallPackages())
-                .AddOption("2", "Update packages (npm-check-updates)", () => UpdatePackages())
-                .AddOption("3", "Show package.json info", () => ShowPackageInfo())
-                .AddOption("4", "Build for production (npm run build)", () => BuildProduction())
-                .AddOption("5", "Start development server (npm run dev)", () => BuildDevelopment())
-                .AddOption("6", "Run custom npm script", () => RunCustomScript())
-                .AddOption("7", "Security audit (npm audit)", () => SecurityAudit())
-                .AddOption("8", "Reset npm cache", () => ResetCache())
-                .AddOption("9", "Configure npm path", () => ConfigureNpmPath())
-                .AddOption("D", "Run npm diagnostics", () => RunNpmDiagnostics())
-                .AddOption("0", "Back to main menu", () =>
-                {
-                    /* Return to main menu */
-                });
+        menu.AddOption("1", "Install packages (npm install)", () => InstallPackages())
+            .AddOption("2", "Update packages (npm-check-updates)", () => UpdatePackages())
+            .AddOption("3", "Show package.json info", () => ShowPackageInfo())
+            .AddOption("4", "Build for production (npm run build)", () => BuildProduction())
+            .AddOption("5", "Start development server (npm run dev)", () => BuildDevelopment())
+            .AddOption("6", "Run custom npm script", () => RunCustomScript())
+            .AddOption("7", "Security audit (npm audit)", () => SecurityAudit())
+            .AddOption("8", "Reset npm cache", () => ResetCache())
+            .AddOption("9", "Configure npm path", () => ConfigureNpmPath())
+            .AddOption("D", "Run npm diagnostics", () => RunNpmDiagnostics())
+            .AddOption("0", "Back to main menu", () =>
+            {
+                /* Return to main menu */
+            });
 
         menu.WithColors(colorScheme.border, colorScheme.highlight, colorScheme.title, colorScheme.text,
                 colorScheme.help)
             .WithHelpText("Select an option or press 0 to return to the main menu")
-            .WithDoubleBorder() // Using a double border for NPM tools for a distinct look
+            .WithDoubleBorder()
             .Show();
     }
 
     private bool IsNpmInstalled()
     {
+        // Simplified: Just check if npm is available in PATH
         return _processService.RunProcess(GetNpmPath(), "--version", false, Environment.CurrentDirectory);
     }
 
     private void OpenNodejsWebsite()
     {
-        _console.WriteInfo("Opening Node.js website in your default browser...");
+        _console.WriteInfo(
+            "Node.js and npm are required. Opening the official Node.js download page in your default browser...");
         try
         {
             Process.Start(new ProcessStartInfo
@@ -119,7 +133,8 @@ public class NpmController
                 FileName = "https://nodejs.org/en/download/",
                 UseShellExecute = true
             });
-            _console.WriteInfo("Browser opened successfully.");
+            _console.WriteInfo(
+                "Browser opened. Please download and install Node.js (includes npm). After installation, restart EasyKit.");
         }
         catch (Exception ex)
         {
@@ -130,178 +145,12 @@ public class NpmController
         Console.ReadLine();
     }
 
-    private void CheckNodeInstallation()
-    {
-        _console.WriteInfo("Checking Node.js installation status...");
-
-        // Try to detect Node.js in common locations
-        bool potentiallyInstalled = CheckCommonNodejsLocations();
-
-        if (potentiallyInstalled)
-        {
-            _console.WriteInfo("Node.js appears to be installed in one of the standard locations, but is not in PATH.");
-            _console.WriteInfo("Please add Node.js to your system PATH to use npm commands.");
-
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            {
-                _console.WriteInfo("\nIn Windows:");
-                _console.WriteInfo("1. Open Control Panel → System → Advanced System Settings → Environment Variables");
-                _console.WriteInfo("2. Find the PATH variable in System Variables and click Edit");
-                _console.WriteInfo("3. Add the Node.js installation directory (e.g., C:\\Program Files\\nodejs)");
-                _console.WriteInfo("4. Restart any open command prompts or this application");
-
-                // Ask if user wants to open System Properties directly
-                if (_prompt.ConfirmYesNo("Would you like to open Environment Variables settings now?"))
-                    try
-                    {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = "rundll32.exe",
-                            Arguments = "sysdm.cpl,EditEnvironmentVariables",
-                            UseShellExecute = true
-                        });
-                        _console.WriteInfo("Environment Variables dialog opened. Please add Node.js to PATH.");
-                    }
-                    catch (Exception ex)
-                    {
-                        LoggerUtilities.Error($"Error opening Environment Variables: {ex.Message}");
-                        _console.WriteError("Failed to open Environment Variables dialog. Please open it manually.");
-                    }
-            }
-            else
-            {
-                _console.WriteInfo("\nIn Linux/macOS:");
-                _console.WriteInfo("1. Edit your shell profile file (.bashrc, .bash_profile, .zshrc, etc.)");
-                _console.WriteInfo("2. Add: export PATH=\"$PATH:/path/to/nodejs/bin\"");
-                _console.WriteInfo("3. Save the file and run: source ~/.bashrc (or your profile file)");
-            }
-        }
-        else
-        {
-            _console.WriteError("Node.js does not appear to be installed on this system.");
-            _console.WriteInfo("Please install Node.js from https://nodejs.org/");
-
-            // Ask if the user wants to download Node.js now
-            if (_prompt.ConfirmYesNo("Would you like to open the Node.js download page now?"))
-            {
-                OpenNodejsWebsite();
-                return; // The OpenNodejsWebsite method already has Console.ReadLine()
-            }
-        }
-
-        Console.ReadLine();
-    }
-
     private bool EnsureNpmInstalled()
     {
-        var result = _processService.RunProcess(GetNpmPath(), "--version", false, Environment.CurrentDirectory);
-        if (!result)
-        {
-            _console.WriteError("Node.js/NPM is not installed or not found in PATH.");
-
-            // Check common installation locations
-            bool potentiallyInstalled = CheckCommonNodejsLocations();
-
-            if (potentiallyInstalled)
-            {
-                _console.WriteInfo("\nNode.js appears to be installed but is not in your PATH environment variable.");
-                _console.WriteInfo("To fix this issue:");
-
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    _console.WriteInfo(
-                        "1. Open Control Panel → System → Advanced System Settings → Environment Variables");
-                    _console.WriteInfo("2. Find the PATH variable in System Variables and click Edit");
-                    _console.WriteInfo("3. Add the Node.js installation directory (e.g., C:\\Program Files\\nodejs)");
-                    _console.WriteInfo("4. Restart any open command prompts or this application");
-                }
-                else
-                {
-                    _console.WriteInfo("1. Add the Node.js path to your shell profile (.bash_profile, .zshrc, etc.)");
-                    _console.WriteInfo("2. Example: export PATH=\"$PATH:/usr/local/bin/node\"");
-                    _console.WriteInfo("3. Restart your terminal or this application");
-                }
-            }
-            else
-            {
-                _console.WriteInfo("\nPlease install Node.js from https://nodejs.org/");
-
-                // Display platform-specific installation instructions
-                if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                {
-                    _console.WriteInfo("\nFor Windows users:");
-                    _console.WriteInfo("1. Download the installer from https://nodejs.org/en/download/");
-                    _console.WriteInfo("2. Run the installer and follow the setup wizard");
-                    _console.WriteInfo("3. Make sure to check the option to add Node.js to your PATH");
-                    _console.WriteInfo("4. Restart any open command prompts after installation");
-                }
-                else
-                {
-                    _console.WriteInfo("\nFor Linux/macOS users:");
-                    _console.WriteInfo("• Linux: Use your package manager (apt, yum, etc.) to install Node.js");
-                    _console.WriteInfo("• macOS: Use Homebrew with 'brew install node' or download from nodejs.org");
-                    _console.WriteInfo("• Ensure the installation directory is in your PATH");
-                }
-            }
-
-            _console.WriteInfo(
-                "\nAfter installation or PATH configuration, restart this application to use NPM tools.");
-            Console.ReadLine();
-        }
-
-        return result;
-    }
-
-    private bool CheckCommonNodejsLocations()
-    {
-        // Check common Node.js installation locations based on the platform
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-        {
-            string[] commonPaths =
-            {
-                @"C:\Program Files\nodejs\node.exe",
-                @"C:\Program Files (x86)\nodejs\node.exe",
-                Environment.ExpandEnvironmentVariables(@"%APPDATA%\npm\node.exe"),
-                Environment.ExpandEnvironmentVariables(@"%ProgramFiles%\nodejs\node.exe")
-            };
-
-            foreach (string path in commonPaths)
-                if (File.Exists(path))
-                    return true;
-        }
-        else
-        {
-            // For Linux/macOS systems
-            string[] commonPaths =
-            {
-                "/usr/bin/node",
-                "/usr/local/bin/node",
-                "/opt/local/bin/node",
-                "/opt/homebrew/bin/node"
-            };
-
-            foreach (string path in commonPaths)
-                if (File.Exists(path))
-                    return true;
-        }
-
+        if (IsNpmInstalled())
+            return true;
+        OpenNodejsWebsite();
         return false;
-    }
-
-    private void DisplayPathError(string message)
-    {
-        _console.WriteError(message);
-    }
-
-    private string? FindExecutablePath(string executableName)
-    {
-        return _processService.FindExecutablePath(executableName);
-    }
-
-    private void DisplayPathDiagnostics(string command)
-    {
-        // Delegate to ProcessService's DisplayPathDiagnostics functionality
-        _processService.RunProcess(command, "--version", false);
     }
 
     private void InstallPackages()
