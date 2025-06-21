@@ -42,20 +42,33 @@ public class ProcessService
     {
         try
         {
-            var cmdArgs = $"/k \"{command} {args}\"";
             var psi = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = cmdArgs,
-                UseShellExecute = true,
-                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+                Arguments = $"/c \"{command} {args}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
+                CreateNoWindow = true
             };
-            Process.Start(psi);
-            // No output/error capture in new window mode
-            return ("", "", 0);
+            using var process = new Process { StartInfo = psi };
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+            int exitCode = process.ExitCode;
+            // Show what it does in main window
+            Console.WriteLine($"[ProcessService] Ran: {command} {args}");
+            if (!string.IsNullOrWhiteSpace(output))
+                Console.WriteLine(output);
+            if (!string.IsNullOrWhiteSpace(error))
+                Console.Error.WriteLine(error);
+            return (output, error, exitCode);
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"[ProcessService] Error: {ex.Message}");
             return ("", ex.Message, -1);
         }
     }
@@ -69,19 +82,43 @@ public class ProcessService
     {
         try
         {
-            var cmdArgs = $"/k \"{command} {args}\"";
             var psi = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = cmdArgs,
-                UseShellExecute = true,
-                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+                Arguments = $"/c \"{command} {args}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
+                CreateNoWindow = true
             };
-            Process.Start(psi);
-            return 0;
+            using var process = new Process { StartInfo = psi };
+            process.OutputDataReceived += (s, e) =>
+            {
+                if (e.Data != null)
+                {
+                    onOutput?.Invoke(e.Data);
+                    Console.WriteLine(e.Data);
+                }
+            };
+            process.ErrorDataReceived += (s, e) =>
+            {
+                if (e.Data != null)
+                {
+                    onError?.Invoke(e.Data);
+                    Console.Error.WriteLine(e.Data);
+                }
+            };
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            Console.WriteLine($"[ProcessService] Streaming: {command} {args}");
+            process.WaitForExit();
+            return process.ExitCode;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.Error.WriteLine($"[ProcessService] Streaming Error: {ex.Message}");
             return -1;
         }
     }
@@ -89,16 +126,10 @@ public class ProcessService
     /// <summary>
     ///     Runs a process in a new cmd.exe window (best for interactive or environment-sensitive commands on Windows).
     /// </summary>
+    [Obsolete("This method is deprecated. Use RunProcess instead.")]
     public void RunProcessInNewCmdWindow(string command, string args, string? workingDirectory = null)
     {
-        var cmdArgs = $"/k \"{command} {args}\"";
-        var psi = new ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            Arguments = cmdArgs,
-            UseShellExecute = true,
-            WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
-        };
-        Process.Start(psi);
+        // Deprecated: No longer opens a new window
+        RunProcess(command, args, workingDirectory);
     }
 }
