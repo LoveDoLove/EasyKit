@@ -1,4 +1,26 @@
-﻿using System.Reflection;
+﻿// MIT License
+// 
+// Copyright (c) 2025 LoveDoLove
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+using System.Reflection;
 using CommonUtilities.Utilities.System;
 using EasyKit.Controllers;
 using EasyKit.Helpers.Console;
@@ -36,98 +58,8 @@ internal class Program
 
     private static readonly SettingsController SettingsController = new(Config, ConsoleService, PromptView);
 
-    private static readonly ToolMarketplaceController ToolMarketplaceController = new(
-        new ProcessService(ConsoleService, Config),
-        ConsoleService);
-
-    // Helper to select the best executable for a tool on Windows
-    private static string? SelectBestExecutable(string tool, List<string> candidates)
-    {
-        if (candidates == null || candidates.Count == 0)
-            return null;
-
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-            switch (tool.ToLower())
-            {
-                case "npm":
-                    // Prefer npm.cmd, then npm.exe, then npm
-                    var npmCmd =
-                        candidates.FirstOrDefault(p => p.EndsWith("npm.cmd", StringComparison.OrdinalIgnoreCase));
-                    if (npmCmd != null) return npmCmd;
-                    var npmExe =
-                        candidates.FirstOrDefault(p => p.EndsWith("npm.exe", StringComparison.OrdinalIgnoreCase));
-                    if (npmExe != null) return npmExe;
-                    break;
-                case "node":
-                    // Prefer node.exe
-                    var nodeExe =
-                        candidates.FirstOrDefault(p => p.EndsWith("node.exe", StringComparison.OrdinalIgnoreCase));
-                    if (nodeExe != null) return nodeExe;
-                    break;
-                case "php":
-                    // Prefer php.exe
-                    var phpExe =
-                        candidates.FirstOrDefault(p => p.EndsWith("php.exe", StringComparison.OrdinalIgnoreCase));
-                    if (phpExe != null) return phpExe;
-                    break;
-                case "composer":
-                    // Prefer composer.bat, then composer.phar, then composer.exe
-                    var composerBat = candidates.FirstOrDefault(p =>
-                        p.EndsWith("composer.bat", StringComparison.OrdinalIgnoreCase));
-                    if (composerBat != null) return composerBat;
-                    var composerPhar = candidates.FirstOrDefault(p =>
-                        p.EndsWith("composer.phar", StringComparison.OrdinalIgnoreCase));
-                    if (composerPhar != null) return composerPhar;
-                    var composerExe = candidates.FirstOrDefault(p =>
-                        p.EndsWith("composer.exe", StringComparison.OrdinalIgnoreCase));
-                    if (composerExe != null) return composerExe;
-                    break;
-                case "git":
-                    // Prefer git.exe
-                    var gitExe =
-                        candidates.FirstOrDefault(p => p.EndsWith("git.exe", StringComparison.OrdinalIgnoreCase));
-                    if (gitExe != null) return gitExe;
-                    break;
-            }
-
-        // Fallback: return the first candidate
-        return candidates[0];
-    }
-
-    private static void AutoDetectAndSaveToolPaths()
-    {
-        var processService = new ProcessService(ConsoleService, Config);
-        var tools = new[] { "npm", "node", "php", "composer", "git" };
-        foreach (var tool in tools)
-        {
-            // Gather all possible candidates
-            var candidates = new List<string>();
-            // 1. PATH search
-            var pathExecutable = processService.FindExecutablePath(tool);
-            if (!string.IsNullOrEmpty(pathExecutable))
-                candidates.Add(pathExecutable);
-            // 2. All known search paths
-            var searchPaths = typeof(ProcessService)
-                .GetMethod("GetSearchPathsForExecutable", BindingFlags.NonPublic | BindingFlags.Instance)
-                ?.Invoke(processService, new object[] { tool }) as string[];
-            if (searchPaths != null)
-                foreach (var path in searchPaths)
-                    if (!string.IsNullOrEmpty(path) && File.Exists(path) &&
-                        !candidates.Contains(path, StringComparer.OrdinalIgnoreCase))
-                        candidates.Add(path);
-
-            // Select the best candidate
-            var best = SelectBestExecutable(tool, candidates);
-            if (!string.IsNullOrEmpty(best))
-            {
-                if (candidates.Count > 1 && !string.Equals(best, candidates[0], StringComparison.OrdinalIgnoreCase))
-                    LoggerUtilities.Warning(
-                        $"Auto-detected {tool}: Found multiple candidates, selected '{best}' as the best match.");
-                Config.Set($"{tool}_path", best);
-                LoggerUtilities.Info($"Auto-detected {tool} path: {best} and saved to config.");
-            }
-        }
-    }
+    private static readonly ToolMarketplaceController ToolMarketplaceController =
+        new(new ProcessService(), ConsoleService);
 
     private static void Main(string[] args)
     {
@@ -137,7 +69,7 @@ internal class Program
             LoggerUtilities.StartLog("EasyKit");
             LoggerUtilities.Info("EasyKit application started");
 
-            AutoDetectAndSaveToolPaths();
+            // Removed AutoDetectAndSaveToolPaths
 
             // If launched from context menu, always use absolute path argument
             string? originalArg = args.Length > 0 ? args[0] : null;
