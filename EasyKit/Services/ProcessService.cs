@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using System.Diagnostics;
+using CommonUtilities.Helpers.Processes;
 
 namespace EasyKit.Services;
 
@@ -31,7 +31,7 @@ public class ProcessService
 {
     /// <summary>
     ///     Runs a process and captures its output, error, and exit code.
-    ///     [MVP] Now always opens a new cmd.exe window for execution (no output capture).
+    ///     Now delegates to ProcessExecutionHelper.RunProcessWithCmd.
     /// </summary>
     /// <param name="command">The command to run (e.g., "npm", "php").</param>
     /// <param name="args">Arguments to pass to the command.</param>
@@ -40,111 +40,25 @@ public class ProcessService
     public (string output, string error, int exitCode) RunProcess(string command, string args,
         string? workingDirectory = null)
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/c \"{command} {args}\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
-                CreateNoWindow = true
-            };
-            using var process = new Process { StartInfo = psi };
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-            int exitCode = process.ExitCode;
-            // Show what it does in main window
-            Console.WriteLine($"[ProcessService] Ran: {command} {args}");
-            if (!string.IsNullOrWhiteSpace(output))
-                Console.WriteLine(output);
-            if (!string.IsNullOrWhiteSpace(error))
-                Console.Error.WriteLine(error);
-            return (output, error, exitCode);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[ProcessService] Error: {ex.Message}");
-            return ("", ex.Message, -1);
-        }
+        return ProcessExecutionHelper.RunProcessWithCmd(command, args, workingDirectory);
     }
 
     /// <summary>
     ///     Runs a process and streams its output and error in real time.
-    ///     [MVP] Now always opens a new cmd.exe window for execution (no streaming).
+    ///     Now delegates to ProcessExecutionHelper.RunProcessWithCmdStreaming.
     /// </summary>
     public int RunProcessWithStreaming(string command, string args, string? workingDirectory = null,
         Action<string>? onOutput = null, Action<string>? onError = null)
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/c \"{command} {args}\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
-                CreateNoWindow = true
-            };
-            using var process = new Process { StartInfo = psi };
-            process.OutputDataReceived += (s, e) =>
-            {
-                if (e.Data != null)
-                {
-                    onOutput?.Invoke(e.Data);
-                    Console.WriteLine(e.Data);
-                }
-            };
-            process.ErrorDataReceived += (s, e) =>
-            {
-                if (e.Data != null)
-                {
-                    onError?.Invoke(e.Data);
-                    Console.Error.WriteLine(e.Data);
-                }
-            };
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            Console.WriteLine($"[ProcessService] Streaming: {command} {args}");
-            process.WaitForExit();
-            return process.ExitCode;
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[ProcessService] Streaming Error: {ex.Message}");
-            return -1;
-        }
+        return ProcessExecutionHelper.RunProcessWithCmdStreaming(command, args, workingDirectory, onOutput, onError);
     }
 
     /// <summary>
     ///     Runs a process in a new cmd.exe window (best for interactive or environment-sensitive commands on Windows).
-    ///     This method is NOT obsolete anymore. It opens a new visible window and does not block the current process.
+    ///     Now delegates to ProcessExecutionHelper.RunProcessInNewCmdWindow.
     /// </summary>
     public void RunProcessInNewCmdWindow(string command, string args, string? workingDirectory = null)
     {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/k \"{command} {args}\"",
-                UseShellExecute = true,
-                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
-                CreateNoWindow = false
-            };
-            Process.Start(psi);
-            Console.WriteLine($"[ProcessService] Opened new cmd window: {command} {args}");
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[ProcessService] Error opening new cmd window: {ex.Message}");
-        }
+        ProcessExecutionHelper.RunProcessInNewCmdWindow(command, args, workingDirectory);
     }
 }
