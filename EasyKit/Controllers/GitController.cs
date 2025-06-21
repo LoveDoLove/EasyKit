@@ -49,13 +49,7 @@ public class GitController
         _confirmation = confirmation;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService(console, console.Config);
-    }
-
-    // Helper to get the detected git path
-    private string GetGitPath()
-    {
-        return _processService.FindExecutablePath("git") ?? "git";
+        _processService = new ProcessService();
     }
 
     /// <summary>
@@ -76,14 +70,14 @@ public class GitController
         // Step 1: Check if git is accessible in PATH
         _console.WriteInfo("Step 1: Checking if git is accessible in PATH");
         var (gitVersionOutput, gitVersionError, gitVersionExit) =
-            _processService.RunProcessWithOutput(GetGitPath(), "--version", Environment.CurrentDirectory);
+            _processService.RunProcess("git", "--version", Environment.CurrentDirectory);
         if (gitVersionExit == 0 && !string.IsNullOrWhiteSpace(gitVersionOutput))
         {
             _console.WriteSuccess($"\u2713 Git is accessible. Version: {gitVersionOutput.Trim()}");
         }
         else
         {
-            _console.WriteError("\u2717 Git is not accessible via PATH or detected path.");
+            _console.WriteError("\u2717 Git is not accessible via PATH.");
             _console.WriteInfo("Please install Git from https://git-scm.com/downloads and ensure it is in your PATH.");
             _console.WriteInfo("You can also use the Tool Marketplace in EasyKit to open the download page.");
             _console.WriteInfo("\n===== End of GIT Configuration Diagnostics =====");
@@ -91,9 +85,8 @@ public class GitController
             return;
         }
 
-        // Step 2: Show detected git path
-        var gitPath = GetGitPath();
-        _console.WriteInfo($"Detected git path: {gitPath}");
+        // Step 2: Show detected git path (removed, always 'git')
+        _console.WriteInfo("Detected git path: git");
 
         // Step 3: Check if current directory is a git repository
         _console.WriteInfo("\nStep 3: Checking if current directory is a git repository");
@@ -112,7 +105,8 @@ public class GitController
 
         // Step 4: Run git status
         _console.WriteInfo("\nStep 4: Checking repository status (git status)");
-        var (statusOutput, statusError, statusExit) = RunGitCommandWithOutput("status");
+        var (statusOutput, statusError, statusExit) =
+            _processService.RunProcess("git", "status", Environment.CurrentDirectory);
         if (!string.IsNullOrWhiteSpace(statusError))
             _console.WriteError(statusError.Trim());
         else if (!string.IsNullOrWhiteSpace(statusOutput))
@@ -176,25 +170,6 @@ public class GitController
             .Show();
     }
 
-    private bool RunGitCommand(string args, bool showOutput = true)
-    {
-        if (!File.Exists(".git/config") && args != "init")
-        {
-            if (showOutput)
-                _console.WriteError("This doesn't appear to be a git repository. Run 'git init' first.");
-            return false;
-        }
-
-        return _processService.RunProcess(GetGitPath(), args, showOutput, Environment.CurrentDirectory);
-    } // New helper to get output and error from git command
-
-    private (string output, string error, int exitCode) RunGitCommandWithOutput(string args)
-    {
-        if (!File.Exists(".git/config") && args != "init")
-            return ("", "This doesn't appear to be a git repository. Run 'git init' first.", 1);
-        return _processService.RunProcessWithOutput(GetGitPath(), args, Environment.CurrentDirectory);
-    }
-
     private void InitRepo()
     {
         _console.WriteInfo("Initializing git repository in current directory...");
@@ -205,17 +180,15 @@ public class GitController
             return;
         }
 
-        if (RunGitCommand("init"))
-            _console.WriteSuccess("✓ Git repository initialized successfully!");
-        else
-            _console.WriteError("✗ Failed to initialize git repository.");
+        _processService.RunProcess("git", "init", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Git repository initialized successfully!");
         WaitForUser();
     }
 
     private void CheckStatus()
     {
         _console.WriteInfo("Checking git status...");
-        var (output, error, exitCode) = RunGitCommandWithOutput("status");
+        var (output, error, exitCode) = _processService.RunProcess("git", "status", Environment.CurrentDirectory);
 
         if (!string.IsNullOrWhiteSpace(error))
         {
@@ -231,7 +204,6 @@ public class GitController
         }
         else
         {
-            // Prevent invisible output: check for black-on-black
             var textColorObj = _console.Config?.Get("text_color", "");
             var bgColorObj = _console.Config?.Get("background_color", "");
             if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")
@@ -246,10 +218,8 @@ public class GitController
     private void AddAll()
     {
         _console.WriteInfo("Adding all changes to staging area...");
-        if (RunGitCommand("add ."))
-            _console.WriteSuccess("✓ Changes added to staging area!");
-        else
-            _console.WriteError("✗ Failed to add changes.");
+        _processService.RunProcess("git", "add .", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Changes added to staging area!");
         WaitForUser();
     }
 
@@ -264,10 +234,8 @@ public class GitController
         }
 
         _console.WriteInfo("Committing changes...");
-        if (RunGitCommand($"commit -m \"{message}\""))
-            _console.WriteSuccess("✓ Changes committed successfully!");
-        else
-            _console.WriteError("✗ Failed to commit changes.");
+        _processService.RunProcess("git", $"commit -m \"{message}\"", Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Changes committed successfully!");
         WaitForUser();
     }
 
@@ -281,10 +249,8 @@ public class GitController
         var parts = remoteBranch.Split(' ');
         string remote = parts.Length > 0 ? parts[0] : "origin";
         string branch = parts.Length > 1 ? parts[1] : "main";
-        if (RunGitCommand($"push {remote} {branch}"))
-            _console.WriteSuccess($"✓ Changes pushed to {remote}/{branch} successfully!");
-        else
-            _console.WriteError($"✗ Failed to push changes to {remote}/{branch}.");
+        _processService.RunProcess("git", $"push {remote} {branch}", Environment.CurrentDirectory);
+        _console.WriteSuccess($"✓ Changes pushed to {remote}/{branch} successfully!");
         WaitForUser();
     }
 
@@ -298,10 +264,8 @@ public class GitController
         var parts = remoteBranch.Split(' ');
         string remote = parts.Length > 0 ? parts[0] : "origin";
         string branch = parts.Length > 1 ? parts[1] : "main";
-        if (RunGitCommand($"pull {remote} {branch}"))
-            _console.WriteSuccess($"✓ Changes pulled from {remote}/{branch} successfully!");
-        else
-            _console.WriteError($"✗ Failed to pull changes from {remote}/{branch}.");
+        _processService.RunProcess("git", $"pull {remote} {branch}", Environment.CurrentDirectory);
+        _console.WriteSuccess($"✓ Changes pulled from {remote}/{branch} successfully!");
         WaitForUser();
     }
 
@@ -316,17 +280,15 @@ public class GitController
         }
 
         _console.WriteInfo($"Creating branch '{branchName}'...");
-        if (RunGitCommand($"checkout -b {branchName}"))
-            _console.WriteSuccess($"✓ Branch '{branchName}' created and checked out successfully!");
-        else
-            _console.WriteError($"✗ Failed to create branch '{branchName}'.");
+        _processService.RunProcess("git", $"checkout -b {branchName}", Environment.CurrentDirectory);
+        _console.WriteSuccess($"✓ Branch '{branchName}' created and checked out successfully!");
         WaitForUser();
     }
 
     private void SwitchBranch()
     {
         _console.WriteInfo("Available branches:");
-        RunGitCommand("branch");
+        _processService.RunProcess("git", "branch", Environment.CurrentDirectory);
         var branchName = _prompt.Prompt("Enter branch name to switch to: ") ?? "";
         if (string.IsNullOrWhiteSpace(branchName))
         {
@@ -336,17 +298,15 @@ public class GitController
         }
 
         _console.WriteInfo($"Switching to branch '{branchName}'...");
-        if (RunGitCommand($"checkout {branchName}"))
-            _console.WriteSuccess($"✓ Switched to branch '{branchName}' successfully!");
-        else
-            _console.WriteError($"✗ Failed to switch to branch '{branchName}'.");
+        _processService.RunProcess("git", $"checkout {branchName}", Environment.CurrentDirectory);
+        _console.WriteSuccess($"✓ Switched to branch '{branchName}' successfully!");
         WaitForUser();
     }
 
     private void MergeBranch()
     {
         _console.WriteInfo("Available branches:");
-        RunGitCommand("branch");
+        _processService.RunProcess("git", "branch", Environment.CurrentDirectory);
         var branchName = _prompt.Prompt("Enter branch name to merge into current branch: ") ?? "";
         if (string.IsNullOrWhiteSpace(branchName))
         {
@@ -356,17 +316,16 @@ public class GitController
         }
 
         _console.WriteInfo($"Merging branch '{branchName}' into current branch...");
-        if (RunGitCommand($"merge {branchName}"))
-            _console.WriteSuccess($"✓ Branch '{branchName}' merged successfully!");
-        else
-            _console.WriteError($"✗ Failed to merge branch '{branchName}'.");
+        _processService.RunProcess("git", $"merge {branchName}", Environment.CurrentDirectory);
+        _console.WriteSuccess($"✓ Branch '{branchName}' merged successfully!");
         WaitForUser();
     }
 
     private void ViewHistory()
     {
         _console.WriteInfo("Viewing commit history...");
-        RunGitCommand("log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short");
+        _processService.RunProcess("git", "log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short",
+            Environment.CurrentDirectory);
         WaitForUser();
     }
 
@@ -375,24 +334,20 @@ public class GitController
         var message = _prompt.Prompt("Enter stash message (optional): ") ?? "";
         var command = string.IsNullOrWhiteSpace(message) ? "stash" : $"stash push -m \"{message}\"";
         _console.WriteInfo("Stashing changes...");
-        if (RunGitCommand(command))
-            _console.WriteSuccess("✓ Changes stashed successfully!");
-        else
-            _console.WriteError("✗ Failed to stash changes.");
+        _processService.RunProcess("git", command, Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Changes stashed successfully!");
         WaitForUser();
     }
 
     private void ApplyStash()
     {
         _console.WriteInfo("Available stashes:");
-        RunGitCommand("stash list");
+        _processService.RunProcess("git", "stash list", Environment.CurrentDirectory);
         var stashId = _prompt.Prompt("Enter stash to apply (e.g. 'stash@{0}', leave empty for latest): ") ?? "";
         var command = string.IsNullOrWhiteSpace(stashId) ? "stash apply" : $"stash apply {stashId}";
         _console.WriteInfo("Applying stash...");
-        if (RunGitCommand(command))
-            _console.WriteSuccess("✓ Stash applied successfully!");
-        else
-            _console.WriteError("✗ Failed to apply stash.");
+        _processService.RunProcess("git", command, Environment.CurrentDirectory);
+        _console.WriteSuccess("✓ Stash applied successfully!");
         WaitForUser();
     }
 
@@ -550,7 +505,7 @@ public class GitController
 
         // Run the git submodule add command and capture detailed output
         string addCommand = url.StartsWith("--force") ? $"submodule add {url} {path}" : $"submodule add {url} {path}";
-        var (output, error, exitCode) = RunGitCommandWithOutput(addCommand);
+        var (output, error, exitCode) = _processService.RunProcess("git", addCommand, Environment.CurrentDirectory);
 
         if (exitCode == 0)
         {
@@ -558,7 +513,7 @@ public class GitController
 
             // Additional information about the submodule
             _console.WriteInfo("\nSubmodule Information:");
-            RunGitCommand("submodule status");
+            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
 
             // Inform user about initialization and updating
             _console.WriteInfo("\nYou can update this submodule later using 'Update submodule' option.");
@@ -585,7 +540,8 @@ public class GitController
                             // Try adding the submodule again
                             _console.WriteInfo($"Retrying: Adding submodule from '{url}' to '{path}'...");
                             var (retryOutput, retryError, retryExitCode) =
-                                RunGitCommandWithOutput($"submodule add {url} {path}");
+                                _processService.RunProcess("git", $"submodule add {url} {path}",
+                                    Environment.CurrentDirectory);
 
                             if (retryExitCode == 0)
                             {
@@ -593,7 +549,7 @@ public class GitController
 
                                 // Additional information about the submodule
                                 _console.WriteInfo("\nSubmodule Information:");
-                                RunGitCommand("submodule status");
+                                _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
 
                                 // Inform user about initialization and updating
                                 _console.WriteInfo(
@@ -641,13 +597,14 @@ public class GitController
                     {
                         _console.WriteInfo("Retrying with --force option...");
                         var (forceOutput, forceError, forceExitCode) =
-                            RunGitCommandWithOutput($"submodule add --force {url} {path}");
+                            _processService.RunProcess("git", $"submodule add --force {url} {path}",
+                                Environment.CurrentDirectory);
 
                         if (forceExitCode == 0)
                         {
                             _console.WriteSuccess("✓ Submodule added successfully with --force option!");
                             _console.WriteInfo("\nSubmodule Information:");
-                            RunGitCommand("submodule status");
+                            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
                             _console.WriteInfo(
                                 "\nYou can update this submodule later using 'Update submodule' option.");
                         }
@@ -672,46 +629,48 @@ public class GitController
                                 _console.WriteInfo($"Removing directory '{gitModulesPath}'...");
                                 Directory.Delete(gitModulesPath, true);
                                 _console.WriteSuccess($"Directory '{gitModulesPath}' removed.");
+
+                                // Try adding the submodule again
+                                _console.WriteInfo($"Retrying: Adding submodule from '{url}' to '{path}'...");
+                                var (retryOutput, retryError, retryExitCode) =
+                                    _processService.RunProcess("git", $"submodule add --force {url} {path}",
+                                        Environment.CurrentDirectory);
+
+                                if (retryExitCode == 0)
+                                {
+                                    _console.WriteSuccess("✓ Submodule added successfully on retry!");
+                                    _console.WriteInfo("\nSubmodule Information:");
+                                    _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
+                                    _console.WriteInfo(
+                                        "\nYou can update this submodule later using 'Update submodule' option.");
+                                    WaitForUser();
+                                    return;
+                                }
+
+                                _console.WriteError("✗ Failed to add submodule on retry. Error details:");
+                                _console.WriteError(retryError);
                             }
-
-                            // Try adding the submodule again
-                            _console.WriteInfo($"Retrying: Adding submodule from '{url}' to '{path}'...");
-                            var (retryOutput, retryError, retryExitCode) =
-                                RunGitCommandWithOutput($"submodule add --force {url} {path}");
-
-                            if (retryExitCode == 0)
-                            {
-                                _console.WriteSuccess("✓ Submodule added successfully on retry!");
-                                _console.WriteInfo("\nSubmodule Information:");
-                                RunGitCommand("submodule status");
-                                _console.WriteInfo(
-                                    "\nYou can update this submodule later using 'Update submodule' option.");
-                                WaitForUser();
-                                return;
-                            }
-
-                            _console.WriteError("✗ Failed to add submodule on retry. Error details:");
-                            _console.WriteError(retryError);
                         }
                         catch (Exception ex)
                         {
                             _console.WriteError($"Error during cleanup: {ex.Message}");
                         }
                 }
+                else if (!string.IsNullOrWhiteSpace(output))
+                {
+                    _console.WriteInfo(output);
+                }
             }
-            else if (!string.IsNullOrWhiteSpace(output))
-            {
-                _console.WriteInfo(output);
-            }
-        }
 
-        WaitForUser();
+            WaitForUser();
+        }
     }
 
     private void UpdateSubmodule()
     {
         // Check if there are any submodules first
-        var (statusOutput, statusError, statusExitCode) = RunGitCommandWithOutput("submodule status");
+        var (statusOutput, statusError, statusExitCode) =
+            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
         if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
         {
             _console.WriteError("No submodules found in this repository.");
@@ -722,7 +681,7 @@ public class GitController
 
         // Show available submodules
         _console.WriteInfo("Available submodules:");
-        RunGitCommand("submodule status");
+        _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
 
         // Ask if user wants to update a specific submodule or all submodules
         var specificPath = _prompt.Prompt("Enter submodule path to update (leave empty to update all): ") ?? "";
@@ -824,7 +783,7 @@ public class GitController
         _console.WriteInfo($"Running command: git {updateCommand}");
 
         // Run the update command and capture detailed output
-        var (output, error, exitCode) = RunGitCommandWithOutput(updateCommand);
+        var (output, error, exitCode) = _processService.RunProcess("git", updateCommand, Environment.CurrentDirectory);
 
         if (exitCode == 0)
         {
@@ -835,7 +794,7 @@ public class GitController
 
             // Show updated submodule status
             _console.WriteInfo("\nCurrent submodule status:");
-            RunGitCommand("submodule status");
+            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
 
             // Inform user about additional steps if needed
             if (updateOption == "2") // Remote update
@@ -892,7 +851,8 @@ public class GitController
                     if (_confirmation.ConfirmAction("Would you like to try initializing the submodules first?"))
                     {
                         _console.WriteInfo("\nInitializing submodules...");
-                        var (initOutput, initError, initExitCode) = RunGitCommandWithOutput("submodule init");
+                        var (initOutput, initError, initExitCode) =
+                            _processService.RunProcess("git", "submodule init", Environment.CurrentDirectory);
 
                         if (initExitCode == 0)
                         {
@@ -900,13 +860,14 @@ public class GitController
                             _console.WriteInfo("\nNow updating submodules...");
 
                             // Try the update again
-                            var (retryOutput, retryError, retryExitCode) = RunGitCommandWithOutput(updateCommand);
+                            var (retryOutput, retryError, retryExitCode) =
+                                _processService.RunProcess("git", updateCommand, Environment.CurrentDirectory);
 
                             if (retryExitCode == 0)
                             {
                                 _console.WriteSuccess("✓ Submodules updated successfully on retry!");
                                 _console.WriteInfo("\nCurrent submodule status:");
-                                RunGitCommand("submodule status");
+                                _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
                             }
                             else
                             {
@@ -923,11 +884,12 @@ public class GitController
                 }
                 else if (error.Contains("pathspec") && error.Contains("did not match any file"))
                 {
-                    _console.WriteInfo("\nSuggestion: The submodule may not be initialized or the path is incorrect.");
+                    _console.WriteInfo(
+                        "\nSuggestion: The submodule may not be initialized or the path is incorrect.");
 
                     // Show available submodules again
                     _console.WriteInfo("\nAvailable submodules:");
-                    RunGitCommand("submodule status");
+                    _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
 
                     _console.WriteInfo(
                         "\nTry updating with the correct path or use the option to initialize first (option 3).");
@@ -943,13 +905,14 @@ public class GitController
                             : $"submodule update --init {specificPath}";
 
                         _console.WriteInfo($"\nRunning: git {initCommand}");
-                        var (initOutput, initError, initExitCode) = RunGitCommandWithOutput(initCommand);
+                        var (initOutput, initError, initExitCode) =
+                            _processService.RunProcess("git", initCommand, Environment.CurrentDirectory);
 
                         if (initExitCode == 0)
                         {
                             _console.WriteSuccess("✓ Submodule initialized and updated successfully!");
                             _console.WriteInfo("\nCurrent submodule status:");
-                            RunGitCommand("submodule status");
+                            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
                         }
                         else
                         {
@@ -966,20 +929,22 @@ public class GitController
                     _console.WriteInfo("1. Commit or stash your changes in the submodule first");
                     _console.WriteInfo("2. Use --force to discard local changes (option 5)");
 
-                    if (_confirmation.ConfirmAction("Would you like to retry with --force to discard local changes?"))
+                    if (_confirmation.ConfirmAction(
+                            "Would you like to retry with --force to discard local changes?"))
                     {
                         string forceCommand = string.IsNullOrWhiteSpace(specificPath)
                             ? "submodule update --force"
                             : $"submodule update --force {specificPath}";
 
                         _console.WriteInfo($"\nRunning: git {forceCommand}");
-                        var (forceOutput, forceError, forceExitCode) = RunGitCommandWithOutput(forceCommand);
+                        var (forceOutput, forceError, forceExitCode) =
+                            _processService.RunProcess("git", forceCommand, Environment.CurrentDirectory);
 
                         if (forceExitCode == 0)
                         {
                             _console.WriteSuccess("✓ Submodule updated successfully with --force!");
                             _console.WriteInfo("\nCurrent submodule status:");
-                            RunGitCommand("submodule status");
+                            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
                         }
                         else
                         {
@@ -1001,7 +966,8 @@ public class GitController
     private void RemoveSubmodule()
     {
         // Check if there are any submodules first
-        var (statusOutput, statusError, statusExitCode) = RunGitCommandWithOutput("submodule status");
+        var (statusOutput, statusError, statusExitCode) =
+            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
         if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
         {
             _console.WriteError("No submodules found in this repository.");
@@ -1012,7 +978,7 @@ public class GitController
 
         // Show available submodules
         _console.WriteInfo("Available submodules:");
-        RunGitCommand("submodule status");
+        _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
 
         // Get the submodule path to remove
         var path = _prompt.Prompt("Enter submodule path to remove: ") ?? "";
@@ -1057,14 +1023,15 @@ public class GitController
         if (Directory.Exists(path))
         {
             var (subStatusOutput, subStatusError, subStatusExitCode) =
-                _processService.RunProcessWithOutput(GetGitPath(), "status --short", Path.GetFullPath(path));
+                _processService.RunProcess("git", "status --short", Path.GetFullPath(path));
 
             if (subStatusExitCode == 0 && !string.IsNullOrWhiteSpace(subStatusOutput))
             {
                 _console.WriteInfo($"[Warning] The submodule at '{path}' has uncommitted changes:");
                 _console.WriteInfo(subStatusOutput);
 
-                if (!_confirmation.ConfirmAction("These changes will be lost when removing the submodule. Continue?",
+                if (!_confirmation.ConfirmAction(
+                        "These changes will be lost when removing the submodule. Continue?",
                         false))
                 {
                     _console.WriteInfo("Submodule removal cancelled.");
@@ -1091,7 +1058,8 @@ public class GitController
 
         // Step 1: Deinitialize the submodule
         _console.WriteInfo("Step 1/4: Deinitializing submodule...");
-        var (output1, error1, exitCode1) = RunGitCommandWithOutput($"submodule deinit -f {path}");
+        var (output1, error1, exitCode1) =
+            _processService.RunProcess("git", $"submodule deinit -f {path}", Environment.CurrentDirectory);
         if (exitCode1 != 0)
         {
             if (error1.Contains("error: pathspec") || error1.Contains("did not match any file"))
@@ -1113,7 +1081,8 @@ public class GitController
 
         // Step 2: Remove submodule from index and working tree
         _console.WriteInfo("Step 2/4: Removing from Git index...");
-        var (output2, error2, exitCode2) = RunGitCommandWithOutput($"rm -f {path}");
+        var (output2, error2, exitCode2) =
+            _processService.RunProcess("git", $"rm -f {path}", Environment.CurrentDirectory);
         if (exitCode2 != 0)
         {
             if (error2.Contains("pathspec") || error2.Contains("did not match any file"))
@@ -1161,11 +1130,14 @@ public class GitController
                     _console.WriteInfo("Step 4/4: Removing submodule entry from .gitmodules file...");
                     // Use git directly to modify the .gitmodules file
                     var (output3, error3, exitCode3) =
-                        RunGitCommandWithOutput($"config --file=.gitmodules --remove-section submodule.{path}");
+                        _processService.RunProcess("git",
+                            $"config --file=.gitmodules --remove-section submodule.{path}",
+                            Environment.CurrentDirectory);
                     if (exitCode3 == 0)
                     {
                         gitmodulesEntryRemoved = true;
-                        RunGitCommand("add .gitmodules", false); // Stage the changes
+                        _processService.RunProcess("git", "add .gitmodules",
+                            Environment.CurrentDirectory); // Stage the changes
                         _console.WriteSuccess("✓ Removed submodule entry from .gitmodules file successfully.");
                     }
                     else
@@ -1200,7 +1172,8 @@ public class GitController
         {
             _console.WriteInfo("Step 5/4: Committing changes...");
             var commitMessage = $"Remove submodule {path}";
-            var (output3, error3, exitCode3) = RunGitCommandWithOutput($"commit -m \"{commitMessage}\"");
+            var (output3, error3, exitCode3) = _processService.RunProcess("git", $"commit -m \"{commitMessage}\"",
+                Environment.CurrentDirectory);
             if (exitCode3 != 0)
             {
                 // This might happen if there's nothing staged - don't treat as complete failure
@@ -1244,7 +1217,7 @@ public class GitController
 
             // Show updated submodule status
             _console.WriteInfo("\nCurrent submodule status:");
-            RunGitCommand("submodule status");
+            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
         }
         else
         {

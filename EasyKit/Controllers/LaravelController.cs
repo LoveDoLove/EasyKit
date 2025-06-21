@@ -1,3 +1,25 @@
+// MIT License
+// 
+// Copyright (c) 2025 LoveDoLove
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 using System.Diagnostics;
 using CommonUtilities.Utilities.System;
 using EasyKit.Helpers.Console;
@@ -28,7 +50,7 @@ public class LaravelController
         _confirmation = confirmation;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService(console, console.Config);
+        _processService = new ProcessService();
     }
 
     public void RunPhpDiagnostics()
@@ -39,16 +61,14 @@ public class LaravelController
 
         // Step 1: Check if PHP is accessible in PATH
         _console.WriteInfo("Step 1: Checking if PHP is accessible in PATH");
-        var phpPath = GetPhpPath();
-        var (phpVersion, detectedPhpPath, isCompatible) = _processService.GetPhpVersionInfo();
-        if (phpVersion != "Unknown")
+        var process = _processService.RunProcess("php", "--version", Environment.CurrentDirectory);
+        if (process.exitCode == 0 && !string.IsNullOrWhiteSpace(process.output))
         {
-            _console.WriteSuccess($"\u2713 PHP is accessible. Version: {phpVersion}");
-            _console.WriteInfo($"Detected PHP path: {detectedPhpPath}");
+            _console.WriteSuccess($"\u2713 PHP is accessible. Version: {process.output.Split('\n')[0].Trim()}");
         }
         else
         {
-            _console.WriteError("\u2717 PHP is not accessible via PATH or detected path.");
+            _console.WriteError("\u2717 PHP is not accessible via PATH.");
             _console.WriteInfo(
                 "Please install PHP from https://windows.php.net/download/ and ensure it is in your PATH.");
             _console.WriteInfo("You can also use the Tool Marketplace in EasyKit to open the download page.");
@@ -57,49 +77,8 @@ public class LaravelController
             return;
         }
 
-        // Step 2: Check PHP version compatibility
-        _console.WriteInfo("\nStep 2: Checking PHP version compatibility");
-        if (isCompatible)
-            _console.WriteSuccess("\u2713 PHP version is compatible with Laravel/Composer.");
-        else
-            _console.WriteError(
-                "\u2717 PHP version may not be compatible with Laravel/Composer. Laravel 8+ requires PHP 7.3+.");
-
-        // Step 3: Check PHP extensions
-        _console.WriteInfo("\nStep 3: Checking required PHP extensions");
-        var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
-        if (extensionsCompatible)
-            _console.WriteSuccess("\u2713 All critical PHP extensions are present.");
-        else
-            _console.WriteError("\u2717 Missing critical PHP extensions required for Laravel/Composer.");
-        if (missingExtensions.Count > 0)
-        {
-            _console.WriteInfo("Missing extensions:");
-            foreach (var ext in missingExtensions) _console.WriteInfo($"  - {ext}");
-        }
-
-        // Step 4: Check PHP memory limit
-        _console.WriteInfo("\nStep 4: Checking PHP memory limit");
-        var (hasEnoughMemory, currentLimit, recommendedLimit) = _processService.CheckPhpMemoryLimit(phpPath);
-        _console.WriteInfo($"Current memory_limit: {currentLimit} (Recommended: {recommendedLimit})");
-        if (hasEnoughMemory)
-            _console.WriteSuccess("\u2713 PHP memory limit is sufficient for Composer operations.");
-        else
-            _console.WriteError(
-                "\u2717 PHP memory limit may be too low for Composer. Set memory_limit to -1 or at least 1536M.");
-
-        // Step 5: Show environment variable recommendations
-        _console.WriteInfo("\nStep 5: Environment variable recommendations");
-        var envRecommendations = _processService.GetPhpEnvironmentRecommendations();
-        foreach (var (key, (currentValue, recommendedValue, needsUpdate)) in envRecommendations)
-        {
-            string status = needsUpdate ? "Not Optimal" : "OK";
-            _console.WriteInfo(
-                $"  - {key}: {currentValue ?? "Not Set"} (Recommended: {recommendedValue}, Status: {status})");
-        }
-
-        // Step 6: Recommendations
-        _console.WriteInfo("\nStep 6: Recommendations");
+        // Step 2: Recommendations
+        _console.WriteInfo("\nStep 2: Recommendations");
         _console.WriteInfo("- If you encounter issues, ensure PHP is installed and in your PATH.");
         _console.WriteInfo("- Enable all required extensions in your php.ini file.");
         _console.WriteInfo("- Set memory_limit to -1 for Composer-heavy operations.");
@@ -109,6 +88,38 @@ public class LaravelController
 
         _console.WriteInfo("\n===== End of PHP Configuration Diagnostics =====");
         Console.ReadLine();
+    }
+
+    private bool EnsurePhpInstalled()
+    {
+        var process = _processService.RunProcess("php", "--version", Environment.CurrentDirectory);
+        if (process.exitCode != 0)
+        {
+            _console.WriteError("PHP is not properly installed or not compatible with Laravel.");
+            _console.WriteInfo("Laravel requires PHP 7.3+ (PHP 8.0+ recommended for newer Laravel versions).");
+            _console.WriteInfo("Please install PHP from https://www.php.net/ or https://windows.php.net/download/");
+            Console.ReadLine();
+            return false;
+        }
+
+        _console.WriteInfo($"Using PHP: {process.output.Split('\n')[0].Trim()}");
+        return true;
+    }
+
+    private bool RunComposerCommand(string args, bool showOutput = true)
+    {
+        // Always open a new cmd window for Composer commands
+        _processService.RunProcess("composer", args, Environment.CurrentDirectory);
+        _console.WriteInfo($"Opened new command window for: composer {args}");
+        return true; // Assume success for MVP
+    }
+
+    private bool RunArtisanCommand(string args, bool showOutput = true)
+    {
+        // Always open a new cmd window for Artisan commands
+        _processService.RunProcess("php", $"artisan {args}", Environment.CurrentDirectory);
+        _console.WriteInfo($"Opened new command window for: php artisan {args}");
+        return true; // Assume success for MVP
     }
 
     public void ShowMenu()
@@ -149,152 +160,6 @@ public class LaravelController
             .WithHelpText("Select an option or press 0 to return to the main menu")
             .WithDoubleBorder()
             .Show();
-    }
-
-    private bool EnsurePhpInstalled()
-    {
-        var (phpVersion, phpPath, isCompatible) = _processService.GetPhpVersionInfo();
-
-        if (phpVersion == "Unknown" || !isCompatible)
-        {
-            _console.WriteError("PHP is not properly installed or not compatible with Laravel.");
-            _console.WriteInfo($"Found PHP version: {phpVersion}");
-            _console.WriteInfo("Laravel requires PHP 7.3+ (PHP 8.0+ recommended for newer Laravel versions).");
-            _console.WriteInfo("Please install PHP from https://www.php.net/ or https://windows.php.net/download/");
-            Console.ReadLine();
-            return false;
-        }
-
-        // Check PHP extensions required for Laravel
-        var (missingExtensions, extensionsCompatible) = _processService.CheckPhpExtensions(phpPath);
-        if (missingExtensions.Count > 0)
-        {
-            _console.WriteInfo("Some PHP extensions required by Laravel might be missing:");
-            foreach (var ext in missingExtensions) _console.WriteInfo($"  - {ext}");
-
-            if (!extensionsCompatible)
-            {
-                _console.WriteError("Critical PHP extensions are missing. Laravel might not work correctly.");
-                _console.WriteInfo("Please enable these extensions in your php.ini file.");
-                Console.ReadLine();
-                return false;
-            }
-        }
-
-        _console.WriteInfo($"Using PHP {phpVersion} from {phpPath}");
-        return true;
-    }
-
-    // Helper to get the detected php path
-    private string GetPhpPath()
-    {
-        return _processService.FindExecutablePath("php") ?? "php";
-    }
-
-    // Helper to get the detected composer path
-    private string GetComposerPath()
-    {
-        return _processService.FindExecutablePath("composer") ?? "composer";
-    }
-
-    private string? FindComposerCommand()
-    {
-        var (composerVersion, composerPath, isGlobal) = _processService.GetComposerInfo();
-        if (!string.IsNullOrEmpty(composerPath) && composerPath != "composer")
-        {
-            _console.WriteInfo($"Using Composer {composerVersion} from {composerPath}");
-            return composerPath;
-        }
-
-        if (File.Exists("composer.phar"))
-            return $"{GetPhpPath()} composer.phar";
-        if (File.Exists("composer.bat"))
-            return "composer.bat";
-        if (File.Exists("composer.exe"))
-            return "composer.exe";
-        return GetComposerPath();
-    }
-
-    private bool RunComposerCommand(string args, bool showOutput = true)
-    {
-        if (!EnsurePhpInstalled()) return false;
-        var composerCmd = FindComposerCommand();
-        if (composerCmd == null)
-        {
-            _console.WriteError("Composer executable not found. Please ensure Composer is installed and in your PATH.");
-            return false;
-        }
-
-        try
-        {
-            if (composerCmd.StartsWith("php "))
-            {
-                string phpArgs = composerCmd.Substring(4) + " " + args;
-                phpArgs = "-d memory_limit=-1 " + phpArgs;
-                return _processService.RunProcess(GetPhpPath(), phpArgs, showOutput, Environment.CurrentDirectory);
-            }
-
-            return _processService.RunProcess(composerCmd, args, showOutput, Environment.CurrentDirectory);
-        }
-        catch (Exception ex)
-        {
-            LoggerUtilities.Error($"Error running Composer command: {ex.Message}");
-            if (showOutput) _console.WriteError($"Error: {ex.Message}");
-            return false;
-        }
-    }
-
-    private bool RunArtisanCommand(string args, bool showOutput = true)
-    {
-        if (!EnsurePhpInstalled()) return false;
-        if (!File.Exists("artisan"))
-        {
-            _console.WriteError(
-                "This doesn't appear to be a Laravel project directory. Make sure you're in the root directory of a Laravel project.");
-            return false;
-        }
-
-        try
-        {
-            var (laravelVersion, isCompatible) = _processService.GetLaravelVersionInfo();
-            if (showOutput && laravelVersion != "Unknown")
-            {
-                _console.WriteInfo($"Laravel version: {laravelVersion}");
-                if (!isCompatible)
-                    _console.WriteInfo("Warning: Your Laravel version might not be fully supported by EasyKit.");
-            }
-
-            string phpOptions = _processService.GetPhpConfigOptions(new Dictionary<string, string>
-            {
-                ["memory_limit"] = "-1",
-                ["max_execution_time"] = "0",
-                ["display_errors"] = "On"
-            });
-            _processService.SetRecommendedPhpEnvironmentVariables();
-            bool result = _processService.RunProcess(GetPhpPath(), $"{phpOptions} artisan {args}", showOutput);
-            if (!result && showOutput)
-            {
-                HandleLaravelError(args);
-                if (args.Contains("cache:status") && result == false)
-                {
-                    _console.WriteInfo("Note: 'cache:status' command may not be available in all Laravel versions.");
-                    _console.WriteInfo("Try using 'php artisan list cache' to see available cache commands.");
-                }
-                else if (args.Contains("--compact") && result == false)
-                {
-                    _console.WriteInfo("Note: The '--compact' option may not be available in your Laravel version.");
-                    _console.WriteInfo("Try using 'php artisan route:list' without additional options.");
-                }
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            LoggerUtilities.Error($"Error running Artisan command: {ex.Message}");
-            if (showOutput) _console.WriteError($"Error: {ex.Message}");
-            return false;
-        }
     }
 
     private void QuickSetup()
@@ -377,7 +242,7 @@ public class LaravelController
     {
         _console.WriteInfo("Building for production...");
         bool isLaravel11Plus = false;
-        var phpPath = GetPhpPath();
+        var phpPath = "php";
         var versionProcess = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -454,7 +319,7 @@ public class LaravelController
 
         try
         {
-            var phpPath = GetPhpPath();
+            var phpPath = "php";
             var quotedPhp = phpPath.Contains(" ") ? $"\"{phpPath}\"" : phpPath;
             Process.Start(new ProcessStartInfo
             {
@@ -534,7 +399,7 @@ public class LaravelController
     private void CheckPhpVersion()
     {
         _console.WriteInfo("Checking PHP version...");
-        _processService.RunProcess(GetPhpPath(), "--version");
+        _processService.RunProcess("php", "--version");
         Console.ReadLine();
     }
 
@@ -543,9 +408,9 @@ public class LaravelController
         _console.WriteInfo("Checking Laravel configuration...");
         var checks = new[]
         {
-            ("PHP Version", $"{GetPhpPath()} --version"),
-            ("Laravel Version", $"{GetPhpPath()} artisan --version"),
-            ("Environment", $"{GetPhpPath()} artisan env")
+            ("PHP Version", "php --version"),
+            ("Laravel Version", "php artisan --version"),
+            ("Environment", "php artisan env")
         };
         foreach (var (name, cmd) in checks)
         {

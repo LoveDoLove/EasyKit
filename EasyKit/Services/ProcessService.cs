@@ -31,31 +31,28 @@ public class ProcessService
 {
     /// <summary>
     ///     Runs a process and captures its output, error, and exit code.
+    ///     [MVP] Now always opens a new cmd.exe window for execution (no output capture).
     /// </summary>
     /// <param name="command">The command to run (e.g., "npm", "php").</param>
     /// <param name="args">Arguments to pass to the command.</param>
     /// <param name="workingDirectory">Optional working directory.</param>
-    /// <returns>Tuple of (output, error, exitCode).</returns>
-    public (string output, string error, int exitCode) RunProcess(string command, string args, string? workingDirectory = null)
+    /// <returns>Tuple of (output, error, exitCode) - always empty for MVP.</returns>
+    public (string output, string error, int exitCode) RunProcess(string command, string args,
+        string? workingDirectory = null)
     {
         try
         {
-            using (var process = new Process())
+            var cmdArgs = $"/k \"{command} {args}\"";
+            var psi = new ProcessStartInfo
             {
-                process.StartInfo.FileName = command;
-                process.StartInfo.Arguments = args;
-                process.StartInfo.WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.CreateNoWindow = true;
-
-                process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-                return (output, error, process.ExitCode);
-            }
+                FileName = "cmd.exe",
+                Arguments = cmdArgs,
+                UseShellExecute = true,
+                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+            };
+            Process.Start(psi);
+            // No output/error capture in new window mode
+            return ("", "", 0);
         }
         catch (Exception ex)
         {
@@ -65,43 +62,43 @@ public class ProcessService
 
     /// <summary>
     ///     Runs a process and streams its output and error in real time.
+    ///     [MVP] Now always opens a new cmd.exe window for execution (no streaming).
     /// </summary>
-    /// <param name="command">The command to run.</param>
-    /// <param name="args">Arguments to pass to the command.</param>
-    /// <param name="workingDirectory">Optional working directory.</param>
-    /// <param name="onOutput">Callback for each output line.</param>
-    /// <param name="onError">Callback for each error line.</param>
-    /// <returns>Exit code of the process.</returns>
-    public int RunProcessWithStreaming(string command, string args, string? workingDirectory = null, Action<string>? onOutput = null, Action<string>? onError = null)
+    public int RunProcessWithStreaming(string command, string args, string? workingDirectory = null,
+        Action<string>? onOutput = null, Action<string>? onError = null)
     {
         try
         {
-            using (var process = new Process())
+            var cmdArgs = $"/k \"{command} {args}\"";
+            var psi = new ProcessStartInfo
             {
-                process.StartInfo.FileName = command;
-                process.StartInfo.Arguments = args;
-                process.StartInfo.WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.CreateNoWindow = true;
-
-                if (onOutput != null)
-                    process.OutputDataReceived += (s, e) => { if (e.Data != null) onOutput(e.Data); };
-                if (onError != null)
-                    process.ErrorDataReceived += (s, e) => { if (e.Data != null) onError(e.Data); };
-
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-                process.WaitForExit();
-                return process.ExitCode;
-            }
+                FileName = "cmd.exe",
+                Arguments = cmdArgs,
+                UseShellExecute = true,
+                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+            };
+            Process.Start(psi);
+            return 0;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            onError?.Invoke(ex.Message);
             return -1;
         }
+    }
+
+    /// <summary>
+    ///     Runs a process in a new cmd.exe window (best for interactive or environment-sensitive commands on Windows).
+    /// </summary>
+    public void RunProcessInNewCmdWindow(string command, string args, string? workingDirectory = null)
+    {
+        var cmdArgs = $"/k \"{command} {args}\"";
+        var psi = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = cmdArgs,
+            UseShellExecute = true,
+            WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+        };
+        Process.Start(psi);
     }
 }
