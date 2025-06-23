@@ -20,14 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-using CommonUtilities.Helpers.Processes;
+using CommonUtilities.Helpers.Command;
 
 namespace EasyKit.Services;
 
 /// <summary>
 ///     Minimal ProcessService for running external commands using system PATH.
 /// </summary>
-public class ProcessService
+public class CmdService
 {
     /// <summary>
     ///     Runs a process and captures its output, error, and exit code.
@@ -40,7 +40,7 @@ public class ProcessService
     public (string output, string error, int exitCode) RunProcess(string command, string args,
         string? workingDirectory = null)
     {
-        return ProcessExecutionHelper.RunProcessWithCmd(command, args, workingDirectory);
+        return CmdHelper.RunProcessWithCmd(command, args, workingDirectory);
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class ProcessService
     public int RunProcessWithStreaming(string command, string args, string? workingDirectory = null,
         Action<string>? onOutput = null, Action<string>? onError = null)
     {
-        return ProcessExecutionHelper.RunProcessWithCmdStreaming(command, args, workingDirectory, onOutput, onError);
+        return CmdHelper.RunProcessWithCmdStreaming(command, args, workingDirectory, onOutput, onError);
     }
 
     /// <summary>
@@ -59,6 +59,6 @@ public class ProcessService
     /// </summary>
     public void RunProcessInNewCmdWindow(string command, string args, string? workingDirectory = null)
     {
-        ProcessExecutionHelper.RunProcessInNewCmdWindow(command, args, workingDirectory);
+        CmdHelper.RunProcessInNewCmdWindow(command, args, workingDirectory);
     }
 }

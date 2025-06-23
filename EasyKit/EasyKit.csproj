@@ -16,8 +16,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/LoveDoLove/EasyKit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>4.1.5</AssemblyVersion>
-    <FileVersion>4.1.5</FileVersion>
+    <AssemblyVersion>4.1.6</AssemblyVersion>
+    <FileVersion>4.1.6</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
@@ -44,13 +44,6 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Serilog" Version="4.3.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="System.Text.Json" Version="9.0.6" />
   </ItemGroup>
 
   <ItemGroup>
