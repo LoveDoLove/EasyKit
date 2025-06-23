@@ -36,7 +36,6 @@ internal class Program
     private static readonly Config Config =
         new("EasyKit", Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0");
 
-    private static readonly IServiceProvider ServiceProvider = ConfigureService.ConfigureServices();
     private static readonly Software Software = new();
     private static readonly ConsoleService ConsoleService = new(Config);
     private static readonly ConfirmationHelper ConfirmationService = new();
