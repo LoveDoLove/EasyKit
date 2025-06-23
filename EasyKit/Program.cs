@@ -58,7 +58,7 @@ internal class Program
     private static readonly SettingsController SettingsController = new(Config, ConsoleService, PromptView);
 
     private static readonly ToolMarketplaceController ToolMarketplaceController =
-        new(new ProcessService(), ConsoleService);
+        new(new CmdService(), ConsoleService);
 
     private static void Main(string[] args)
     {

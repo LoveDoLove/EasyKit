@@ -38,9 +38,9 @@ public class ToolMarketplaceController
         new ToolInfo("Git", "git", "https://git-scm.com/downloads", "--version")
     };
 
-    private readonly ProcessService _processService;
+    private readonly CmdService _processService;
 
-    public ToolMarketplaceController(ProcessService processService, ConsoleService console)
+    public ToolMarketplaceController(CmdService processService, ConsoleService console)
     {
         _processService = processService;
         _console = console;

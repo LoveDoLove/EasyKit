@@ -37,7 +37,7 @@ public class NpmController
     private readonly ConfirmationHelper _confirmationHelper;
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
-    private readonly ProcessService _processService;
+    private readonly CmdService _processService;
     private readonly PromptView _prompt;
     private readonly Software _software;
 
@@ -53,7 +53,7 @@ public class NpmController
         _confirmationHelper = confirmationHelper;
         _prompt = prompt;
         _notificationView = notificationView;
-        _processService = new ProcessService();
+        _processService = new CmdService();
     }
 
     public void ShowMenu()
