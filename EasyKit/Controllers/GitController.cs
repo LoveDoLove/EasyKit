@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System.Diagnostics;
 using System.Text;
 using EasyKit.Helpers.Console;
 using EasyKit.Models;
@@ -508,20 +509,31 @@ public class GitController
 
     private void UpdateSubmodule()
     {
-        // Check if there are any submodules first
-        var (statusOutput, statusError, statusExitCode) =
-            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
-        if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
+        // Step 1: List submodules robustly by parsing .gitmodules
+        var submodulePaths = new List<string>();
+        if (File.Exists(".gitmodules"))
         {
-            _console.WriteError("No submodules found in this repository.");
-            if (!string.IsNullOrWhiteSpace(statusError)) _console.WriteError("Error details: " + statusError);
+            var (listOutput, listError, listExit) = _processService.RunProcess(
+                "git", "config --file=.gitmodules --get-regexp path", Environment.CurrentDirectory);
+            if (listExit == 0 && !string.IsNullOrWhiteSpace(listOutput))
+                foreach (var line in listOutput.Split('\n'))
+                {
+                    var parts = line.Trim().Split(' ');
+                    if (parts.Length == 2)
+                        submodulePaths.Add(parts[1].Trim());
+                }
+        }
+
+        if (submodulePaths.Count == 0)
+        {
+            _console.WriteError("No submodules found in this repository (no .gitmodules entries).");
             WaitForUser();
             return;
         }
 
-        // Show available submodules
         _console.WriteInfo("Available submodules:");
-        _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
+        foreach (var sp in submodulePaths)
+            _console.WriteInfo("- " + sp);
 
         // Ask if user wants to update a specific submodule or all submodules
         var specificPath = _prompt.Prompt("Enter submodule path to update (leave empty to update all): ") ?? "";
@@ -581,28 +593,17 @@ public class GitController
         }
         else
         {
-            // Check if the specified submodule exists
-            bool submoduleExists = false;
-            var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var submodule in submodules)
-                if (submodule.Contains(specificPath))
-                {
-                    submoduleExists = true;
-                    break;
-                }
+            // Check if the specified submodule exists using submodulePaths
+            bool submoduleExists = submodulePaths.Any(p =>
+                p.Equals(specificPath, StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFullPath(p).Equals(Path.GetFullPath(specificPath), StringComparison.OrdinalIgnoreCase));
 
             if (!submoduleExists)
             {
                 _console.WriteError($"No submodule found at path '{specificPath}'.");
                 _console.WriteInfo("Available submodules: ");
-                foreach (var submodule in submodules)
-                {
-                    string submodulePath = submodule.Trim();
-                    if (submodulePath.Contains(" ")) submodulePath = submodulePath.Split(' ').Last();
-                    _console.WriteInfo($"- {submodulePath}");
-                }
-
+                foreach (var sp in submodulePaths)
+                    _console.WriteInfo("- " + sp);
                 WaitForUser();
                 return;
             }
@@ -622,9 +623,84 @@ public class GitController
 
         _console.WriteInfo($"Running command: git {updateCommand}");
 
-        // Run the update command and stream output for user feedback
-        _processService.RunProcessWithStreaming("git", updateCommand, Environment.CurrentDirectory);
-        _console.WriteSuccess("✓ Submodule update command executed. Check above for any errors or output.");
+        // Run the update command asynchronously with progress and cancellation
+        var cts = new CancellationTokenSource();
+        var progress = new Progress<string>(msg =>
+        {
+            if (!string.IsNullOrWhiteSpace(msg))
+                _console.WriteInfo(msg);
+        });
+
+        _console.WriteInfo("Press 'c' to cancel the update at any time.");
+
+        var updateTask = Task.Run(() =>
+        {
+            var psi = new ProcessStartInfo("git", updateCommand)
+            {
+                WorkingDirectory = Environment.CurrentDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using (var process = Process.Start(psi))
+            {
+                if (process == null || process.StandardOutput == null || process.StandardError == null)
+                {
+                    ((IProgress<string>)progress).Report(
+                        "[Error] Failed to start git process or access output streams.");
+                    return;
+                }
+
+                var outputLines = new List<string>();
+                string? line;
+                while ((line = process.StandardOutput.ReadLine()) != null)
+                {
+                    outputLines.Add(line);
+                    if (outputLines.Count % 10 == 0)
+                        ((IProgress<string>)progress).Report($"...{outputLines.Count} lines processed...");
+                    if (cts.Token.IsCancellationRequested)
+                    {
+                        process.Kill();
+                        ((IProgress<string>)progress).Report("Update cancelled by user.");
+                        return;
+                    }
+                }
+
+                // Report any remaining lines
+                if (outputLines.Count > 0)
+                    ((IProgress<string>)progress).Report($"...{outputLines.Count} lines processed. Done.");
+                string? err;
+                while ((err = process.StandardError.ReadLine()) != null)
+                    ((IProgress<string>)progress).Report($"[Error] {err}");
+                process.WaitForExit();
+            }
+        }, cts.Token);
+
+        // Listen for user cancel
+        bool cancelled = false;
+        while (!updateTask.IsCompleted)
+        {
+            if (Console.KeyAvailable)
+            {
+                var key = Console.ReadKey(true);
+                if (key.KeyChar == 'c' || key.KeyChar == 'C')
+                {
+                    cts.Cancel();
+                    cancelled = true;
+                    break;
+                }
+            }
+
+            Thread.Sleep(100);
+        }
+
+        updateTask.Wait();
+
+        if (!cancelled)
+            _console.WriteSuccess("✓ Submodule update command executed. Check above for any errors or output.");
+        else
+            _console.WriteInfo("Submodule update was cancelled by the user.");
         _console.WriteInfo("\nCurrent submodule status:");
         _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
         WaitForUser();
