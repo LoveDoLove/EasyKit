@@ -341,19 +341,78 @@ public class GitController
 
     private void MergeBranch()
     {
-        _console.WriteInfo("Available branches:");
-        _processService.RunProcess("git", "branch", Environment.CurrentDirectory);
+        // List all local branches robustly and get the current branch
+        var (branchListOutput, branchListError, branchListExit) =
+            _processService.RunProcess("git", "branch --list", Environment.CurrentDirectory);
+        if (branchListExit != 0 || string.IsNullOrWhiteSpace(branchListOutput))
+        {
+            _console.WriteError("Could not retrieve branch list.");
+            if (!string.IsNullOrWhiteSpace(branchListError))
+                _console.WriteError("Error details: " + branchListError);
+            WaitForUser();
+            return;
+        }
+
+        var branches = branchListOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(b => b.Trim())
+            .Where(b => !string.IsNullOrWhiteSpace(b))
+            .ToList();
+
+        // Find the current branch (marked with *)
+        string? currentBranch = null;
+        var branchNames = new List<string>();
+        foreach (var b in branches)
+            if (b.StartsWith("* "))
+            {
+                currentBranch = b.Substring(2).Trim();
+                branchNames.Add(currentBranch);
+            }
+            else
+            {
+                branchNames.Add(b.TrimStart('*', ' ').Trim());
+            }
+
+        if (branchNames.Count == 0 || string.IsNullOrWhiteSpace(currentBranch))
+        {
+            _console.WriteError("No branches found in this repository.");
+            WaitForUser();
+            return;
+        }
+
+        // Exclude current branch from merge candidates
+        var mergeCandidates = branchNames.Where(b => !b.Equals(currentBranch, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (mergeCandidates.Count == 0)
+        {
+            _console.WriteError("No other branches available to merge.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Current branch: {currentBranch}");
+        _console.WriteInfo("Available branches to merge:");
+        foreach (var b in mergeCandidates)
+            _console.WriteInfo("- " + b);
+
         var branchName = _prompt.Prompt("Enter branch name to merge into current branch: ") ?? "";
         if (string.IsNullOrWhiteSpace(branchName))
         {
             _console.WriteError("Branch name cannot be empty.");
-            Console.ReadLine();
+            WaitForUser();
             return;
         }
 
-        _console.WriteInfo($"Merging branch '{branchName}' into current branch...");
+        // Check if the branch exists and is not the current branch
+        if (!mergeCandidates.Any(b => b.Equals(branchName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _console.WriteError($"Branch '{branchName}' does not exist or is the current branch.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Merging branch '{branchName}' into current branch '{currentBranch}'...");
         _processService.RunProcessWithStreaming("git", $"merge {branchName}", Environment.CurrentDirectory);
-        _console.WriteSuccess($"✓ Branch {branchName} merged!");
+        _console.WriteSuccess($"✓ Branch '{branchName}' merged into '{currentBranch}'!");
         WaitForUser();
     }
 
