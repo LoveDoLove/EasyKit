@@ -266,8 +266,22 @@ public class GitController
 
     private void ViewHistory()
     {
-        _console.WriteInfo("Showing git log...");
-        _processService.RunProcessWithStreaming("git", "log --oneline --graph --all", Environment.CurrentDirectory);
+        _console.WriteInfo("Showing git commit history (graph, decorated)...");
+        string logCommand = "--no-pager log --graph --decorate --oneline --all";
+        var (output, error, exitCode) = _processService.RunProcess("git", logCommand, Environment.CurrentDirectory);
+        if (exitCode != 0 || string.IsNullOrWhiteSpace(output))
+        {
+            _console.WriteError("No commit history found or failed to display history.");
+            if (!string.IsNullOrWhiteSpace(error))
+                _console.WriteError("Error details: " + error);
+            _console.WriteInfo(
+                "Try running 'git log --oneline --graph --decorate --all' manually in your terminal to verify history.");
+            WaitForUser();
+            return;
+        }
+
+        foreach (var line in output.Split('\n')) _console.WriteInfo(line);
+        _console.WriteInfo("\nTip: Use the arrow keys or scroll to view more history if the output is long.");
         WaitForUser();
     }
 
