@@ -20,6 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+using System.Diagnostics;
 using System.Text;
 using EasyKit.Helpers.Console;
 using EasyKit.Models;
@@ -187,31 +188,100 @@ public class GitController
 
     private void CheckStatus()
     {
-        _console.WriteInfo("Checking git status...");
-        var (output, error, exitCode) = _processService.RunProcess("git", "status", Environment.CurrentDirectory);
+        _console.WriteInfo("Checking git status (using --porcelain for reliable output)...");
+        var (output, error, exitCode) =
+            _processService.RunProcess("git", "status --porcelain -b", Environment.CurrentDirectory);
 
         if (!string.IsNullOrWhiteSpace(error))
         {
             _console.WriteError(error.Trim());
+            _console.WriteInfo("If you see 'fatal: not a git repository', initialize with 'git init'.");
+            WaitForUser();
+            return;
         }
-        else if (string.IsNullOrWhiteSpace(output))
+
+        if (string.IsNullOrWhiteSpace(output))
         {
             _console.WriteInfo("No status output received from git.");
+            WaitForUser();
+            return;
         }
-        else if (output.Contains("nothing to commit, working tree clean", StringComparison.OrdinalIgnoreCase))
+
+        var lines = output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+        string branchInfo = string.Empty;
+        var staged = new List<string>();
+        var unstaged = new List<string>();
+        var untracked = new List<string>();
+        var conflicted = new List<string>();
+
+        foreach (var line in lines)
+        {
+            if (line.StartsWith("#"))
+            {
+                branchInfo = line;
+                continue;
+            }
+
+            if (line.StartsWith("??"))
+            {
+                untracked.Add(line.Substring(3));
+                continue;
+            }
+
+            if (line.Length >= 3)
+            {
+                var x = line[0];
+                var y = line[1];
+                var file = line.Substring(3);
+                if (x == 'U' || y == 'U' || (x == 'A' && y == 'A') || (x == 'D' && y == 'D'))
+                    conflicted.Add(file);
+                else if (x != ' ' && x != '?')
+                    staged.Add(file);
+                else if (y != ' ' && y != '?') unstaged.Add(file);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(branchInfo)) _console.WriteInfo($"Branch info: {branchInfo}");
+
+        if (staged.Count == 0 && unstaged.Count == 0 && untracked.Count == 0 && conflicted.Count == 0)
         {
             _console.WriteSuccess("✓ Working tree clean. Nothing to commit.");
         }
         else
         {
-            var textColorObj = _console.Config?.Get("text_color", "");
-            var bgColorObj = _console.Config?.Get("background_color", "");
-            if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")
-                _console.WriteInfo(
-                    "[Warning] Both text and background color are set to black. Please adjust your settings for visibility.");
-            _console.WriteInfo(output?.Trim() ?? "");
+            if (staged.Count > 0)
+            {
+                _console.WriteSuccess($"Staged changes ({staged.Count}):");
+                foreach (var f in staged) _console.WriteInfo($"  [Staged] {f}");
+            }
+
+            if (unstaged.Count > 0)
+            {
+                _console.WriteInfo($"Unstaged changes ({unstaged.Count}):");
+                foreach (var f in unstaged) _console.WriteInfo($"  [Unstaged] {f}");
+            }
+
+            if (untracked.Count > 0)
+            {
+                _console.WriteInfo($"Untracked files ({untracked.Count}):");
+                foreach (var f in untracked) _console.WriteInfo($"  [Untracked] {f}");
+            }
+
+            if (conflicted.Count > 0)
+            {
+                _console.WriteError($"Conflicted files ({conflicted.Count}):");
+                foreach (var f in conflicted) _console.WriteInfo($"  [Conflict] {f}");
+            }
         }
 
+        var textColorObj = _console.Config?.Get("text_color", "");
+        var bgColorObj = _console.Config?.Get("background_color", "");
+        if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")
+            _console.WriteInfo(
+                "[Warning] Both text and background color are set to black. Please adjust your settings for visibility.");
+
+        _console.WriteInfo(
+            "\nTip: Use 'git add <file>' to stage, 'git restore <file>' to discard, and 'git commit' to save changes. For more, see https://git-scm.com/docs/git-status");
         WaitForUser();
     }
 
@@ -265,8 +335,22 @@ public class GitController
 
     private void ViewHistory()
     {
-        _console.WriteInfo("Showing git log...");
-        _processService.RunProcessWithStreaming("git", "log --oneline --graph --all", Environment.CurrentDirectory);
+        _console.WriteInfo("Showing git commit history (graph, decorated)...");
+        string logCommand = "--no-pager log --graph --decorate --oneline --all";
+        var (output, error, exitCode) = _processService.RunProcess("git", logCommand, Environment.CurrentDirectory);
+        if (exitCode != 0 || string.IsNullOrWhiteSpace(output))
+        {
+            _console.WriteError("No commit history found or failed to display history.");
+            if (!string.IsNullOrWhiteSpace(error))
+                _console.WriteError("Error details: " + error);
+            _console.WriteInfo(
+                "Try running 'git log --oneline --graph --decorate --all' manually in your terminal to verify history.");
+            WaitForUser();
+            return;
+        }
+
+        foreach (var line in output.Split('\n')) _console.WriteInfo(line);
+        _console.WriteInfo("\nTip: Use the arrow keys or scroll to view more history if the output is long.");
         WaitForUser();
     }
 
@@ -288,13 +372,47 @@ public class GitController
 
     private void SwitchBranch()
     {
+        // List all local branches robustly
+        var (branchListOutput, branchListError, branchListExit) =
+            _processService.RunProcess("git", "branch --list", Environment.CurrentDirectory);
+        if (branchListExit != 0 || string.IsNullOrWhiteSpace(branchListOutput))
+        {
+            _console.WriteError("Could not retrieve branch list.");
+            if (!string.IsNullOrWhiteSpace(branchListError))
+                _console.WriteError("Error details: " + branchListError);
+            WaitForUser();
+            return;
+        }
+
+        var branches = branchListOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(b => b.TrimStart('*', ' ').Trim())
+            .Where(b => !string.IsNullOrWhiteSpace(b))
+            .ToList();
+
+        if (branches.Count == 0)
+        {
+            _console.WriteError("No branches found in this repository.");
+            WaitForUser();
+            return;
+        }
+
         _console.WriteInfo("Available branches:");
-        _processService.RunProcess("git", "branch", Environment.CurrentDirectory);
+        foreach (var b in branches)
+            _console.WriteInfo("- " + b);
+
         var branchName = _prompt.Prompt("Enter branch name to switch to: ") ?? "";
         if (string.IsNullOrWhiteSpace(branchName))
         {
             _console.WriteError("Branch name cannot be empty.");
-            Console.ReadLine();
+            WaitForUser();
+            return;
+        }
+
+        // Check if the branch exists
+        if (!branches.Any(b => b.Equals(branchName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _console.WriteError($"Branch '{branchName}' does not exist.");
+            WaitForUser();
             return;
         }
 
@@ -306,19 +424,78 @@ public class GitController
 
     private void MergeBranch()
     {
-        _console.WriteInfo("Available branches:");
-        _processService.RunProcess("git", "branch", Environment.CurrentDirectory);
+        // List all local branches robustly and get the current branch
+        var (branchListOutput, branchListError, branchListExit) =
+            _processService.RunProcess("git", "branch --list", Environment.CurrentDirectory);
+        if (branchListExit != 0 || string.IsNullOrWhiteSpace(branchListOutput))
+        {
+            _console.WriteError("Could not retrieve branch list.");
+            if (!string.IsNullOrWhiteSpace(branchListError))
+                _console.WriteError("Error details: " + branchListError);
+            WaitForUser();
+            return;
+        }
+
+        var branches = branchListOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(b => b.Trim())
+            .Where(b => !string.IsNullOrWhiteSpace(b))
+            .ToList();
+
+        // Find the current branch (marked with *)
+        string? currentBranch = null;
+        var branchNames = new List<string>();
+        foreach (var b in branches)
+            if (b.StartsWith("* "))
+            {
+                currentBranch = b.Substring(2).Trim();
+                branchNames.Add(currentBranch);
+            }
+            else
+            {
+                branchNames.Add(b.TrimStart('*', ' ').Trim());
+            }
+
+        if (branchNames.Count == 0 || string.IsNullOrWhiteSpace(currentBranch))
+        {
+            _console.WriteError("No branches found in this repository.");
+            WaitForUser();
+            return;
+        }
+
+        // Exclude current branch from merge candidates
+        var mergeCandidates = branchNames.Where(b => !b.Equals(currentBranch, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (mergeCandidates.Count == 0)
+        {
+            _console.WriteError("No other branches available to merge.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Current branch: {currentBranch}");
+        _console.WriteInfo("Available branches to merge:");
+        foreach (var b in mergeCandidates)
+            _console.WriteInfo("- " + b);
+
         var branchName = _prompt.Prompt("Enter branch name to merge into current branch: ") ?? "";
         if (string.IsNullOrWhiteSpace(branchName))
         {
             _console.WriteError("Branch name cannot be empty.");
-            Console.ReadLine();
+            WaitForUser();
             return;
         }
 
-        _console.WriteInfo($"Merging branch '{branchName}' into current branch...");
+        // Check if the branch exists and is not the current branch
+        if (!mergeCandidates.Any(b => b.Equals(branchName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _console.WriteError($"Branch '{branchName}' does not exist or is the current branch.");
+            WaitForUser();
+            return;
+        }
+
+        _console.WriteInfo($"Merging branch '{branchName}' into current branch '{currentBranch}'...");
         _processService.RunProcessWithStreaming("git", $"merge {branchName}", Environment.CurrentDirectory);
-        _console.WriteSuccess($"✓ Branch {branchName} merged!");
+        _console.WriteSuccess($"✓ Branch '{branchName}' merged into '{currentBranch}'!");
         WaitForUser();
     }
 
@@ -508,20 +685,31 @@ public class GitController
 
     private void UpdateSubmodule()
     {
-        // Check if there are any submodules first
-        var (statusOutput, statusError, statusExitCode) =
-            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
-        if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
+        // Step 1: List submodules robustly by parsing .gitmodules
+        var submodulePaths = new List<string>();
+        if (File.Exists(".gitmodules"))
         {
-            _console.WriteError("No submodules found in this repository.");
-            if (!string.IsNullOrWhiteSpace(statusError)) _console.WriteError("Error details: " + statusError);
+            var (listOutput, listError, listExit) = _processService.RunProcess(
+                "git", "config --file=.gitmodules --get-regexp path", Environment.CurrentDirectory);
+            if (listExit == 0 && !string.IsNullOrWhiteSpace(listOutput))
+                foreach (var line in listOutput.Split('\n'))
+                {
+                    var parts = line.Trim().Split(' ');
+                    if (parts.Length == 2)
+                        submodulePaths.Add(parts[1].Trim());
+                }
+        }
+
+        if (submodulePaths.Count == 0)
+        {
+            _console.WriteError("No submodules found in this repository (no .gitmodules entries).");
             WaitForUser();
             return;
         }
 
-        // Show available submodules
         _console.WriteInfo("Available submodules:");
-        _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
+        foreach (var sp in submodulePaths)
+            _console.WriteInfo("- " + sp);
 
         // Ask if user wants to update a specific submodule or all submodules
         var specificPath = _prompt.Prompt("Enter submodule path to update (leave empty to update all): ") ?? "";
@@ -581,28 +769,17 @@ public class GitController
         }
         else
         {
-            // Check if the specified submodule exists
-            bool submoduleExists = false;
-            var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var submodule in submodules)
-                if (submodule.Contains(specificPath))
-                {
-                    submoduleExists = true;
-                    break;
-                }
+            // Check if the specified submodule exists using submodulePaths
+            bool submoduleExists = submodulePaths.Any(p =>
+                p.Equals(specificPath, StringComparison.OrdinalIgnoreCase) ||
+                Path.GetFullPath(p).Equals(Path.GetFullPath(specificPath), StringComparison.OrdinalIgnoreCase));
 
             if (!submoduleExists)
             {
                 _console.WriteError($"No submodule found at path '{specificPath}'.");
                 _console.WriteInfo("Available submodules: ");
-                foreach (var submodule in submodules)
-                {
-                    string submodulePath = submodule.Trim();
-                    if (submodulePath.Contains(" ")) submodulePath = submodulePath.Split(' ').Last();
-                    _console.WriteInfo($"- {submodulePath}");
-                }
-
+                foreach (var sp in submodulePaths)
+                    _console.WriteInfo("- " + sp);
                 WaitForUser();
                 return;
             }
@@ -622,9 +799,84 @@ public class GitController
 
         _console.WriteInfo($"Running command: git {updateCommand}");
 
-        // Run the update command and stream output for user feedback
-        _processService.RunProcessWithStreaming("git", updateCommand, Environment.CurrentDirectory);
-        _console.WriteSuccess("✓ Submodule update command executed. Check above for any errors or output.");
+        // Run the update command asynchronously with progress and cancellation
+        var cts = new CancellationTokenSource();
+        var progress = new Progress<string>(msg =>
+        {
+            if (!string.IsNullOrWhiteSpace(msg))
+                _console.WriteInfo(msg);
+        });
+
+        _console.WriteInfo("Press 'c' to cancel the update at any time.");
+
+        var updateTask = Task.Run(() =>
+        {
+            var psi = new ProcessStartInfo("git", updateCommand)
+            {
+                WorkingDirectory = Environment.CurrentDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using (var process = Process.Start(psi))
+            {
+                if (process == null || process.StandardOutput == null || process.StandardError == null)
+                {
+                    ((IProgress<string>)progress).Report(
+                        "[Error] Failed to start git process or access output streams.");
+                    return;
+                }
+
+                var outputLines = new List<string>();
+                string? line;
+                while ((line = process.StandardOutput.ReadLine()) != null)
+                {
+                    outputLines.Add(line);
+                    if (outputLines.Count % 10 == 0)
+                        ((IProgress<string>)progress).Report($"...{outputLines.Count} lines processed...");
+                    if (cts.Token.IsCancellationRequested)
+                    {
+                        process.Kill();
+                        ((IProgress<string>)progress).Report("Update cancelled by user.");
+                        return;
+                    }
+                }
+
+                // Report any remaining lines
+                if (outputLines.Count > 0)
+                    ((IProgress<string>)progress).Report($"...{outputLines.Count} lines processed. Done.");
+                string? err;
+                while ((err = process.StandardError.ReadLine()) != null)
+                    ((IProgress<string>)progress).Report($"[Error] {err}");
+                process.WaitForExit();
+            }
+        }, cts.Token);
+
+        // Listen for user cancel
+        bool cancelled = false;
+        while (!updateTask.IsCompleted)
+        {
+            if (Console.KeyAvailable)
+            {
+                var key = Console.ReadKey(true);
+                if (key.KeyChar == 'c' || key.KeyChar == 'C')
+                {
+                    cts.Cancel();
+                    cancelled = true;
+                    break;
+                }
+            }
+
+            Thread.Sleep(100);
+        }
+
+        updateTask.Wait();
+
+        if (!cancelled)
+            _console.WriteSuccess("✓ Submodule update command executed. Check above for any errors or output.");
+        else
+            _console.WriteInfo("Submodule update was cancelled by the user.");
         _console.WriteInfo("\nCurrent submodule status:");
         _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
         WaitForUser();
@@ -632,22 +884,33 @@ public class GitController
 
     private void RemoveSubmodule()
     {
-        // Check if there are any submodules first
-        var (statusOutput, statusError, statusExitCode) =
-            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
-        if (statusExitCode != 0 || string.IsNullOrWhiteSpace(statusOutput))
+        // Step 1: List submodules robustly by parsing .gitmodules
+        var submodulePaths = new List<string>();
+        if (File.Exists(".gitmodules"))
         {
-            _console.WriteError("No submodules found in this repository.");
-            if (!string.IsNullOrWhiteSpace(statusError)) _console.WriteError("Error details: " + statusError);
+            var (listOutput, listError, listExit) = _processService.RunProcess(
+                "git", "config --file=.gitmodules --get-regexp path", Environment.CurrentDirectory);
+            if (listExit == 0 && !string.IsNullOrWhiteSpace(listOutput))
+                foreach (var line in listOutput.Split('\n'))
+                {
+                    var parts = line.Trim().Split(' ');
+                    if (parts.Length == 2)
+                        submodulePaths.Add(parts[1].Trim());
+                }
+        }
+
+        if (submodulePaths.Count == 0)
+        {
+            _console.WriteError("No submodules found in this repository (no .gitmodules entries).");
             WaitForUser();
             return;
         }
 
-        // Show available submodules
         _console.WriteInfo("Available submodules:");
-        _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
+        foreach (var sp in submodulePaths)
+            _console.WriteInfo("- " + sp);
 
-        // Get the submodule path to remove
+        // Step 2: Prompt for submodule path
         var path = _prompt.Prompt("Enter submodule path to remove: ") ?? "";
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -656,50 +919,31 @@ public class GitController
             return;
         }
 
-        // Check if specified submodule exists
-        bool submoduleExists = false;
-        var submodules = statusOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var submodule in submodules)
-        {
-            string submodulePath = submodule.Trim();
-            if (submodulePath.Contains(" ")) submodulePath = submodulePath.Split(' ').Last();
-
-            if (submodulePath.Equals(path, StringComparison.OrdinalIgnoreCase))
-            {
-                submoduleExists = true;
-                break;
-            }
-        }
-
-        if (!submoduleExists)
+        // Step 3: Robustly match user input to submodule paths
+        var match = submodulePaths.FirstOrDefault(p =>
+            p.Equals(path, StringComparison.OrdinalIgnoreCase) ||
+            Path.GetFullPath(p).Equals(Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase));
+        if (match == null)
         {
             _console.WriteError($"No submodule found at path '{path}'.");
-            _console.WriteInfo("Available submodules: ");
-            foreach (var submodule in submodules)
-            {
-                string submodulePath = submodule.Trim();
-                if (submodulePath.Contains(" ")) submodulePath = submodulePath.Split(' ').Last();
-                _console.WriteInfo($"- {submodulePath}");
-            }
-
+            _console.WriteInfo("Available submodules:");
+            foreach (var sp in submodulePaths)
+                _console.WriteInfo("- " + sp);
             WaitForUser();
             return;
         }
 
-        // Check for pending changes in the submodule
-        if (Directory.Exists(path))
+        // Step 4: Check for pending changes in the submodule
+        if (Directory.Exists(match))
         {
             var (subStatusOutput, subStatusError, subStatusExitCode) =
-                _processService.RunProcess("git", "status --short", Path.GetFullPath(path));
-
+                _processService.RunProcess("git", "status --short", Path.GetFullPath(match));
             if (subStatusExitCode == 0 && !string.IsNullOrWhiteSpace(subStatusOutput))
             {
-                _console.WriteInfo($"[Warning] The submodule at '{path}' has uncommitted changes:");
+                _console.WriteInfo($"[Warning] The submodule at '{match}' has uncommitted changes:");
                 _console.WriteInfo(subStatusOutput);
-
                 if (!_confirmation.ConfirmAction(
-                        "These changes will be lost when removing the submodule. Continue?",
-                        false))
+                        "These changes will be lost when removing the submodule. Continue?", false))
                 {
                     _console.WriteInfo("Submodule removal cancelled.");
                     WaitForUser();
@@ -708,198 +952,116 @@ public class GitController
             }
         }
 
-        // Confirm removal
-        if (!_confirmation.ConfirmAction($"Are you sure you want to remove submodule at '{path}'?", false))
+        // Step 5: Confirm removal
+        if (!_confirmation.ConfirmAction($"Are you sure you want to remove submodule at '{match}'?", false))
         {
             _console.WriteInfo("Submodule removal cancelled.");
             WaitForUser();
             return;
         }
 
-        _console.WriteInfo($"Removing submodule '{path}'...");
-
+        _console.WriteInfo($"Removing submodule '{match}'...");
         bool success = true;
         StringBuilder errorDetails = new StringBuilder();
 
-        // The proper Git submodule removal process involves multiple steps
-
-        // Step 1: Deinitialize the submodule
-        _console.WriteInfo("Step 1/4: Deinitializing submodule...");
-        var (output1, error1, exitCode1) =
-            _processService.RunProcess("git", $"submodule deinit -f {path}", Environment.CurrentDirectory);
-        if (exitCode1 != 0)
+        // Step 6: Remove submodule entry from .gitmodules
+        if (File.Exists(".gitmodules"))
         {
-            if (error1.Contains("error: pathspec") || error1.Contains("did not match any file"))
+            var (rmModOut, rmModErr, rmModExit) = _processService.RunProcess(
+                "git", $"config --file=.gitmodules --remove-section submodule.{match.Replace('/', '.')} ",
+                Environment.CurrentDirectory);
+            if (rmModExit == 0)
+            {
+                _console.WriteSuccess("✓ Removed submodule entry from .gitmodules.");
+                _processService.RunProcess("git", "add .gitmodules", Environment.CurrentDirectory);
+            }
+            else
             {
                 _console.WriteInfo(
-                    "[Warning] Submodule might be partially removed already. Continuing with next steps...");
+                    "[Warning] Could not automatically remove entry from .gitmodules. You may need to edit it manually.");
             }
-            else
-            {
-                success = false;
-                errorDetails.AppendLine("Error deinitializing submodule:");
-                errorDetails.AppendLine(error1);
-            }
-        }
-        else
-        {
-            _console.WriteSuccess("✓ Submodule deinitialized successfully.");
         }
 
-        // Step 2: Remove submodule from index and working tree
-        _console.WriteInfo("Step 2/4: Removing from Git index...");
-        var (output2, error2, exitCode2) =
-            _processService.RunProcess("git", $"rm -f {path}", Environment.CurrentDirectory);
-        if (exitCode2 != 0)
-        {
-            if (error2.Contains("pathspec") || error2.Contains("did not match any file"))
-            {
-                _console.WriteInfo("[Warning] Path might be removed already. Continuing with next steps...");
-            }
-            else
-            {
-                success = false;
-                errorDetails.AppendLine("Error removing from Git index:");
-                errorDetails.AppendLine(error2);
-            }
-        }
+        // Step 7: Remove submodule entry from .git/config
+        var (rmCfgOut, rmCfgErr, rmCfgExit) = _processService.RunProcess(
+            "git", $"config --remove-section submodule.{match.Replace('/', '.')} ", Environment.CurrentDirectory);
+        if (rmCfgExit == 0)
+            _console.WriteSuccess("✓ Removed submodule entry from .git/config.");
         else
-        {
-            _console.WriteSuccess("✓ Submodule removed from Git index successfully.");
-        }
+            _console.WriteInfo(
+                "[Warning] Could not automatically remove entry from .git/config. You may need to edit it manually.");
 
-        // Step 3: Remove the submodule directory from .git/modules
-        _console.WriteInfo("Step 3/4: Cleaning up .git/modules...");
-        // Use cross-platform approach to remove directory
-        string gitModulesPath = Path.Combine(".git", "modules", path);
+        // Step 8: Remove from index (but keep files for now)
+        var (rmIdxOut, rmIdxErr, rmIdxExit) = _processService.RunProcess(
+            "git", $"rm --cached {match}", Environment.CurrentDirectory);
+        if (rmIdxExit == 0)
+            _console.WriteSuccess("✓ Removed submodule from index.");
+        else
+            _console.WriteInfo(
+                "[Warning] Could not remove submodule from index. You may need to run 'git rm --cached' manually.");
+
+        // Step 9: Remove submodule directory from .git/modules
+        string gitModulesPath = Path.Combine(".git", "modules", match.Replace('/', Path.DirectorySeparatorChar));
         if (Directory.Exists(gitModulesPath))
             try
             {
-                Directory.Delete(gitModulesPath, true); // true for recursive
-                _console.WriteSuccess($"✓ Removed .git/modules/{path} successfully.");
+                // Recursively clear read-only attributes before deletion
+                void ClearReadOnly(string dir)
+                {
+                    foreach (var file in Directory.GetFiles(dir))
+                    {
+                        var fileInfo = new FileInfo(file);
+                        if (fileInfo.IsReadOnly)
+                            fileInfo.IsReadOnly = false;
+                    }
+
+                    foreach (var subDir in Directory.GetDirectories(dir))
+                        ClearReadOnly(subDir);
+                }
+
+                ClearReadOnly(gitModulesPath);
+                Directory.Delete(gitModulesPath, true);
+                _console.WriteSuccess($"✓ Removed .git/modules/{match} directory.");
             }
             catch (Exception ex)
             {
+                _console.WriteError(
+                    $"Error removing .git/modules/{match}: {ex.Message}\nThis may be due to files being locked by another process (e.g., git, an editor, or antivirus) or insufficient permissions. Try closing any programs that may be using the repository and try again. If the problem persists, remove the directory manually.");
                 success = false;
-                errorDetails.AppendLine($"Error removing .git/modules/{path}: {ex.Message}");
             }
-        else
-            _console.WriteInfo($"No .git/modules/{path} directory found (might be already removed).");
 
-        // Step 4: Check if we need to remove entry from .gitmodules
-        bool gitmodulesEntryRemoved = false;
-        if (File.Exists(".gitmodules"))
+        // Step 10: Remove submodule directory from working tree
+        if (Directory.Exists(match))
             try
             {
-                string gitmodulesContent = File.ReadAllText(".gitmodules");
-                if (gitmodulesContent.Contains($"path = {path}"))
-                {
-                    _console.WriteInfo("Step 4/4: Removing submodule entry from .gitmodules file...");
-                    // Use git directly to modify the .gitmodules file
-                    var (output3, error3, exitCode3) =
-                        _processService.RunProcess("git",
-                            $"config --file=.gitmodules --remove-section submodule.{path}",
-                            Environment.CurrentDirectory);
-                    if (exitCode3 == 0)
-                    {
-                        gitmodulesEntryRemoved = true;
-                        _processService.RunProcess("git", "add .gitmodules",
-                            Environment.CurrentDirectory); // Stage the changes
-                        _console.WriteSuccess("✓ Removed submodule entry from .gitmodules file successfully.");
-                    }
-                    else
-                    {
-                        _console.WriteInfo("[Warning] Could not automatically remove entry from .gitmodules file.");
-                        _console.WriteInfo("You might need to manually edit .gitmodules file to complete removal.");
-
-                        // Read .gitmodules content and suggest manual edit
-                        if (!string.IsNullOrWhiteSpace(gitmodulesContent))
-                        {
-                            _console.WriteInfo("\nCurrent .gitmodules content:");
-                            _console.WriteInfo(gitmodulesContent);
-                            _console.WriteInfo("\nManually remove the [submodule \"" + path +
-                                               "\"] section and all its properties.");
-                        }
-                    }
-                }
-                else
-                {
-                    _console.WriteInfo("No entry for this submodule found in .gitmodules file.");
-                }
-            }
-            catch (Exception ex)
-            {
-                _console.WriteInfo($"[Warning] Error processing .gitmodules file: {ex.Message}");
-            }
-        else
-            _console.WriteInfo("No .gitmodules file found (might be already removed).");
-
-        // Step 5: Commit the changes
-        if (success && gitmodulesEntryRemoved)
-        {
-            _console.WriteInfo("Step 5/4: Committing changes...");
-            var commitMessage = $"Remove submodule {path}";
-            var (output3, error3, exitCode3) = _processService.RunProcess("git", $"commit -m \"{commitMessage}\"",
-                Environment.CurrentDirectory);
-            if (exitCode3 != 0)
-            {
-                // This might happen if there's nothing staged - don't treat as complete failure
-                if (error3.Contains("nothing to commit"))
-                {
-                    _console.WriteInfo(
-                        "Note: No changes were committed. This is normal if the submodule was already removed from Git.");
-                    _console.WriteInfo("You may need to manually commit any remaining changes.");
-                }
-                else
-                {
-                    _console.WriteError("Error committing changes:");
-                    _console.WriteError(error3);
-                }
-            }
-            else
-            {
-                _console.WriteSuccess("✓ Changes committed successfully.");
-            }
-        }
-
-        // Clean up the actual directory if it still exists
-        if (Directory.Exists(path))
-            try
-            {
-                _console.WriteInfo($"Removing directory '{path}'...");
-                Directory.Delete(path, true);
-                _console.WriteSuccess($"✓ Directory '{path}' removed successfully.");
+                Directory.Delete(match, true);
+                _console.WriteSuccess($"✓ Removed submodule directory '{match}'.");
             }
             catch (Exception ex)
             {
                 _console.WriteError($"Error removing directory: {ex.Message}");
-                _console.WriteInfo("You may need to manually remove the directory.");
                 success = false;
             }
 
-        // Output results
+        // Step 11: Commit changes
+        var (commitOut, commitErr, commitExit) = _processService.RunProcess(
+            "git", $"commit -am \"Remove submodule {match}\"", Environment.CurrentDirectory);
+        if (commitExit == 0)
+            _console.WriteSuccess("✓ Changes committed successfully.");
+        else
+            _console.WriteInfo("[Warning] Could not commit changes automatically. You may need to commit manually.");
+
+        // Step 12: Output results
         if (success)
         {
-            _console.WriteSuccess($"✓ Submodule '{path}' removed successfully!");
-
-            // Show updated submodule status
+            _console.WriteSuccess($"✓ Submodule '{match}' removed successfully!");
             _console.WriteInfo("\nCurrent submodule status:");
             _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
         }
         else
         {
-            _console.WriteError($"⚠ There were some issues removing submodule '{path}':");
-            _console.WriteError(errorDetails.ToString());
-            _console.WriteInfo(
-                "\nThe submodule might be partially removed. You may need to manually complete the removal process.");
-
-            // Provide recovery guidance
-            _console.WriteInfo("\nRecovery steps if needed:");
-            _console.WriteInfo("1. Check if the submodule still exists: git submodule status");
-            _console.WriteInfo("2. If needed, manually edit the .gitmodules file to remove the entry");
-            _console.WriteInfo("3. Run: git add .gitmodules");
-            _console.WriteInfo("4. If any remaining submodule references exist, run: git rm -f " + path);
-            _console.WriteInfo("5. Commit the changes: git commit -m \"Remove submodule " + path + "\"");
+            _console.WriteError($"⚠ There were some issues removing submodule '{match}'.");
+            _console.WriteInfo("You may need to manually complete the removal process.");
         }
 
         WaitForUser();
