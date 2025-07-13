@@ -188,31 +188,100 @@ public class GitController
 
     private void CheckStatus()
     {
-        _console.WriteInfo("Checking git status...");
-        var (output, error, exitCode) = _processService.RunProcess("git", "status", Environment.CurrentDirectory);
+        _console.WriteInfo("Checking git status (using --porcelain for reliable output)...");
+        var (output, error, exitCode) =
+            _processService.RunProcess("git", "status --porcelain -b", Environment.CurrentDirectory);
 
         if (!string.IsNullOrWhiteSpace(error))
         {
             _console.WriteError(error.Trim());
+            _console.WriteInfo("If you see 'fatal: not a git repository', initialize with 'git init'.");
+            WaitForUser();
+            return;
         }
-        else if (string.IsNullOrWhiteSpace(output))
+
+        if (string.IsNullOrWhiteSpace(output))
         {
             _console.WriteInfo("No status output received from git.");
+            WaitForUser();
+            return;
         }
-        else if (output.Contains("nothing to commit, working tree clean", StringComparison.OrdinalIgnoreCase))
+
+        var lines = output.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+        string branchInfo = string.Empty;
+        var staged = new List<string>();
+        var unstaged = new List<string>();
+        var untracked = new List<string>();
+        var conflicted = new List<string>();
+
+        foreach (var line in lines)
+        {
+            if (line.StartsWith("#"))
+            {
+                branchInfo = line;
+                continue;
+            }
+
+            if (line.StartsWith("??"))
+            {
+                untracked.Add(line.Substring(3));
+                continue;
+            }
+
+            if (line.Length >= 3)
+            {
+                var x = line[0];
+                var y = line[1];
+                var file = line.Substring(3);
+                if (x == 'U' || y == 'U' || (x == 'A' && y == 'A') || (x == 'D' && y == 'D'))
+                    conflicted.Add(file);
+                else if (x != ' ' && x != '?')
+                    staged.Add(file);
+                else if (y != ' ' && y != '?') unstaged.Add(file);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(branchInfo)) _console.WriteInfo($"Branch info: {branchInfo}");
+
+        if (staged.Count == 0 && unstaged.Count == 0 && untracked.Count == 0 && conflicted.Count == 0)
         {
             _console.WriteSuccess("✓ Working tree clean. Nothing to commit.");
         }
         else
         {
-            var textColorObj = _console.Config?.Get("text_color", "");
-            var bgColorObj = _console.Config?.Get("background_color", "");
-            if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")
-                _console.WriteInfo(
-                    "[Warning] Both text and background color are set to black. Please adjust your settings for visibility.");
-            _console.WriteInfo(output?.Trim() ?? "");
+            if (staged.Count > 0)
+            {
+                _console.WriteSuccess($"Staged changes ({staged.Count}):");
+                foreach (var f in staged) _console.WriteInfo($"  [Staged] {f}");
+            }
+
+            if (unstaged.Count > 0)
+            {
+                _console.WriteInfo($"Unstaged changes ({unstaged.Count}):");
+                foreach (var f in unstaged) _console.WriteInfo($"  [Unstaged] {f}");
+            }
+
+            if (untracked.Count > 0)
+            {
+                _console.WriteInfo($"Untracked files ({untracked.Count}):");
+                foreach (var f in untracked) _console.WriteInfo($"  [Untracked] {f}");
+            }
+
+            if (conflicted.Count > 0)
+            {
+                _console.WriteError($"Conflicted files ({conflicted.Count}):");
+                foreach (var f in conflicted) _console.WriteInfo($"  [Conflict] {f}");
+            }
         }
 
+        var textColorObj = _console.Config?.Get("text_color", "");
+        var bgColorObj = _console.Config?.Get("background_color", "");
+        if (textColorObj?.ToString()?.ToLower() == "black" && bgColorObj?.ToString()?.ToLower() == "black")
+            _console.WriteInfo(
+                "[Warning] Both text and background color are set to black. Please adjust your settings for visibility.");
+
+        _console.WriteInfo(
+            "\nTip: Use 'git add <file>' to stage, 'git restore <file>' to discard, and 'git commit' to save changes. For more, see https://git-scm.com/docs/git-status");
         WaitForUser();
     }
 
