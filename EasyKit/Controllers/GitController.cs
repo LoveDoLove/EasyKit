@@ -289,13 +289,47 @@ public class GitController
 
     private void SwitchBranch()
     {
+        // List all local branches robustly
+        var (branchListOutput, branchListError, branchListExit) =
+            _processService.RunProcess("git", "branch --list", Environment.CurrentDirectory);
+        if (branchListExit != 0 || string.IsNullOrWhiteSpace(branchListOutput))
+        {
+            _console.WriteError("Could not retrieve branch list.");
+            if (!string.IsNullOrWhiteSpace(branchListError))
+                _console.WriteError("Error details: " + branchListError);
+            WaitForUser();
+            return;
+        }
+
+        var branches = branchListOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(b => b.TrimStart('*', ' ').Trim())
+            .Where(b => !string.IsNullOrWhiteSpace(b))
+            .ToList();
+
+        if (branches.Count == 0)
+        {
+            _console.WriteError("No branches found in this repository.");
+            WaitForUser();
+            return;
+        }
+
         _console.WriteInfo("Available branches:");
-        _processService.RunProcess("git", "branch", Environment.CurrentDirectory);
+        foreach (var b in branches)
+            _console.WriteInfo("- " + b);
+
         var branchName = _prompt.Prompt("Enter branch name to switch to: ") ?? "";
         if (string.IsNullOrWhiteSpace(branchName))
         {
             _console.WriteError("Branch name cannot be empty.");
-            Console.ReadLine();
+            WaitForUser();
+            return;
+        }
+
+        // Check if the branch exists
+        if (!branches.Any(b => b.Equals(branchName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _console.WriteError($"Branch '{branchName}' does not exist.");
+            WaitForUser();
             return;
         }
 
