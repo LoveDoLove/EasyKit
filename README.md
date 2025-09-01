@@ -16,12 +16,12 @@
   <img src="images/icon.jpg" alt="EasyKit Logo" width="80" height="80">
   <h3 align="center">EasyKit</h3>
   <p align="center">
-    Automate tasks, simplify Windows maintenance, and eliminate repetitive processes with this .NET-powered toolkit for web developers.
+    A .NET-powered toolkit for web developers providing a unified console UI for Git, NPM, Composer, and Laravel tools
     <br />
     <a href="https://github.com/LoveDoLove/EasyKit"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/LoveDoLove/EasyKit">View Demo</a>
+    <a href="https://github.com/LoveDoLove/EasyKit/releases">Download Latest</a>
     &middot;
     <a href="https://github.com/LoveDoLove/EasyKit/issues/new?labels=bug&template=bug-report---.md">Report Bug</a>
     &middot;
@@ -57,29 +57,29 @@
 
 ## About The Project
 
-EasyKit is a modular, menu-driven Windows toolkit for web developers. It streamlines common development and maintenance tasks by providing a unified console UI for Git, NPM, Composer, Laravel, and more. With built-in tool detection, context menu integration, and a marketplace for essential developer tools, EasyKit helps automate workflows and reduce repetitive work.
+EasyKit is a comprehensive Windows toolkit designed specifically for web developers. It provides a unified console interface that integrates multiple development tools including Git, NPM, Composer, and Laravel Artisan, making it easier to manage web development workflows on Windows systems.
 
-### Features
+Key features include:
 
-- Unified console UI for:
-  - Git tools (clone, commit, push, pull, branch, etc.)
-  - NPM tools (install, update, audit, etc.)
-  - Composer tools (install, update, dump-autoload, etc.)
-  - Laravel tools (artisan commands, migrations, etc.)
-  - Tool Marketplace (detect/install Node.js, npm, PHP, Composer, Git)
-  - Settings management
-- Context menu support for quick access from Windows Explorer
-- Colorized console output and notifications
-- Modular, extensible architecture
-- Requires administrator rights for some features
-- .NET 8.0+ support
+- **Unified Interface**: Single console application for all your development tools
+- **Git Integration**: Complete Git workflow management
+- **NPM Support**: Node.js package management
+- **Composer Integration**: PHP dependency management
+- **Laravel Tools**: Artisan command execution
+- **Tool Marketplace**: Detect and install missing development tools
+- **Windows Optimized**: Designed specifically for Windows 10/11
+- **Modern .NET**: Built with .NET 8.0 for performance and reliability
+- **Context Menu Support**: Quick access from Windows Explorer
+- **Colorized Output**: Enhanced console experience with notifications
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ### Built With
 
-- [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-- [CommonUtilities](https://github.com/LoveDoLove/CS_CommonUtilities)
+- [![.NET][.NET-badge]][.NET-url] - .NET 8.0 Framework
+- [![C#][C#-badge]][C#-url] - Primary programming language
+- [![Windows][Windows-badge]][Windows-url] - Target platform
+- [CommonUtilities](https://github.com/LoveDoLove/CS_CommonUtilities) - Shared utility library
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -87,15 +87,28 @@ EasyKit is a modular, menu-driven Windows toolkit for web developers. It streaml
 
 ## Getting Started
 
-To get a local copy up and running:
+EasyKit is designed to run on Windows systems and provides an easy way to get started with web development tools.
 
 ### Prerequisites
 
-- Windows 10/11
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-- (Optional) Git, Node.js, npm, PHP, Composer, Laravel (for full tool support)
+Before running EasyKit, ensure you have the following installed:
+
+- **Windows 10 or 11**
+- **.NET 8.0 SDK** - Download from [Microsoft .NET](https://dotnet.microsoft.com/download/dotnet/8.0)
+- **Optional Development Tools**:
+  - Git (for Git operations)
+  - Node.js and NPM (for JavaScript/TypeScript projects)
+  - PHP and Composer (for PHP/Laravel projects)
 
 ### Installation
+
+#### Option 1: Download Pre-built Release (Recommended)
+
+1. Visit the [Releases](https://github.com/LoveDoLove/EasyKit/releases) page
+2. Download the latest `EasyKit-x.x.x-x64.exe` or `EasyKit-x.x.x-x86.exe` depending on your system
+3. Run the installer and follow the setup wizard
+
+#### Option 2: Build from Source
 
 1. Clone the repository:
    ```cmd
@@ -111,13 +124,31 @@ To get a local copy up and running:
 
 ## Usage
 
-- Launch EasyKit from the Start Menu, desktop, or context menu (if registered)
-- Use the arrow keys or number keys to navigate the main menu
-- Select Git, NPM, Composer, Laravel, or Tool Marketplace for relevant actions
-- Use Settings to configure appearance and behavior
-- Tool Marketplace helps you detect and install missing developer tools
+After installation, simply run EasyKit from your Start menu or by executing the installed application. The console interface will present you with a menu of available tools:
+
+- **Git Controller**: Manage Git repositories, commits, branches, and more
+- **NPM Controller**: Handle Node.js package management
+- **Composer Controller**: Manage PHP dependencies
+- **Laravel Controller**: Execute Laravel Artisan commands
+- **Tool Marketplace**: Detect and install missing development tools
+- **Settings**: Configure EasyKit preferences
+
+Navigate through the menu using your keyboard to access the various development tools integrated into EasyKit.
 
 For more usage details, see the in-app help or source code comments.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Roadmap
+
+EasyKit has evolved significantly since its inception:
+
+- **v3.x Series**: Pure Python implementation with Windows focus
+- **v4.0.6**: Major transition to .NET framework
+- **v4.1.x Series**: Enhanced .NET implementation with improved performance
+- **Current v4.1.8**: Latest stable release with bug fixes and optimizations
+
+See the [open issues](https://github.com/LoveDoLove/EasyKit/issues) for a full list of proposed features and known issues.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -186,3 +217,9 @@ This project is proudly supported by [ZMTO](https://www.zmto.com) as part of the
 [issues-url]: https://github.com/LoveDoLove/EasyKit/issues
 [license-shield]: https://img.shields.io/github/license/LoveDoLove/EasyKit.svg?style=for-the-badge
 [license-url]: https://github.com/LoveDoLove/EasyKit/blob/main/LICENSE
+[.NET-badge]: https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white
+[.NET-url]: https://dotnet.microsoft.com/
+[C#-badge]: https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white
+[C#-url]: https://docs.microsoft.com/en-us/dotnet/csharp/
+[Windows-badge]: https://img.shields.io/badge/Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white
+[Windows-url]: https://www.microsoft.com/windows
