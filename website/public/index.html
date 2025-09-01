@@ -1,12 +1,422 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Hello, World!</title>
-	</head>
-	<body>
-		<h1 id="heading">Hello, World!</h1>
-		<p>This page comes from a static asset stored at `public/index.html` as configured in `wrangler.jsonc`.</p>
-	</body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyKit Documentation - Windows Development Toolkit</title>
+    <meta name="description" content="EasyKit is a modular, menu-driven Windows toolkit for web developers. Automate tasks with Git, NPM, Composer, Laravel, and more.">
+    <meta name="keywords" content="EasyKit, Windows toolkit, web development, Git, NPM, Composer, Laravel, .NET">
+    <meta name="author" content="LoveDoLove">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome 6 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Animate.css -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            color: #007bff;
+        }
+        .navbar-brand img {
+            width: 40px;
+            height: 40px;
+        }
+        .project-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="/images/icon.webp" alt="EasyKit Logo" class="me-2 rounded">
+                <span class="fw-bold">EasyKit</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#projects">Projects</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#getting-started">Getting Started</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-bg text-white py-5">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6 animate__animated animate__fadeInLeft">
+                    <h1 class="display-4 fw-bold mb-4">EasyKit</h1>
+                    <p class="lead mb-4">
+                        Automate tasks, simplify Windows maintenance, and eliminate repetitive processes with this .NET-powered toolkit for web developers.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="https://github.com/LoveDoLove/EasyKit" class="btn btn-light btn-lg">
+                            <i class="fab fa-github me-2"></i>View on GitHub
+                        </a>
+                        <a href="#getting-started" class="btn btn-outline-light btn-lg">
+                            Get Started
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 animate__animated animate__fadeInRight">
+                    <img src="/images/interface.webp" alt="EasyKit Interface" class="img-fluid rounded shadow">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="display-5 fw-bold mb-4">About EasyKit</h2>
+                    <p class="lead mb-4">
+                        EasyKit is a modular, menu-driven Windows toolkit for web developers. It streamlines common development and maintenance tasks by providing a unified console UI for Git, NPM, Composer, Laravel, and more.
+                    </p>
+                    <p class="mb-4">
+                        With built-in tool detection, context menu integration, and a marketplace for essential developer tools, EasyKit helps automate workflows and reduce repetitive work. Built with .NET 8.0+ and designed for Windows 10/11.
+                    </p>
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="h5 text-primary mb-2"><i class="fas fa-code"></i></div>
+                            <h6>Modular Architecture</h6>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 text-primary mb-2"><i class="fas fa-terminal"></i></div>
+                            <h6>Console UI</h6>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="h5 text-primary mb-2"><i class="fas fa-tools"></i></div>
+                            <h6>Tool Integration</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Our Projects</h2>
+                <p class="lead">Explore the tools and libraries we've built</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card project-card h-100 border-0 shadow">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-cogs text-primary me-3" style="font-size: 2rem;"></i>
+                                <h4 class="card-title mb-0">EasyKit</h4>
+                            </div>
+                            <p class="card-text">
+                                A comprehensive Windows toolkit for web developers featuring unified console UI for Git, NPM, Composer, Laravel, and tool marketplace with automatic detection and installation.
+                            </p>
+                            <ul class="list-unstyled mb-4">
+                                <li><i class="fas fa-check text-success me-2"></i>Git operations (clone, commit, push, pull)</li>
+                                <li><i class="fas fa-check text-success me-2"></i>NPM package management</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Composer dependency management</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Laravel artisan commands</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Context menu integration</li>
+                            </ul>
+                            <a href="https://github.com/LoveDoLove/EasyKit" class="btn btn-primary">
+                                <i class="fab fa-github me-2"></i>View Repository
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card project-card h-100 border-0 shadow">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="fas fa-puzzle-piece text-primary me-3" style="font-size: 2rem;"></i>
+                                <h4 class="card-title mb-0">CommonUtilities</h4>
+                            </div>
+                            <p class="card-text">
+                                A modular, production-ready C#/.NET utility library providing comprehensive helpers for security, data processing, HTTP operations, scheduling, and more.
+                            </p>
+                            <ul class="list-unstyled mb-4">
+                                <li><i class="fas fa-check text-success me-2"></i>Security utilities (AES, SHA256, MFA)</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Data conversion and formatting</li>
+                                <li><i class="fas fa-check text-success me-2"></i>HTTP client utilities</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Stripe payment integration</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Email and media processing</li>
+                            </ul>
+                            <a href="https://github.com/LoveDoLove/CS_CommonUtilities" class="btn btn-primary">
+                                <i class="fab fa-github me-2"></i>View Repository
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Key Features</h2>
+                <p class="lead">Powerful capabilities to enhance your development workflow</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-terminal"></i>
+                        </div>
+                        <h5 class="fw-bold">Unified Console UI</h5>
+                        <p>Navigate through all tools using an intuitive menu-driven interface with arrow keys and number selections.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h5 class="fw-bold">Tool Detection</h5>
+                        <p>Automatically detects installed development tools and provides installation guidance for missing components.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </div>
+                        <h5 class="fw-bold">Context Menu</h5>
+                        <p>Quick access to EasyKit functions directly from Windows Explorer context menu for seamless integration.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <h5 class="fw-bold">Colorized Output</h5>
+                        <p>Enhanced console output with color coding and notifications for better user experience and feedback.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-cubes"></i>
+                        </div>
+                        <h5 class="fw-bold">Modular Design</h5>
+                        <p>Extensible architecture allowing easy addition of new tools and features as your needs evolve.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h5 class="fw-bold">Admin Rights</h5>
+                        <p>Supports administrator privileges for operations requiring elevated permissions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Getting Started Section -->
+    <section id="getting-started" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Getting Started</h2>
+                <p class="lead">Get EasyKit up and running in minutes</p>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center p-4">
+                                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                        <span class="fw-bold fs-4">1</span>
+                                    </div>
+                                    <h5 class="card-title">Prerequisites</h5>
+                                    <p class="card-text">Ensure you have Windows 10/11 and .NET 8.0 SDK installed on your system.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center p-4">
+                                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                        <span class="fw-bold fs-4">2</span>
+                                    </div>
+                                    <h5 class="card-title">Clone Repository</h5>
+                                    <p class="card-text">Download the source code from GitHub using git clone command.</p>
+                                    <code class="d-block bg-light p-2 rounded mt-2">git clone https://github.com/LoveDoLove/EasyKit.git</code>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center p-4">
+                                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                        <span class="fw-bold fs-4">3</span>
+                                    </div>
+                                    <h5 class="card-title">Build Solution</h5>
+                                    <p class="card-text">Open the solution in Visual Studio 2022+ and build the project.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center p-4">
+                                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                        <span class="fw-bold fs-4">4</span>
+                                    </div>
+                                    <h5 class="card-title">Run EasyKit</h5>
+                                    <p class="card-text">Launch the application and start automating your development tasks.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a href="https://github.com/LoveDoLove/EasyKit/releases" class="btn btn-primary btn-lg">
+                            <i class="fas fa-download me-2"></i>Download Latest Release
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5 bg-dark text-white">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold">Get in Touch</h2>
+                <p class="lead">Connect with us on various platforms</p>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="row g-4">
+                        <div class="col-md-4 text-center">
+                            <a href="https://github.com/LoveDoLove/" class="text-white text-decoration-none">
+                                <div class="mb-3">
+                                    <i class="fab fa-github" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5>GitHub</h5>
+                                <p>View our repositories and contribute to open source</p>
+                            </a>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="https://discord.com/invite/FyYEmtRCRE" class="text-white text-decoration-none">
+                                <div class="mb-3">
+                                    <i class="fab fa-discord" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5>Discord</h5>
+                                <p>Join our community for discussions and support</p>
+                            </a>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="https://t.me/lovedoloveofficialchannel" class="text-white text-decoration-none">
+                                <div class="mb-3">
+                                    <i class="fab fa-telegram" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5>Telegram</h5>
+                                <p>Follow our official channel for updates</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; 2025 LoveDoLove. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">Built with <i class="fas fa-heart text-danger"></i> using .NET 8.0</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+
+    <!-- Custom JS -->
+    <script>
+        $(document).ready(function() {
+            // Smooth scrolling for navigation links
+            $('a[href^="#"]').on('click', function(event) {
+                var target = $(this.getAttribute('href'));
+                if (target.length) {
+                    event.preventDefault();
+                    $('html, body').stop().animate({
+                        scrollTop: target.offset().top - 70
+                    }, 1000);
+                }
+            });
+
+            // Add animation on scroll
+            $(window).scroll(function() {
+                $('.animate__animated').each(function() {
+                    var elementTop = $(this).offset().top;
+                    var elementBottom = elementTop + $(this).outerHeight();
+                    var viewportTop = $(window).scrollTop();
+                    var viewportBottom = viewportTop + $(window).height();
+
+                    if (elementBottom > viewportTop && elementTop < viewportBottom) {
+                        $(this).addClass('animate__fadeInUp');
+                    }
+                });
+            });
+
+            // Navbar background change on scroll
+            $(window).scroll(function() {
+                if ($(this).scrollTop() > 50) {
+                    $('.navbar').addClass('bg-dark').removeClass('bg-transparent');
+                } else {
+                    $('.navbar').addClass('bg-transparent').removeClass('bg-dark');
+                }
+            });
+        });
+    </script>
+</body>
 </html>
