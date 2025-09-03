@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EasyKit — Features</title>
+    <meta name="description" content="Features of EasyKit: guided Git workflows, package management, tool marketplace, automation, and extensibility.">
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="./features.html">
+    <meta property="og:title" content="EasyKit — Features">
+    <meta property="og:description" content="Guided Git workflows, package management, a tool marketplace, automation, and extensibility — features of EasyKit.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="./features.html">
+    <meta property="og:image" content="/assets/images/icon.webp">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="EasyKit — Features">
+    <meta name="twitter:description" content="Guided Git workflows, package management, marketplace, automation, and extensibility.">
+    <link rel="icon" href="../assets/images/favicon.ico" type="image/x-icon">
+    <link rel="preload" as="image" href="../assets/images/icon.webp" type="image/webp">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"EasyKit — Features","url":"./features.html"}</script>
+    <style>
+        :root{--bg:#fff;--bg-alt:#f7f7f8;--text:#222;--muted:#666;--accent:#317EFB}
+        body{font-family:Segoe UI, Roboto, Arial, sans-serif;color:var(--text);margin:0;background:var(--bg)}
+        .container{max-width:960px;margin:0 auto;padding:1rem}
+        header{background:var(--bg-alt);border-bottom:1px solid #e6e6e6}
+        header .container{display:flex;align-items:center;gap:1rem}
+        .brand{display:flex;align-items:center;gap:0.75rem;text-decoration:none;color:inherit}
+        nav ul{list-style:none;margin:0;padding:0;display:flex;gap:0.5rem}
+        nav a{color:var(--text);text-decoration:none;padding:0.5rem;border-radius:4px}
+        nav a:hover{background:#eee}
+        main{padding:1rem 0}
+        section h2{margin-top:0.5rem}
+        pre{background:#f4f6f8;padding:0.75rem;border-radius:6px;overflow:auto}
+        .back{display:inline-block;margin-top:0.75rem;color:var(--accent);text-decoration:none}
+        footer{background:var(--bg-alt);padding:1rem 0;border-top:1px solid #e6e6e6;margin-top:2rem}
+        footer p{margin:0;color:var(--muted);font-size:0.9rem}
+        .skip-link{position:absolute;left:-999px;top:auto;width:1px;height:1px;overflow:hidden}
+        .skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;padding:0.5rem 0.75rem;background:#000;color:#fff;border-radius:4px;z-index:1000}
+    </style>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <header role="banner" aria-label="EasyKit header">
+        <div class="container">
+            <a class="brand" href="../index.html" aria-label="EasyKit Home" style="display:flex;align-items:center;gap:0.75rem;text-decoration:none;color:inherit">
+                <img src="../assets/images/icon.webp" alt="EasyKit logo" width="40" height="40" style="display:block">
+                <div>
+                    <strong>EasyKit</strong>
+                    <div style="font-size:0.85rem;color:var(--muted)">Developer Toolkit</div>
+                </div>
+            </a>
+            <nav role="navigation" aria-label="Main navigation" style="margin-left:auto">
+                <ul>
+                    <li><a href="../index.html">Overview</a></li>
+                    <li><a href="./features.html" aria-current="page">Features</a></li>
+                    <li><a href="./installation.html">Installation</a></li>
+                    <li><a href="./notes.html">Important Notes</a></li>
+                    <li><a href="./contact.html">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content" class="container" role="main">
+        <article>
+            <h1>Features</h1>
+            <p>EasyKit consolidates common developer workflows into a single, extensible toolkit. Below are the major features and short usage notes.</p>
+
+            <section>
+                <h2>Git — Guided repository workflows</h2>
+                <p>Interactive repository management: initialize, clone, stage, commit, branch, merge, and push with guided prompts.</p>
+                <p>Example: commit and push via CLI integration</p>
+                <pre><code class="language-bash"># Open a repo and run the guided commit flow
+EasyKit --open /path/to/repo
+# Choose "Git Tools" → "Commit Changes"</code></pre>
+            </section>
+
+            <section>
+                <h2>NPM — Package management</h2>
+                <p>Inspect, update, and manage Node packages. Run audits, update dependencies, and execute build scripts from within EasyKit.</p>
+            </section>
+
+            <section>
+                <h2>Composer & Laravel — PHP ecosystem</h2>
+                <p>Composer dependency management and Laravel-specific helpers (artisan commands, migrations, environment helpers).</p>
+            </section>
+
+            <section>
+                <h2>Tool Marketplace</h2>
+                <p>An extensible marketplace to discover, install, and publish community tools. Tools provide manifests that register commands, UI entries, and configuration schemas.</p>
+            </section>
+
+            <section>
+                <h2>Automation & Workflows</h2>
+                <p>Combine common tasks into repeatable workflows (example: build → test → package). Workflows can be saved and reused across projects.</p>
+            </section>
+
+            <section>
+                <h2>Extensibility & Configuration</h2>
+                <p>Plugin manifest model supports commands, pre/post hooks, and UI entries. Configuration profiles allow switching between development and CI settings.</p>
+            </section>
+
+            <p class="back"><a href="../index.html">← Back to Overview</a></p>
+        </article>
+    </main>
+
+    <footer role="contentinfo">
+        <div class="container">
+            <p>&copy; 2025 EasyKit — <a href="https://github.com/LoveDoLove/EasyKit">Source</a></p>
+        </div>
+    </footer>
+</body>
+</html>
