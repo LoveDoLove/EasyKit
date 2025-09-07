@@ -4,7 +4,7 @@
 #define MyAppName "EasyKit"
 #endif
 #ifndef MyAppVersion
-#define MyAppVersion "4.2.0"
+#define MyAppVersion "4.2.1"
 #endif
 #ifndef MyAppPublisher
 #define MyAppPublisher "LoveDoLove"
