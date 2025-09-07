@@ -22,7 +22,7 @@ Install EasyKit on Windows with these simple steps.
 2. Run the installer and follow the on-screen instructions.
 3. Launch EasyKit from the Start Menu.
 
-   `./EasyKit.AppImage`
+   `EasyKit`
 
 ## Troubleshooting
 
