@@ -8,6 +8,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonUtilities", "CommonUtilities\CommonUtilities\CommonUtilities.csproj", "{ED641BEA-29C9-C50F-1DB7-800C6A5B8C53}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyKit-Gui", "EasyKit-Gui\EasyKit-Gui.csproj", "{C730B2EC-A301-492C-9356-222265522525}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E9F4BFBA-7149-42B0-8F80-974C348504E0} = {E9F4BFBA-7149-42B0-8F80-974C348504E0}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
