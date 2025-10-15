@@ -228,14 +228,85 @@ public class GitControl : UserControl
                     if (!string.IsNullOrWhiteSpace(trimmed))
                         fileList.Add(trimmed);
                 }
+
                 stagedFiles = fileList.ToArray();
             }
         });
 
+        // If no staged files, prompt user to select files to stage
         if (stagedFiles.Length == 0)
         {
-            AppendLog("[Commit] No staged files to commit.");
-            return;
+            // Get all changed/untracked files
+            string[] files = Array.Empty<string>();
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) =
+                    _cmdService.RunProcess("git", "status --porcelain", Environment.CurrentDirectory);
+                if (!string.IsNullOrWhiteSpace(output))
+                {
+                    var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    var fileList = new List<string>();
+                    foreach (var line in lines)
+                    {
+                        // Format: XY filename
+                        var trimmed = line.Length > 3 ? line.Substring(3).Trim() : null;
+                        if (!string.IsNullOrWhiteSpace(trimmed))
+                            fileList.Add(trimmed);
+                    }
+
+                    files = fileList.ToArray();
+                }
+            });
+
+            if (files.Length == 0)
+            {
+                AppendLog("[Commit] No changes to stage or commit.");
+                return;
+            }
+
+            // Show dialog for file selection
+            var addDialog = new AddFilesDialog(files);
+            var addResult = addDialog.ShowDialog();
+            if (addDialog.Confirmed && addDialog.SelectedFiles.Count > 0)
+            {
+                AppendLog($"[Commit] Staging {addDialog.SelectedFiles.Count} file(s)...");
+                await Task.Run(() =>
+                {
+                    string args = "add --";
+                    foreach (var file in addDialog.SelectedFiles)
+                        args += " \"" + file.Replace("\"", "'") + "\"";
+                    _cmdService.RunProcess("git", args, Environment.CurrentDirectory);
+                });
+                // Refresh staged files
+                await Task.Run(() =>
+                {
+                    (string output, string error, int exit) =
+                        _cmdService.RunProcess("git", "diff --cached --name-status", Environment.CurrentDirectory);
+                    if (!string.IsNullOrWhiteSpace(output))
+                    {
+                        var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        var fileList = new List<string>();
+                        foreach (var line in lines)
+                        {
+                            var trimmed = line.Length > 2 ? line.Substring(2).Trim() : null;
+                            if (!string.IsNullOrWhiteSpace(trimmed))
+                                fileList.Add(trimmed);
+                        }
+
+                        stagedFiles = fileList.ToArray();
+                    }
+                });
+                if (stagedFiles.Length == 0)
+                {
+                    AppendLog("[Commit] No files staged after selection.");
+                    return;
+                }
+            }
+            else
+            {
+                AppendLog("[Commit] Cancelled by user (no files selected to stage).");
+                return;
+            }
         }
 
         // Step 2: Show commit dialog
@@ -249,7 +320,8 @@ public class GitControl : UserControl
             await Task.Run(() =>
             {
                 (string output, string error, int exit) =
-                    _cmdService.RunProcess("git", $"commit -m \"{title}\" -m \"{message}\"", Environment.CurrentDirectory);
+                    _cmdService.RunProcess("git", $"commit -m \"{title}\" -m \"{message}\"",
+                        Environment.CurrentDirectory);
                 Invoke(() =>
                 {
                     if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
