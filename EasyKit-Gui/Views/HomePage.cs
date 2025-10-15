@@ -15,6 +15,16 @@ public partial class HomePage : Form
     public HomePage(string? initialDirectory = null)
     {
         InitializeComponent();
+        try
+        {
+            // Set the window icon from icon.ico in the app directory
+            Icon = new Icon("icon.ico");
+        }
+        catch
+        {
+            /* Ignore if icon not found */
+        }
+
         _currentDirectory = initialDirectory ?? Environment.CurrentDirectory;
         // Initialize UserControls (actual module controls)
         _gitControl = new GitControl();
