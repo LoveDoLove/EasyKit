@@ -20,6 +20,7 @@ public class GitControl : UserControl
     private readonly Button _pullButton;
     private readonly Button _pushButton;
     private readonly Button _statusButton;
+    private readonly Button _submodulesButton;
     private bool _isPopulatingBranches;
 
     public GitControl()
@@ -69,11 +70,12 @@ public class GitControl : UserControl
         _pullButton = CreateButton("Pull");
         _historyButton = CreateButton("History");
         _clearLogButton = CreateButton("Clear Log");
+        _submodulesButton = CreateButton("Submodules");
 
         _buttonPanel.Controls.AddRange(new Control[]
         {
             _statusButton, _initButton, _addAllButton, _commitButton, _pushButton, _pullButton, _historyButton,
-            _clearLogButton
+            _clearLogButton, _submodulesButton
         });
 
         // Commit message
@@ -121,6 +123,8 @@ public class GitControl : UserControl
         _pullButton.Click += (s, e) => OnPullClicked();
         _historyButton.Click += (s, e) => OnHistoryClicked();
         _clearLogButton.Click += (s, e) => OnClearLogClicked();
+        _submodulesButton.Click += async (s, e) => await OnSubmoduleClicked();
+
 
         // Also repopulate branches after key git actions
         _statusButton.Click += async (s, e) => await PopulateBranchesAsync();
@@ -131,6 +135,90 @@ public class GitControl : UserControl
 
         // Populate branches on load
         Load += async (s, e) => await PopulateBranchesAsync();
+    }
+
+    private async Task OnSubmoduleClicked()
+    {
+        // Step 1: Get submodule paths
+        List<string> submodules = new();
+        string statusText = "";
+        await Task.Run(() =>
+        {
+            (string listOutput, string listError, int listExit) = _cmdService.RunProcess(
+                "git", "config --file=.gitmodules --get-regexp path", Environment.CurrentDirectory);
+            if (listExit == 0 && !string.IsNullOrWhiteSpace(listOutput))
+                foreach (var line in listOutput.Split('\n'))
+                {
+                    var parts = line.Trim().Split(' ');
+                    if (parts.Length == 2)
+                        submodules.Add(parts[1].Trim());
+                }
+
+            (string statusOutput, string statusError, int statusExit) = _cmdService.RunProcess(
+                "git", "submodule status", Environment.CurrentDirectory);
+            statusText = !string.IsNullOrWhiteSpace(statusOutput)
+                ? statusOutput.Trim()
+                : "No submodule status output.";
+        });
+        if (submodules.Count == 0)
+        {
+            AppendLog("[Submodules] No submodules found in this repository.");
+            return;
+        }
+
+        // Step 2: Show dialog
+        using var dialog = new SubmoduleDialog(submodules, statusText);
+        var result = dialog.ShowDialog();
+        if (result != DialogResult.OK) return;
+        if (dialog.UpdateSelected && dialog.SelectedSubmodule != null)
+        {
+            AppendLog($"[Submodules] Updating '{dialog.SelectedSubmodule}' from remote...");
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) = _cmdService.RunProcess(
+                    "git", $"submodule update --remote {dialog.SelectedSubmodule}", Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+                    AppendLog($"[Submodules] Update done for '{dialog.SelectedSubmodule}'.");
+                });
+            });
+        }
+        else if (dialog.UpdateAll)
+        {
+            AppendLog("[Submodules] Updating all submodules from remote...");
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) = _cmdService.RunProcess(
+                    "git", "submodule update --remote", Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+                    AppendLog("[Submodules] Update done for all submodules.");
+                });
+            });
+        }
+        else if (dialog.RemoveSelected && dialog.SelectedSubmodule != null)
+        {
+            // Remove submodule (deinit, remove from index, delete dir)
+            string sub = dialog.SelectedSubmodule;
+            AppendLog($"[Submodules] Removing '{sub}'...");
+            await Task.Run(() =>
+            {
+                // Deinit
+                _cmdService.RunProcess("git", $"submodule deinit -f {sub}", Environment.CurrentDirectory);
+                // Remove from index
+                _cmdService.RunProcess("git", $"rm -f {sub}", Environment.CurrentDirectory);
+                // Remove .git/modules entry
+                string modulesPath = Path.Combine(".git", "modules", sub.Replace('/', Path.DirectorySeparatorChar));
+                if (Directory.Exists(modulesPath)) Directory.Delete(modulesPath, true);
+                // Remove working directory
+                if (Directory.Exists(sub)) Directory.Delete(sub, true);
+                Invoke(() => { AppendLog($"[Submodules] '{sub}' removed. You may need to commit these changes."); });
+            });
+        }
     }
 
     private async Task PopulateBranchesAsync()
@@ -205,7 +293,7 @@ public class GitControl : UserControl
     private async Task OnBranchSelected()
     {
         if (_branchComboBox.SelectedItem == null) return;
-        string selected = _branchComboBox.SelectedItem.ToString();
+        string? selected = _branchComboBox.SelectedItem.ToString();
         if (string.IsNullOrWhiteSpace(selected) || selected == "--- Remote ---") return;
         // Only switch if not already on this branch
         string currentBranch = "";
