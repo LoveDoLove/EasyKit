@@ -66,7 +66,7 @@
             navListBox.Font = new Font("Segoe UI", 11F);
             navListBox.ForeColor = Color.White;
             navListBox.ItemHeight = 20;
-            navListBox.Items.AddRange(new object[] { "Git", "Composer", "Laravel", "Npm", "Tool Marketplace", "Settings" });
+            navListBox.Items.AddRange(new object[] { "Git" });
             navListBox.Location = new Point(0, 0);
             navListBox.Name = "navListBox";
             navListBox.Size = new Size(180, 650);
