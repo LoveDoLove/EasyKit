@@ -1,14 +1,11 @@
-using System.Windows.Forms;
+namespace EasyKit_Gui.Views.Modules;
 
-namespace EasyKit_Gui.Views.Modules
+public class ToolMarketplaceControl : UserControl
 {
-    public class ToolMarketplaceControl : UserControl
+    public ToolMarketplaceControl()
     {
-        public ToolMarketplaceControl()
-        {
-            this.Dock = DockStyle.Fill;
-            this.BackColor = System.Drawing.Color.FromArgb(100, 100, 60);
-            // TODO: Add Tool Marketplace module UI here
-        }
+        Dock = DockStyle.Fill;
+        BackColor = Color.FromArgb(100, 100, 60);
+        // TODO: Add Tool Marketplace module UI here
     }
 }

@@ -216,6 +216,90 @@ public class GitControl : UserControl
             currentBranch = output?.Trim() ?? "";
         });
         if (selected == currentBranch) return;
+
+        // Check for uncommitted changes
+        string[] changedFiles = Array.Empty<string>();
+        await Task.Run(() =>
+        {
+            (string output, string error, int exit) =
+                _cmdService.RunProcess("git", "status --porcelain", Environment.CurrentDirectory);
+            if (!string.IsNullOrWhiteSpace(output))
+            {
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var fileList = new List<string>();
+                foreach (var line in lines)
+                {
+                    var trimmed = line.Length > 3 ? line.Substring(3).Trim() : null;
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                        fileList.Add(trimmed);
+                }
+
+                changedFiles = fileList.ToArray();
+            }
+        });
+
+        BranchChangeDialog.BranchChangeAction branchAction = BranchChangeDialog.BranchChangeAction.None;
+        if (changedFiles.Length > 0)
+        {
+            // Show dialog for user action
+            var dialog = new BranchChangeDialog(changedFiles);
+            var result = dialog.ShowDialog();
+            branchAction = dialog.Action;
+            switch (branchAction)
+            {
+                case BranchChangeDialog.BranchChangeAction.StageCommit:
+                    // Prompt for commit message and commit
+                    var commitDialog = new CommitDialog(changedFiles);
+                    var commitResult = commitDialog.ShowDialog();
+                    if (commitDialog.Confirmed && !string.IsNullOrWhiteSpace(commitDialog.CommitTitle))
+                    {
+                        string title = commitDialog.CommitTitle.Replace("\"", "'");
+                        string message = commitDialog.CommitMessage.Replace("\"", "'");
+                        AppendLog($"[Commit] Running: {title}");
+                        await Task.Run(() =>
+                        {
+                            (string output, string error, int exit) =
+                                _cmdService.RunProcess("git", "add -- .", Environment.CurrentDirectory);
+                            (string coutput, string cerror, int cexit) =
+                                _cmdService.RunProcess("git", $"commit -m \"{title}\" -m \"{message}\"",
+                                    Environment.CurrentDirectory);
+                            Invoke(() =>
+                            {
+                                if (!string.IsNullOrWhiteSpace(cerror)) AppendLog($"[Error] {cerror.Trim()}");
+                                if (!string.IsNullOrWhiteSpace(coutput)) AppendLog(coutput.Trim());
+                                AppendLog("[Commit] Done.");
+                            });
+                        });
+                    }
+                    else
+                    {
+                        AppendLog("[Branch] Switch cancelled: commit required.");
+                        return;
+                    }
+
+                    break;
+                case BranchChangeDialog.BranchChangeAction.Stash:
+                    AppendLog("[Branch] Stashing changes...");
+                    await Task.Run(() => { _cmdService.RunProcess("git", "stash", Environment.CurrentDirectory); });
+                    break;
+                case BranchChangeDialog.BranchChangeAction.Discard:
+                    AppendLog("[Branch] Discarding changes...");
+                    await Task.Run(() =>
+                    {
+                        _cmdService.RunProcess("git", "reset --hard", Environment.CurrentDirectory);
+                    });
+                    break;
+                case BranchChangeDialog.BranchChangeAction.Bring:
+                    AppendLog("[Branch] Stashing changes to bring to new branch...");
+                    await Task.Run(() => { _cmdService.RunProcess("git", "stash", Environment.CurrentDirectory); });
+                    break;
+                case BranchChangeDialog.BranchChangeAction.None:
+                default:
+                    AppendLog("[Branch] Switch cancelled by user.");
+                    return;
+            }
+        }
+
         // If remote branch, check out as local tracking branch
         bool isRemote = selected.Contains("/");
         string checkoutArg = isRemote ? $"checkout --track {selected}" : $"checkout {selected}";
@@ -230,6 +314,13 @@ public class GitControl : UserControl
                 if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
             });
         });
+        // If user chose to bring changes, pop stash after switching
+        if (changedFiles.Length > 0 && branchAction == BranchChangeDialog.BranchChangeAction.Bring)
+        {
+            AppendLog("[Branch] Applying stashed changes to new branch...");
+            await Task.Run(() => { _cmdService.RunProcess("git", "stash pop", Environment.CurrentDirectory); });
+        }
+
         await PopulateBranchesAsync();
         AppendLog($"[Branch] Now on {selected}.");
     }
