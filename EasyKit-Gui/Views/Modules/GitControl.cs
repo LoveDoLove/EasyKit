@@ -1,3 +1,4 @@
+using EasyKit_Gui.Utilities;
 using EasyKit.Services;
 
 namespace EasyKit_Gui.Views.Modules;
@@ -15,7 +16,7 @@ public class GitControl : UserControl
     private readonly Label _commitMessageLabel;
     private readonly Button _historyButton;
     private readonly Button _initButton;
-    private readonly TextBox _logTextBox;
+    private readonly RichTextBox _logRichTextBox;
     private readonly Button _pullButton;
     private readonly Button _pushButton;
     private readonly Button _statusButton;
@@ -68,12 +69,12 @@ public class GitControl : UserControl
             Margin = new Padding(8, 0, 8, 8)
         };
 
-        // Log output
-        _logTextBox = new TextBox
+        // Log output (RichTextBox for color)
+        _logRichTextBox = new RichTextBox
         {
             Multiline = true,
             ReadOnly = true,
-            ScrollBars = ScrollBars.Vertical,
+            ScrollBars = RichTextBoxScrollBars.Vertical,
             Dock = DockStyle.Fill,
             BackColor = Color.FromArgb(40, 40, 60),
             ForeColor = Color.White,
@@ -82,7 +83,7 @@ public class GitControl : UserControl
         };
 
         // Add controls
-        Controls.Add(_logTextBox);
+        Controls.Add(_logRichTextBox);
         Controls.Add(_commitMessageBox);
         Controls.Add(_commitMessageLabel);
         Controls.Add(_buttonPanel);
@@ -100,7 +101,7 @@ public class GitControl : UserControl
 
     private void OnClearLogClicked()
     {
-        _logTextBox.Clear();
+        _logRichTextBox.Clear();
     }
 
     private Button CreateButton(string text)
@@ -226,7 +227,7 @@ public class GitControl : UserControl
         await Task.Run(() =>
         {
             (string output, string error, int exit) = _cmdService.RunProcess("git",
-                "--no-pager log --graph --decorate --oneline --all", Environment.CurrentDirectory);
+                "--no-pager log --graph --decorate --oneline --all --color=always", Environment.CurrentDirectory);
             Invoke(() =>
             {
                 if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
@@ -238,6 +239,6 @@ public class GitControl : UserControl
 
     private void AppendLog(string message)
     {
-        _logTextBox.AppendText($"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}");
+        AnsiColorParser.AppendAnsiText(_logRichTextBox, $"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}");
     }
 }
