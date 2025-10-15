@@ -10,10 +10,12 @@ public partial class HomePage : Form
     private readonly UserControl _npmControl;
     private readonly UserControl _settingsControl;
     private readonly UserControl _toolMarketplaceControl;
+    private string _currentDirectory;
 
-    public HomePage()
+    public HomePage(string? initialDirectory = null)
     {
         InitializeComponent();
+        _currentDirectory = initialDirectory ?? Environment.CurrentDirectory;
         // Initialize UserControls (actual module controls)
         _gitControl = new GitControl();
         _composerControl = new ComposerControl();
@@ -24,8 +26,34 @@ public partial class HomePage : Form
 
         // Wire up navigation
         navListBox.SelectedIndexChanged += NavListBox_SelectedIndexChanged;
+        // Wire up changeDirButton event
+        if (changeDirButton != null)
+            changeDirButton.Click += ChangeDirButton_Click;
+        // Set current directory label
+        UpdateCurrentDirLabel();
         // Load default module
         LoadModule(0);
+    }
+
+    private void ChangeDirButton_Click(object? sender, EventArgs e)
+    {
+        using (var dialog = new FolderBrowserDialog())
+        {
+            dialog.Description = "Select working directory";
+            dialog.SelectedPath = _currentDirectory;
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+                _currentDirectory = dialog.SelectedPath;
+                Environment.CurrentDirectory = _currentDirectory;
+                UpdateCurrentDirLabel();
+                // Optionally, notify modules of directory change
+            }
+        }
+    }
+
+    private void UpdateCurrentDirLabel()
+    {
+        if (currentDirLabel != null) currentDirLabel.Text = $"Folder: {_currentDirectory}";
     }
 
     private void NavListBox_SelectedIndexChanged(object? sender, EventArgs e)
