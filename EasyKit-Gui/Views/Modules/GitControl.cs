@@ -3,18 +3,14 @@ using EasyKit.Services;
 
 namespace EasyKit_Gui.Views.Modules;
 
-public class GitControl : UserControl
+public sealed class GitControl : UserControl
 {
     private readonly Button _addAllButton;
     private readonly Button _addSubmoduleButton;
     private readonly ComboBox _branchComboBox;
-    private readonly Label _branchLabel;
-    private readonly FlowLayoutPanel _buttonPanel;
     private readonly Button _clearLogButton;
     private readonly CmdService _cmdService = new();
     private readonly Button _commitButton;
-    private readonly TextBox _commitMessageBox;
-    private readonly Label _commitMessageLabel;
     private readonly Button _historyButton;
     private readonly Button _initButton;
     private readonly RichTextBox _logRichTextBox;
@@ -30,7 +26,7 @@ public class GitControl : UserControl
         BackColor = Color.FromArgb(60, 80, 120);
 
         // Button panel
-        _buttonPanel = new FlowLayoutPanel
+        var buttonPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             Height = 48,
@@ -41,7 +37,7 @@ public class GitControl : UserControl
         };
 
         // Branch selector
-        _branchLabel = new Label
+        var branchLabel = new Label
         {
             Text = "Branch:",
             ForeColor = Color.White,
@@ -60,8 +56,8 @@ public class GitControl : UserControl
             ForeColor = Color.Black
         };
         _branchComboBox.SelectedIndexChanged += async (s, e) => await OnBranchSelected();
-        _buttonPanel.Controls.Add(_branchLabel);
-        _buttonPanel.Controls.Add(_branchComboBox);
+        buttonPanel.Controls.Add(branchLabel);
+        buttonPanel.Controls.Add(_branchComboBox);
 
         _statusButton = CreateButton("Status");
         _initButton = CreateButton("Init");
@@ -75,14 +71,23 @@ public class GitControl : UserControl
         _submodulesButton = CreateButton("Submodules");
         _addSubmoduleButton.Width = 140;
 
-        _buttonPanel.Controls.AddRange(new Control[]
-        {
-            _statusButton, _initButton, _addAllButton, _commitButton, _pushButton, _pullButton, _historyButton,
-            _clearLogButton, _addSubmoduleButton, _submodulesButton
-        });
+        // New button order
+        buttonPanel.Controls.Clear();
+        buttonPanel.Controls.Add(_statusButton);
+        buttonPanel.Controls.Add(_initButton);
+        buttonPanel.Controls.Add(branchLabel);
+        buttonPanel.Controls.Add(_branchComboBox);
+        buttonPanel.Controls.Add(_addAllButton);
+        buttonPanel.Controls.Add(_commitButton);
+        buttonPanel.Controls.Add(_pullButton);
+        buttonPanel.Controls.Add(_pushButton);
+        buttonPanel.Controls.Add(_historyButton);
+        buttonPanel.Controls.Add(_submodulesButton);
+        buttonPanel.Controls.Add(_addSubmoduleButton);
+        buttonPanel.Controls.Add(_clearLogButton);
 
         // Commit message
-        _commitMessageLabel = new Label
+        var commitMessageLabel = new Label
         {
             Text = "Commit Message:",
             ForeColor = Color.White,
@@ -91,7 +96,7 @@ public class GitControl : UserControl
             Padding = new Padding(8, 0, 0, 0),
             Height = 24
         };
-        _commitMessageBox = new TextBox
+        var commitMessageBox = new TextBox
         {
             Dock = DockStyle.Top,
             Height = 24,
@@ -113,9 +118,9 @@ public class GitControl : UserControl
 
         // Add controls
         Controls.Add(_logRichTextBox);
-        Controls.Add(_commitMessageBox);
-        Controls.Add(_commitMessageLabel);
-        Controls.Add(_buttonPanel);
+        Controls.Add(commitMessageBox);
+        Controls.Add(commitMessageLabel);
+        Controls.Add(buttonPanel);
 
         // Event handlers
         _statusButton.Click += (s, e) => OnStatusClicked();
