@@ -6,10 +6,10 @@ namespace EasyKit_Gui.Views.Modules;
 public class GitControl : UserControl
 {
     private readonly Button _addAllButton;
+    private readonly ComboBox _branchComboBox;
+    private readonly Label _branchLabel;
     private readonly FlowLayoutPanel _buttonPanel;
     private readonly Button _clearLogButton;
-
-    // Backend binding: run git commands using CmdService (from EasyKit.Services)
     private readonly CmdService _cmdService = new();
     private readonly Button _commitButton;
     private readonly TextBox _commitMessageBox;
@@ -20,6 +20,7 @@ public class GitControl : UserControl
     private readonly Button _pullButton;
     private readonly Button _pushButton;
     private readonly Button _statusButton;
+    private bool _isPopulatingBranches;
 
     public GitControl()
     {
@@ -36,6 +37,29 @@ public class GitControl : UserControl
             BackColor = Color.FromArgb(50, 70, 110),
             AutoSize = true
         };
+
+        // Branch selector
+        _branchLabel = new Label
+        {
+            Text = "Branch:",
+            ForeColor = Color.White,
+            BackColor = Color.Transparent,
+            AutoSize = true,
+            Padding = new Padding(8, 0, 0, 0),
+            Height = 24
+        };
+        _branchComboBox = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 220,
+            Margin = new Padding(8, 0, 8, 0),
+            Font = new Font("Segoe UI", 10F),
+            BackColor = Color.White,
+            ForeColor = Color.Black
+        };
+        _branchComboBox.SelectedIndexChanged += async (s, e) => await OnBranchSelected();
+        _buttonPanel.Controls.Add(_branchLabel);
+        _buttonPanel.Controls.Add(_branchComboBox);
 
         _statusButton = CreateButton("Status");
         _initButton = CreateButton("Init");
@@ -88,7 +112,7 @@ public class GitControl : UserControl
         Controls.Add(_commitMessageLabel);
         Controls.Add(_buttonPanel);
 
-        // Event handlers (to be implemented)
+        // Event handlers
         _statusButton.Click += (s, e) => OnStatusClicked();
         _initButton.Click += (s, e) => OnInitClicked();
         _addAllButton.Click += (s, e) => OnAddAllClicked();
@@ -97,6 +121,117 @@ public class GitControl : UserControl
         _pullButton.Click += (s, e) => OnPullClicked();
         _historyButton.Click += (s, e) => OnHistoryClicked();
         _clearLogButton.Click += (s, e) => OnClearLogClicked();
+
+        // Also repopulate branches after key git actions
+        _statusButton.Click += async (s, e) => await PopulateBranchesAsync();
+        _initButton.Click += async (s, e) => await PopulateBranchesAsync();
+        _commitButton.Click += async (s, e) => await PopulateBranchesAsync();
+        _pushButton.Click += async (s, e) => await PopulateBranchesAsync();
+        _pullButton.Click += async (s, e) => await PopulateBranchesAsync();
+
+        // Populate branches on load
+        Load += async (s, e) => await PopulateBranchesAsync();
+    }
+
+    private async Task PopulateBranchesAsync()
+    {
+        if (_isPopulatingBranches) return;
+        _isPopulatingBranches = true;
+        try
+        {
+            var localBranches = new List<string>();
+            var remoteBranches = new List<string>();
+            string currentBranch = "";
+            await Task.Run(() =>
+            {
+                // Get local branches
+                (string output, string error, int exit) =
+                    _cmdService.RunProcess("git", "branch", Environment.CurrentDirectory);
+                if (!string.IsNullOrWhiteSpace(output))
+                {
+                    var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var line in lines)
+                    {
+                        var branch = line.Trim();
+                        if (branch.StartsWith("*"))
+                        {
+                            currentBranch = branch.Substring(2).Trim();
+                            branch = currentBranch;
+                        }
+
+                        localBranches.Add(branch);
+                    }
+                }
+
+                // Get remote branches
+                (string routput, string rerror, int rexit) =
+                    _cmdService.RunProcess("git", "branch -r", Environment.CurrentDirectory);
+                if (!string.IsNullOrWhiteSpace(routput))
+                {
+                    var lines = routput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var line in lines)
+                    {
+                        var branch = line.Trim();
+                        if (!string.IsNullOrWhiteSpace(branch) && !remoteBranches.Contains(branch))
+                            remoteBranches.Add(branch);
+                    }
+                }
+            });
+            Invoke(() =>
+            {
+                _branchComboBox.Items.Clear();
+                foreach (var b in localBranches)
+                    _branchComboBox.Items.Add(b);
+                if (remoteBranches.Count > 0)
+                {
+                    _branchComboBox.Items.Add("--- Remote ---");
+                    foreach (var b in remoteBranches)
+                        _branchComboBox.Items.Add(b);
+                }
+
+                if (!string.IsNullOrWhiteSpace(currentBranch)) _branchComboBox.SelectedItem = currentBranch;
+            });
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"[Branch] Error: {ex.Message}");
+        }
+        finally
+        {
+            _isPopulatingBranches = false;
+        }
+    }
+
+    private async Task OnBranchSelected()
+    {
+        if (_branchComboBox.SelectedItem == null) return;
+        string selected = _branchComboBox.SelectedItem.ToString();
+        if (string.IsNullOrWhiteSpace(selected) || selected == "--- Remote ---") return;
+        // Only switch if not already on this branch
+        string currentBranch = "";
+        await Task.Run(() =>
+        {
+            (string output, string error, int exit) =
+                _cmdService.RunProcess("git", "branch --show-current", Environment.CurrentDirectory);
+            currentBranch = output?.Trim() ?? "";
+        });
+        if (selected == currentBranch) return;
+        // If remote branch, check out as local tracking branch
+        bool isRemote = selected.Contains("/");
+        string checkoutArg = isRemote ? $"checkout --track {selected}" : $"checkout {selected}";
+        AppendLog($"[Branch] Switching to {selected}...");
+        await Task.Run(() =>
+        {
+            (string output, string error, int exit) =
+                _cmdService.RunProcess("git", checkoutArg, Environment.CurrentDirectory);
+            Invoke(() =>
+            {
+                if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+            });
+        });
+        await PopulateBranchesAsync();
+        AppendLog($"[Branch] Now on {selected}.");
     }
 
     private void OnClearLogClicked()
