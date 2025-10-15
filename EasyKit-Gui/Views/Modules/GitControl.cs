@@ -71,14 +71,14 @@ public class GitControl : UserControl
         _pullButton = CreateButton("Pull");
         _historyButton = CreateButton("History");
         _clearLogButton = CreateButton("Clear Log");
-        _submodulesButton = CreateButton("Submodules");
         _addSubmoduleButton = CreateButton("Add Submodule");
+        _submodulesButton = CreateButton("Submodules");
         _addSubmoduleButton.Width = 140;
 
         _buttonPanel.Controls.AddRange(new Control[]
         {
             _statusButton, _initButton, _addAllButton, _commitButton, _pushButton, _pullButton, _historyButton,
-            _clearLogButton, _submodulesButton, _addSubmoduleButton
+            _clearLogButton, _addSubmoduleButton, _submodulesButton
         });
 
         // Commit message
@@ -126,8 +126,8 @@ public class GitControl : UserControl
         _pullButton.Click += (s, e) => OnPullClicked();
         _historyButton.Click += (s, e) => OnHistoryClicked();
         _clearLogButton.Click += (s, e) => OnClearLogClicked();
-        _submodulesButton.Click += async (s, e) => await OnSubmoduleClicked();
         _addSubmoduleButton.Click += async (s, e) => await OnAddSubmoduleClicked();
+        _submodulesButton.Click += async (s, e) => await OnSubmoduleClicked();
 
         // Also repopulate branches after key git actions
         _statusButton.Click += async (s, e) => await PopulateBranchesAsync();
