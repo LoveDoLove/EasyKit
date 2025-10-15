@@ -207,18 +207,73 @@ public class GitControl : UserControl
 
     private async void OnPullClicked()
     {
-        AppendLog("[Pull] Running...");
+        AppendLog("[Pull] Checking for remote changes...");
+        // Step 1: Fetch remote changes
+        await Task.Run(() => { _cmdService.RunProcess("git", "fetch", Environment.CurrentDirectory); });
+
+        // Step 2: Determine current branch
+        string branch = "";
         await Task.Run(() =>
         {
             (string output, string error, int exit) =
-                _cmdService.RunProcess("git", "pull", Environment.CurrentDirectory);
-            Invoke(() =>
-            {
-                if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
-                if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
-                AppendLog("[Pull] Done.");
-            });
+                _cmdService.RunProcess("git", "rev-parse --abbrev-ref HEAD", Environment.CurrentDirectory);
+            branch = output?.Trim() ?? "";
         });
+        if (string.IsNullOrWhiteSpace(branch))
+        {
+            AppendLog("[Pull] Could not determine current branch.");
+            return;
+        }
+
+        // Step 3: Get incoming changes
+        string changes = "";
+        bool noChanges = false;
+        await Task.Run(() =>
+        {
+            (string output, string error, int exit) = _cmdService.RunProcess(
+                "git",
+                $"log HEAD..origin/{branch} --oneline --color=always",
+                Environment.CurrentDirectory);
+            if (string.IsNullOrWhiteSpace(output))
+            {
+                changes = "No incoming changes detected.";
+                noChanges = true;
+            }
+            else
+            {
+                changes = output;
+                noChanges = false;
+            }
+        });
+
+        // Step 4: Show confirmation dialog
+        var dialog = new PullConfirmationDialog();
+        dialog.SetChangesText(changes);
+        dialog.SetNoChangesMode(noChanges);
+        var result = dialog.ShowDialog();
+        if (!noChanges && dialog.Confirmed)
+        {
+            AppendLog("[Pull] Running...");
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) =
+                    _cmdService.RunProcess("git", "pull", Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+                    AppendLog("[Pull] Done.");
+                });
+            });
+        }
+        else if (noChanges)
+        {
+            AppendLog("[Pull] No incoming changes.");
+        }
+        else
+        {
+            AppendLog("[Pull] Cancelled by user.");
+        }
     }
 
     private async void OnHistoryClicked()
