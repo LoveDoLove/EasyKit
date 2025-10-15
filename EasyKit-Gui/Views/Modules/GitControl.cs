@@ -153,17 +153,60 @@ public class GitControl : UserControl
 
     private async void OnAddAllClicked()
     {
-        AppendLog("[Add All] Running...");
+        AppendLog("[Add All] Checking for changes...");
+        // Step 1: Get list of changed/untracked files
+        string[] files = Array.Empty<string>();
         await Task.Run(() =>
         {
             (string output, string error, int exit) =
-                _cmdService.RunProcess("git", "add .", Environment.CurrentDirectory);
-            Invoke(() =>
+                _cmdService.RunProcess("git", "status --porcelain", Environment.CurrentDirectory);
+            if (!string.IsNullOrWhiteSpace(output))
             {
-                if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
-                AppendLog("[Add All] Done.");
-            });
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var fileList = new List<string>();
+                foreach (var line in lines)
+                {
+                    // Format: XY filename
+                    var trimmed = line.Length > 3 ? line.Substring(3).Trim() : null;
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                        fileList.Add(trimmed);
+                }
+
+                files = fileList.ToArray();
+            }
         });
+
+        if (files.Length == 0)
+        {
+            AppendLog("[Add All] No changes to add.");
+            return;
+        }
+
+        // Step 2: Show dialog for file selection
+        var dialog = new AddFilesDialog(files);
+        var result = dialog.ShowDialog();
+        if (dialog.Confirmed && dialog.SelectedFiles.Count > 0)
+        {
+            AppendLog($"[Add All] Adding {dialog.SelectedFiles.Count} file(s)...");
+            await Task.Run(() =>
+            {
+                // Add only selected files
+                string args = "add --";
+                foreach (var file in dialog.SelectedFiles)
+                    args += " \"" + file.Replace("\"", "'") + "\"";
+                (string output, string error, int exit) =
+                    _cmdService.RunProcess("git", args, Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    AppendLog("[Add All] Done.");
+                });
+            });
+        }
+        else
+        {
+            AppendLog("[Add All] Cancelled by user.");
+        }
     }
 
     private async void OnCommitClicked()
