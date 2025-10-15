@@ -40,4 +40,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities\CommonUtilities.csproj" />
+    <ProjectReference Include="..\EasyKit\EasyKit.csproj" />
+  </ItemGroup>
+
 </Project>
