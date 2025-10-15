@@ -143,6 +143,16 @@ public sealed class GitControl : UserControl
 
         // Populate branches on load
         Load += async (s, e) => await PopulateBranchesAsync();
+
+        // Auto-set working directory to git root
+        Environment.CurrentDirectory = FindGitRoot(Environment.CurrentDirectory);
+    }
+
+    private static string FindGitRoot(string startDir)
+    {
+        var dir = new DirectoryInfo(startDir);
+        while (dir != null && !Directory.Exists(Path.Combine(dir.FullName, ".git"))) dir = dir.Parent;
+        return dir?.FullName ?? startDir;
     }
 
     private async Task OnSubmoduleClicked()
