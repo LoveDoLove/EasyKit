@@ -211,25 +211,61 @@ public class GitControl : UserControl
 
     private async void OnCommitClicked()
     {
-        string msg = _commitMessageBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(msg))
-        {
-            AppendLog("[Commit] Commit message required.");
-            return;
-        }
-
-        AppendLog($"[Commit] Running: {msg}");
+        // Step 1: Get staged files
+        string[] stagedFiles = Array.Empty<string>();
         await Task.Run(() =>
         {
             (string output, string error, int exit) =
-                _cmdService.RunProcess("git", $"commit -m \"{msg.Replace("\"", "'")}\"", Environment.CurrentDirectory);
-            Invoke(() =>
+                _cmdService.RunProcess("git", "diff --cached --name-status", Environment.CurrentDirectory);
+            if (!string.IsNullOrWhiteSpace(output))
             {
-                if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
-                if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
-                AppendLog("[Commit] Done.");
-            });
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var fileList = new List<string>();
+                foreach (var line in lines)
+                {
+                    // Format: XY filename
+                    var trimmed = line.Length > 2 ? line.Substring(2).Trim() : null;
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                        fileList.Add(trimmed);
+                }
+                stagedFiles = fileList.ToArray();
+            }
         });
+
+        if (stagedFiles.Length == 0)
+        {
+            AppendLog("[Commit] No staged files to commit.");
+            return;
+        }
+
+        // Step 2: Show commit dialog
+        var dialog = new CommitDialog(stagedFiles);
+        var result = dialog.ShowDialog();
+        if (dialog.Confirmed && !string.IsNullOrWhiteSpace(dialog.CommitTitle))
+        {
+            string title = dialog.CommitTitle.Replace("\"", "'");
+            string message = dialog.CommitMessage.Replace("\"", "'");
+            AppendLog($"[Commit] Running: {title}");
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) =
+                    _cmdService.RunProcess("git", $"commit -m \"{title}\" -m \"{message}\"", Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+                    AppendLog("[Commit] Done.");
+                });
+            });
+        }
+        else if (dialog.Confirmed && string.IsNullOrWhiteSpace(dialog.CommitTitle))
+        {
+            AppendLog("[Commit] Commit title required.");
+        }
+        else
+        {
+            AppendLog("[Commit] Cancelled by user.");
+        }
     }
 
     private async void OnPushClicked()
