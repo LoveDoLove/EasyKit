@@ -6,6 +6,7 @@ namespace EasyKit_Gui.Views.Modules;
 public class GitControl : UserControl
 {
     private readonly Button _addAllButton;
+    private readonly Button _addSubmoduleButton;
     private readonly ComboBox _branchComboBox;
     private readonly Label _branchLabel;
     private readonly FlowLayoutPanel _buttonPanel;
@@ -71,11 +72,13 @@ public class GitControl : UserControl
         _historyButton = CreateButton("History");
         _clearLogButton = CreateButton("Clear Log");
         _submodulesButton = CreateButton("Submodules");
+        _addSubmoduleButton = CreateButton("Add Submodule");
+        _addSubmoduleButton.Width = 140;
 
         _buttonPanel.Controls.AddRange(new Control[]
         {
             _statusButton, _initButton, _addAllButton, _commitButton, _pushButton, _pullButton, _historyButton,
-            _clearLogButton, _submodulesButton
+            _clearLogButton, _submodulesButton, _addSubmoduleButton
         });
 
         // Commit message
@@ -124,7 +127,7 @@ public class GitControl : UserControl
         _historyButton.Click += (s, e) => OnHistoryClicked();
         _clearLogButton.Click += (s, e) => OnClearLogClicked();
         _submodulesButton.Click += async (s, e) => await OnSubmoduleClicked();
-
+        _addSubmoduleButton.Click += async (s, e) => await OnAddSubmoduleClicked();
 
         // Also repopulate branches after key git actions
         _statusButton.Click += async (s, e) => await PopulateBranchesAsync();
@@ -170,7 +173,32 @@ public class GitControl : UserControl
         using var dialog = new SubmoduleDialog(submodules, statusText);
         var result = dialog.ShowDialog();
         if (result != DialogResult.OK) return;
-        if (dialog.UpdateSelected && dialog.SelectedSubmodule != null)
+        if (dialog.AddSubmodule)
+        {
+            string url = dialog.SubmoduleUrl;
+            string path = dialog.SubmodulePath;
+            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(path))
+            {
+                AppendLog("[Submodules] URL and path are required to add a submodule.");
+                return;
+            }
+
+            AppendLog($"[Submodules] Adding submodule: URL='{url}', Path='{path}'...");
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) = _cmdService.RunProcess(
+                    "git", $"submodule add {url} {path}", Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+                    AppendLog("[Submodules] Add submodule done.");
+                });
+            });
+            // Optionally, refresh submodule list or status
+            await OnSubmoduleClicked();
+        }
+        else if (dialog.UpdateSelected && dialog.SelectedSubmodule != null)
         {
             AppendLog($"[Submodules] Updating '{dialog.SelectedSubmodule}' from remote...");
             await Task.Run(() =>
@@ -760,5 +788,56 @@ public class GitControl : UserControl
     private void AppendLog(string message)
     {
         AnsiColorParser.AppendAnsiText(_logRichTextBox, $"{DateTime.Now:HH:mm:ss} {message}{Environment.NewLine}");
+    }
+
+    private async Task OnAddSubmoduleClicked()
+    {
+        // Show a simple dialog for URL and path
+        using var dialog = new Form
+        {
+            Text = "Add Submodule", Size = new Size(420, 220), FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false, MinimizeBox = false, StartPosition = FormStartPosition.CenterParent
+        };
+        var urlLabel = new Label { Text = "Repository URL:", AutoSize = true, Top = 20, Left = 20 };
+        var urlBox = new TextBox { Width = 320, Top = 40, Left = 20 };
+        try
+        {
+            urlBox.PlaceholderText = "e.g. https://github.com/owner/repo.git";
+        }
+        catch
+        {
+        }
+
+        var pathLabel = new Label { Text = "Destination Path:", AutoSize = true, Top = 70, Left = 20 };
+        var pathBox = new TextBox { Width = 320, Top = 90, Left = 20 };
+        var okBtn = new Button { Text = "Add", DialogResult = DialogResult.OK, Top = 130, Left = 20, Width = 80 };
+        var cancelBtn = new Button
+            { Text = "Cancel", DialogResult = DialogResult.Cancel, Top = 130, Left = 120, Width = 80 };
+        dialog.Controls.AddRange(new Control[] { urlLabel, urlBox, pathLabel, pathBox, okBtn, cancelBtn });
+        dialog.AcceptButton = okBtn;
+        dialog.CancelButton = cancelBtn;
+        if (dialog.ShowDialog() == DialogResult.OK)
+        {
+            string url = urlBox.Text.Trim();
+            string path = pathBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(path))
+            {
+                AppendLog("[Submodules] URL and path are required to add a submodule.");
+                return;
+            }
+
+            AppendLog($"[Submodules] Adding submodule: URL='{url}', Path='{path}'...");
+            await Task.Run(() =>
+            {
+                (string output, string error, int exit) = _cmdService.RunProcess(
+                    "git", $"submodule add {url} {path}", Environment.CurrentDirectory);
+                Invoke(() =>
+                {
+                    if (!string.IsNullOrWhiteSpace(error)) AppendLog($"[Error] {error.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(output)) AppendLog(output.Trim());
+                    AppendLog("[Submodules] Add submodule done.");
+                });
+            });
+        }
     }
 }
