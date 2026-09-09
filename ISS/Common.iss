@@ -19,13 +19,13 @@
 #define MyDefaultDir "{commonpf64}\EasyKit"
 #endif
 #ifndef MyRegFile
-#define MyRegFile "{src}\ContextMenu-win-x64.reg"
+#define MyRegFile "{#MySourcePath}\ContextMenu-win-x64.reg"
 #endif
 #ifndef MyRegFileName
 #define MyRegFileName "ContextMenu-win-x64.reg"
 #endif
 #ifndef MyPublishFolder
-#define MyPublishFolder "{src}\..\publish\win-x64\"
+#define MyPublishFolder "{#MySourcePath}\..\publish\win-x64\"
 #endif
 
 [Setup]
@@ -39,11 +39,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={#MyDefaultDir}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
-LicenseFile={src}\..\LICENSE
+LicenseFile={#MySourcePath}\..\LICENSE
 OutputBaseFilename=EasyKit-{#MyAppVersion}-{#MyArch}
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile={src}\..\images\icon.ico
+SetupIconFile={#MySourcePath}\..\images\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

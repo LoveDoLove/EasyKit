@@ -122,6 +122,75 @@ jobs:
           choco install innosetup -y --no-progress
           Write-Output "Inno Setup installed"
 
+      - name: Preflight validation
+        run: |
+          $workspace = $env:GITHUB_WORKSPACE
+          $issDir = Join-Path $workspace "ISS"
+          $errors = @()
+
+          Write-Output "Validating required files..."
+
+          # Check ISS scripts exist
+          $requiredIss = @("Common.iss", "Release-win-x64.iss", "Release-win-x86.iss", "ContextMenu-win-x64.reg", "ContextMenu-win-x86.reg")
+          foreach ($file in $requiredIss) {
+            $path = Join-Path $issDir $file
+            if (-not (Test-Path $path)) {
+              $errors += "Missing ISS file: $path"
+            } else {
+              Write-Output "  OK: $file"
+            }
+          }
+
+          # Check LICENSE
+          $licensePath = Join-Path $workspace "LICENSE"
+          if (-not (Test-Path $licensePath)) {
+            $errors += "Missing LICENSE file: $licensePath"
+          } else {
+            Write-Output "  OK: LICENSE"
+          }
+
+          # Check icon
+          $iconPath = Join-Path $workspace "images\icon.ico"
+          if (-not (Test-Path $iconPath)) {
+            $errors += "Missing icon file: $iconPath"
+          } else {
+            Write-Output "  OK: images\icon.ico"
+          }
+
+          # Check publish outputs
+          foreach ($arch in @("x64", "x86")) {
+            $pubPath = Join-Path $workspace "publish\win-$arch"
+            if (-not (Test-Path $pubPath)) {
+              $errors += "Missing publish output: $pubPath"
+            } else {
+              Write-Output "  OK: publish\win-$arch"
+              $exePath = Join-Path $pubPath "EasyKit.exe"
+              if (-not (Test-Path $exePath)) {
+                $errors += "Missing EasyKit.exe in $pubPath"
+              }
+            }
+          }
+
+          # Check ISCC.exe
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $errors += "Inno Setup not found at: $iscc"
+          } else {
+            Write-Output "  OK: ISCC.exe"
+          }
+
+          if ($errors.Count -gt 0) {
+            Write-Output ""
+            Write-Output "VALIDATION FAILED:"
+            foreach ($err in $errors) {
+              Write-Output "  - $err"
+            }
+            throw "Preflight validation failed with $($errors.Count) error(s)"
+          }
+
+          Write-Output ""
+          Write-Output "All preflight checks passed."
+
       - name: Compile x64 installer
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
