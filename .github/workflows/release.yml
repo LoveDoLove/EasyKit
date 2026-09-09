@@ -233,10 +233,10 @@ jobs:
           $appVersion = $version.TrimStart('v')
           $x64Installer = "EasyKit-${appVersion}-x64.exe"
           $x86Installer = "EasyKit-${appVersion}-x86.exe"
-          $issDir = Join-Path $env:GITHUB_WORKSPACE "ISS"
+          $issOutputDir = Join-Path $env:GITHUB_WORKSPACE "ISS\Output"
 
-          Write-Output "Checking for installers in ISS directory..."
-          Push-Location $issDir
+          Write-Output "Checking for installers in ISS\Output directory..."
+          Push-Location $issOutputDir
           try {
             Get-ChildItem EasyKit-*.exe | Select-Object Name, @{Name='SizeMB';Expression={[math]::Round($_.Length/1MB, 2)}}
 
