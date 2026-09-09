@@ -4,23 +4,34 @@
 #define MyAppName "EasyKit"
 #endif
 #ifndef MyAppVersion
-#define MyAppVersion "4.2.1"
+#define MyAppVersion "4.2.2"
 #endif
 #ifndef MyAppPublisher
 #define MyAppPublisher "LoveDoLove"
 #endif
 #ifndef MyAppURL
-#define MyAppURL "https://lovedolove.hidns.co/"
+#define MyAppURL "https://github.com/LoveDoLove/EasyKit"
 #endif
 #ifndef MyAppExeName
 #define MyAppExeName "EasyKit.exe"
+#endif
+#ifndef MyDefaultDir
+#define MyDefaultDir "{commonpf64}\EasyKit"
+#endif
+#ifndef MyRegFile
+#define MyRegFile "{src}\ContextMenu-win-x64.reg"
+#endif
+#ifndef MyRegFileName
+#define MyRegFileName "ContextMenu-win-x64.reg"
+#endif
+#ifndef MyPublishFolder
+#define MyPublishFolder "{src}\..\publish\win-x64\"
 #endif
 
 [Setup]
 AppId={{434B4C62-695E-4C3C-889C-1F745FB22A8C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-;AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
@@ -28,12 +39,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={#MyDefaultDir}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
-LicenseFile=D:\Projects\CSharpProjects\EasyKit\LICENSE
-;PrivilegesRequired=lowest
+LicenseFile={src}\LICENSE
 OutputBaseFilename=EasyKit-{#MyAppVersion}-{#MyArch}
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=D:\Projects\CSharpProjects\EasyKit\images\icon.ico
+SetupIconFile={src}\images\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

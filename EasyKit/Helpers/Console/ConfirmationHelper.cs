@@ -45,7 +45,7 @@ public class ConfirmationHelper
     /// <summary>
     ///     Prompts the user for a yes/no confirmation.
     /// </summary>
-    private bool ConfirmYesNo(string message, bool defaultYes = true)
+    public bool ConfirmYesNo(string message, bool defaultYes = true)
     {
         System.Console.Write($"{message} [{(defaultYes ? "Y/n" : "y/N")}]: ");
         var input = System.Console.ReadLine();

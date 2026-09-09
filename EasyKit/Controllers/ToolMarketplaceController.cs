@@ -33,6 +33,7 @@ public class ToolMarketplaceController
     {
         new ToolInfo("Node.js", "node", "https://nodejs.org/", "--version"),
         new ToolInfo("npm", "npm", "https://nodejs.org/", "--version"),
+        new ToolInfo("pnpm", "pnpm", "https://pnpm.io/installation", "--version"),
         new ToolInfo("PHP", "php", "https://www.php.net/downloads", "--version"),
         new ToolInfo("Composer", "composer", "https://getcomposer.org/download/", "--version"),
         new ToolInfo("Git", "git", "https://git-scm.com/downloads", "--version")

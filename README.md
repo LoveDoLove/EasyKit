@@ -62,13 +62,18 @@ EasyKit is a comprehensive Windows toolkit designed specifically for web develop
 Key features include:
 
 - **Unified Interface**: Single console application for all your development tools
-- **Git Integration**: Complete Git workflow management
+- **Git Integration**: Complete Git workflow management with secure command execution
 - **NPM Support**: Node.js package management
+- **pnpm Support**: First-class pnpm support with workspace/monorepo detection
+- **uv Support**: Python package/project/tool management (new!)
 - **Composer Integration**: PHP dependency management
 - **Laravel Tools**: Artisan command execution
 - **Tool Marketplace**: Detect and install missing development tools
+- **EasyKit Doctor**: Comprehensive environment diagnostics (new!)
+- **Project Detection**: Automatic detection of project types (Git, Node.js, pnpm, Python, uv, PHP, .NET, Docker)
 - **Windows Optimized**: Designed specifically for Windows 10/11
 - **Modern .NET**: Built with .NET 8.0 for performance and reliability
+- **Security**: Secure process execution with shell injection prevention
 - **Context Menu Support**: Quick access from Windows Explorer
 - **Colorized Output**: Enhanced console experience with notifications
 
@@ -126,12 +131,33 @@ Before running EasyKit, ensure you have the following installed:
 
 After installation, simply run EasyKit from your Start menu or by executing the installed application. The console interface will present you with a menu of available tools:
 
-- **Git Controller**: Manage Git repositories, commits, branches, and more
-- **NPM Controller**: Handle Node.js package management
-- **Composer Controller**: Manage PHP dependencies
-- **Laravel Controller**: Execute Laravel Artisan commands
-- **Tool Marketplace**: Detect and install missing development tools
-- **Settings**: Configure EasyKit preferences
+| Key | Feature | Description |
+|-----|---------|-------------|
+| 1 | Git Tools | Complete Git workflow management |
+| 2 | NPM Tools | Node.js package management |
+| 3 | pnpm Tools | pnpm package management with workspace support |
+| 4 | Composer Tools | PHP dependency management |
+| 5 | Laravel Tools | Laravel Artisan command execution |
+| 6 | uv Tools | Python package/project/tool management |
+| 7 | Settings | Application settings |
+| 8 | Diagnostics | EasyKit Doctor - Environment diagnostics |
+| T | Tool Marketplace | Detect and manage development tools |
+| Q | Quit | Exit application |
+
+### Project Detection
+
+EasyKit automatically detects your project type based on the following files:
+
+- `.git/` → Git repository
+- `package.json` → Node.js project
+- `pnpm-lock.yaml` / `pnpm-workspace.yaml` → pnpm project
+- `pyproject.toml` / `uv.lock` → Python/uv project
+- `composer.json` → PHP/Composer project
+- `artisan` → Laravel project
+- `*.csproj` → .NET project
+- `Dockerfile` / `docker-compose*.yml` → Docker project
+
+The current project type is displayed in the main menu.
 
 Navigate through the menu using your keyboard to access the various development tools integrated into EasyKit.
 
@@ -146,7 +172,24 @@ EasyKit has evolved significantly since its inception:
 - **v3.x Series**: Pure Python implementation with Windows focus
 - **v4.0.6**: Major transition to .NET framework
 - **v4.1.x Series**: Enhanced .NET implementation with improved performance
-- **Current v4.1.8**: Latest stable release with bug fixes and optimizations
+- **Current v4.2.2**: Latest stable release with security fixes, pnpm/uv support, Doctor diagnostics, and project detection
+
+### Recent Additions (v4.2.2)
+
+- ✅ pnpm first-class support with workspace detection
+- ✅ uv Python package manager support
+- ✅ EasyKit Doctor diagnostic tool
+- ✅ Automatic project type detection
+- ✅ Secure process execution (shell injection prevention)
+- ✅ Comprehensive unit tests
+
+### Future Plans
+
+- [ ] Improve UI/UX with project-aware menus
+- [ ] Add more Git features
+- [ ] Add Docker support
+- [ ] Add integration tests
+- [ ] Add CI/CD pipeline
 
 See the [open issues](https://github.com/LoveDoLove/EasyKit/issues) for a full list of proposed features and known issues.
 

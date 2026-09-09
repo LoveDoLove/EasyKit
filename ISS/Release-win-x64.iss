@@ -2,16 +2,20 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "EasyKit"
-#define MyAppVersion "4.2.1"
-#define MyAppPublisher "LoveDoLove, Inc."
-#define MyAppURL "https://lovedolove.hidns.co/"
+#define MyAppVersion "4.2.2"
+#define MyAppPublisher "LoveDoLove"
+#define MyAppURL "https://github.com/LoveDoLove/EasyKit"
 #define MyAppExeName "EasyKit.exe"
 
 ; x64 Release Inno Setup Script
 #define MyArch "x64"
-#define MyDefaultDir "{commonpf64}\\EasyKit"
-#define MyRegFile "D:\\Projects\\CSharpProjects\\EasyKit\\ISS\\ContextMenu-win-x64.reg"
+#define MyDefaultDir "{commonpf64}\EasyKit"
+#define MyRegFile "{#MySourcePath}\ContextMenu-win-x64.reg"
 #define MyRegFileName "ContextMenu-win-x64.reg"
-#define MyPublishFolder "D:\\Projects\\CSharpProjects\\EasyKit\\EasyKit\\bin\\Release\\net8.0\\publish\\win-x64\\"
+#define MyPublishFolder "{#MySourcePath}\..\publish\win-x64\"
 
-#include "Common.iss"
+#ifdef MySourcePath
+  #include "Common.iss"
+#else
+  #error "MySourcePath must be defined"
+#endif

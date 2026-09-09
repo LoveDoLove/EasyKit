@@ -409,3 +409,4 @@ generate_mcp_yaml.py
 BLANK_README.md
 website/.vitepress/cache
 website/.vitepress/dist
+/.agent-teams

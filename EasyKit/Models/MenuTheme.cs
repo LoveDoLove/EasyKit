@@ -51,6 +51,11 @@ public static class MenuTheme
             help) Purple =
                 (ConsoleColor.DarkMagenta, ConsoleColor.Magenta, ConsoleColor.Yellow, ConsoleColor.White,
                     ConsoleColor.DarkGray);
+
+        public static (ConsoleColor border, ConsoleColor highlight, ConsoleColor title, ConsoleColor text, ConsoleColor
+            help) Teal =
+                (ConsoleColor.DarkCyan, ConsoleColor.Cyan, ConsoleColor.Yellow, ConsoleColor.White,
+                    ConsoleColor.DarkGray);
     }
 
     // Predefined border styles

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,8 +16,8 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/LoveDoLove/EasyKit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <AssemblyVersion>4.2.1</AssemblyVersion>
-    <FileVersion>4.2.1</FileVersion>
+    <AssemblyVersion>4.2.2</AssemblyVersion>
+    <FileVersion>4.2.2</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
@@ -47,7 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CommonUtilities\CommonUtilities\CommonUtilities.csproj" />
+    <PackageReference Include="LoveDoLove.CommonUtilities" Version="2.0.2" />
   </ItemGroup>
 
 </Project>
