@@ -39,11 +39,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={#MyDefaultDir}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
-LicenseFile={src}\LICENSE
+LicenseFile={src}\..\LICENSE
 OutputBaseFilename=EasyKit-{#MyAppVersion}-{#MyArch}
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile={src}\images\icon.ico
+SetupIconFile={src}\..\images\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
