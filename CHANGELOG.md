@@ -5,6 +5,17 @@ All notable changes to EasyKit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.3] - 2025-09-09
+
+### Changed
+- Added GitHub Actions CI/CD workflow for automated releases
+- Added Inno Setup installer packaging (x64/x86)
+- Fixed nuget.config to use official NuGet.org feed
+
+### Added
+- Release workflow with NuGet caching
+- Project Memory structure (AGENTS.md + 25 docs)
+
 ## [4.2.2] - 2025-09-09
 
 ### Added

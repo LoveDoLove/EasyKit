@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "EasyKit"
-#define MyAppVersion "4.2.2"
+#define MyAppVersion "4.2.3"
 #define MyAppPublisher "LoveDoLove"
 #define MyAppURL "https://github.com/LoveDoLove/EasyKit"
 #define MyAppExeName "EasyKit.exe"
