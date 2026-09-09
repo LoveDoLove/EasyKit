@@ -198,10 +198,11 @@ jobs:
             throw "Inno Setup not found at $iscc"
           }
           $version = "${{ steps.version.outputs.version }}"
-          Push-Location $env:GITHUB_WORKSPACE\ISS
+          $mySrc = Join-Path $env:GITHUB_WORKSPACE "ISS"
+          Push-Location $mySrc
           try {
-            Write-Output "Compiling x64 installer from ISS directory with MyAppVersion=$version"
-            & $iscc /DMyAppVersion=$version Release-win-x64.iss
+            Write-Output "Compiling x64 installer from ISS directory with MyAppVersion=$version, MySrc=$mySrc"
+            & $iscc "/DMyAppVersion=$version" "/DMySrc=$mySrc" Release-win-x64.iss
             if ($LASTEXITCODE -ne 0) {
               throw "x64 installer compilation failed"
             }
@@ -213,10 +214,11 @@ jobs:
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           $version = "${{ steps.version.outputs.version }}"
-          Push-Location $env:GITHUB_WORKSPACE\ISS
+          $mySrc = Join-Path $env:GITHUB_WORKSPACE "ISS"
+          Push-Location $mySrc
           try {
-            Write-Output "Compiling x86 installer from ISS directory with MyAppVersion=$version"
-            & $iscc /DMyAppVersion=$version Release-win-x86.iss
+            Write-Output "Compiling x86 installer from ISS directory with MyAppVersion=$version, MySrc=$mySrc"
+            & $iscc "/DMyAppVersion=$version" "/DMySrc=$mySrc" Release-win-x86.iss
             if ($LASTEXITCODE -ne 0) {
               throw "x86 installer compilation failed"
             }

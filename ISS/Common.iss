@@ -21,6 +21,9 @@
 #ifndef MyArch
 #define MyArch "x64"
 #endif
+#ifndef MySrc
+#define MySrc {src}
+#endif
 
 [Setup]
 AppId={{434B4C62-695E-4C3C-889C-1F745FB22A8C}
@@ -33,11 +36,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={#MyDefaultDir}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
-LicenseFile={src}\..\LICENSE
+LicenseFile={#MySrc}\..\LICENSE
 OutputBaseFilename=EasyKit-{#MyAppVersion}-{#MyArch}
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile={src}\..\images\icon.ico
+SetupIconFile={#MySrc}\..\images\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
