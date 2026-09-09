@@ -231,17 +231,23 @@ jobs:
           $version = "${{ steps.version.outputs.version }}"
           $x64Installer = "EasyKit-${version}-x64.exe"
           $x86Installer = "EasyKit-${version}-x86.exe"
+          $issDir = Join-Path $env:GITHUB_WORKSPACE "ISS"
 
-          Write-Output "Checking for installers..."
-          Get-ChildItem EasyKit-*.exe | Select-Object Name, @{Name='SizeMB';Expression={[math]::Round($_.Length/1MB, 2)}}
+          Write-Output "Checking for installers in ISS directory..."
+          Push-Location $issDir
+          try {
+            Get-ChildItem EasyKit-*.exe | Select-Object Name, @{Name='SizeMB';Expression={[math]::Round($_.Length/1MB, 2)}}
 
-          if (-not (Test-Path $x64Installer)) {
-            throw "x64 installer not found: $x64Installer"
+            if (-not (Test-Path $x64Installer)) {
+              throw "x64 installer not found: $x64Installer"
+            }
+            if (-not (Test-Path $x86Installer)) {
+              throw "x86 installer not found: $x86Installer"
+            }
+            Write-Output "Both installers verified successfully"
+          } finally {
+            Pop-Location
           }
-          if (-not (Test-Path $x86Installer)) {
-            throw "x86 installer not found: $x86Installer"
-          }
-          Write-Output "Both installers verified successfully"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
