@@ -172,9 +172,9 @@ EasyKit has evolved significantly since its inception:
 - **v3.x Series**: Pure Python implementation with Windows focus
 - **v4.0.6**: Major transition to .NET framework
 - **v4.1.x Series**: Enhanced .NET implementation with improved performance
-- **Current v4.2.1**: Latest stable release with security fixes, pnpm/uv support, and project detection
+- **Current v4.2.2**: Latest stable release with security fixes, pnpm/uv support, Doctor diagnostics, and project detection
 
-### Recent Additions (v4.2.1)
+### Recent Additions (v4.2.2)
 
 - ✅ pnpm first-class support with workspace detection
 - ✅ uv Python package manager support

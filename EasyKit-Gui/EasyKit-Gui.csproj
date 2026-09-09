@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,8 +9,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <FileVersion>4.2.1</FileVersion>
-    <AssemblyVersion>4.2.1</AssemblyVersion>
+    <FileVersion>4.2.2</FileVersion>
+    <AssemblyVersion>4.2.2</AssemblyVersion>
     <RepositoryUrl>https://github.com/LoveDoLove/EasyKit</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.jpg</PackageIcon>

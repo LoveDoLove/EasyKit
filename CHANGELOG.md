@@ -5,6 +5,27 @@ All notable changes to EasyKit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.2] - 2025-09-09
+
+### Added
+- EasyKit Doctor - Environment diagnostics tool (option 8)
+- Project type detection - Auto-detects Git, Node.js, pnpm, Python, uv, PHP, .NET, Docker
+- uv support - Full Python package/project management (option 6)
+- SecureProcessRunner - Shell injection prevention with argument arrays
+- Windows executable resolution (.exe, .cmd, .bat, .ps1)
+- pnpm add/remove/exec/dlx commands
+- 48 unit tests for security and project detection
+
+### Changed
+- Migrated all controllers to SecureProcessRunner
+- Improved tool detection reliability
+- Enhanced error messages
+
+### Fixed
+- Fixed 9 critical command injection vulnerabilities
+- Fixed Doctor crash on missing tools
+- Fixed corepack whitelist issue
+
 ## [Unreleased]
 
 ### Added
