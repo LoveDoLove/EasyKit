@@ -267,7 +267,7 @@ jobs:
           prerelease: ${{ github.event.inputs.release_type == 'prerelease' }}
           generate_release_notes: true
           files: |
-            EasyKit-${{ steps.app_version.outputs.app_version }}-x64.exe
-            EasyKit-${{ steps.app_version.outputs.app_version }}-x86.exe
+            ISS/Output/EasyKit-${{ steps.app_version.outputs.app_version }}-x64.exe
+            ISS/Output/EasyKit-${{ steps.app_version.outputs.app_version }}-x86.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
