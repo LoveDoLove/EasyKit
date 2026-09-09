@@ -229,8 +229,10 @@ jobs:
       - name: Verify installers
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          $x64Installer = "EasyKit-${version}-x64.exe"
-          $x86Installer = "EasyKit-${version}-x86.exe"
+          # Inno Setup strips the 'v' prefix from version numbers
+          $appVersion = $version.TrimStart('v')
+          $x64Installer = "EasyKit-${appVersion}-x64.exe"
+          $x86Installer = "EasyKit-${appVersion}-x86.exe"
           $issDir = Join-Path $env:GITHUB_WORKSPACE "ISS"
 
           Write-Output "Checking for installers in ISS directory..."
