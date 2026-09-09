@@ -48,8 +48,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 
 [Files]
-Source: "{src}\ContextMenu-win-{#MyArch}.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
-Source: "{src}\..\publish\win-{#MyArch}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MySrc}\ContextMenu-win-{#MyArch}.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
+Source: "{#MySrc}\..\publish\win-{#MyArch}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
