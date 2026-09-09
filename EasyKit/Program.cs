@@ -1,4 +1,4 @@
-﻿// MIT License
+// MIT License
 // 
 // Copyright (c) 2025 LoveDoLove
 // 
@@ -46,6 +46,9 @@ internal class Program
     private static readonly NpmController NpmController =
         new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
+    private static readonly PnpmController PnpmController =
+        new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
+
     private static readonly LaravelController LaravelController =
         new(Software, ConsoleService, ConfirmationService, PromptView, NotificationView);
 
@@ -59,6 +62,14 @@ internal class Program
 
     private static readonly ToolMarketplaceController ToolMarketplaceController =
         new(new CmdService(), ConsoleService);
+
+    private static readonly ProjectDetector ProjectDetector = new();
+
+    private static readonly UvController UvController =
+        new(ConsoleService, ConfirmationService, PromptView, NotificationView, ProjectDetector);
+
+    private static readonly DoctorController DoctorController =
+        new(ConsoleService, ProjectDetector);
 
     private static void Main(string[] args)
     {
@@ -160,16 +171,27 @@ internal class Program
             string version = Config.Get("version", "1.0")?.ToString() ?? "1.0";
 
             // Use MenuView from CommonUtilities to show the main menu
+            // Detect project type for dynamic menu
+            var detection = ProjectDetector.Detect(Environment.CurrentDirectory);
+            var projectTypeDisplay = string.Join(" + ", detection.Types.Select(t => t.ToString()).ToArray());
+            var projectInfo = string.IsNullOrEmpty(projectTypeDisplay)
+                ? "None detected"
+                : projectTypeDisplay;
+
             MenuView.ShowMenu("EasyKit Main Menu v" + version, new[]
             {
                 "0. Exit",
                 "1. Git Tools",
                 "2. NPM Tools",
-                "3. Composer Tools",
-                "4. Laravel Tools",
-                "5. Settings"
+                "3. pnpm Tools",
+                "4. Composer Tools",
+                "5. Laravel Tools",
+                "6. uv Tools",
+                "7. Settings",
+                "8. Diagnostics (Doctor)"
             });
 
+            Console.WriteLine($"Project: {projectInfo}");
             Console.WriteLine("[T] Tool Marketplace");
             Console.WriteLine("[Q] Quit");
             var key = Console.ReadKey(true).Key;
@@ -189,13 +211,22 @@ internal class Program
                     NpmController.ShowMenu();
                     break;
                 case ConsoleKey.D3:
-                    ComposerController.ShowMenu();
+                    PnpmController.ShowMenu();
                     break;
                 case ConsoleKey.D4:
-                    LaravelController.ShowMenu();
+                    ComposerController.ShowMenu();
                     break;
                 case ConsoleKey.D5:
+                    LaravelController.ShowMenu();
+                    break;
+                case ConsoleKey.D6:
+                    UvController.ShowMenu();
+                    break;
+                case ConsoleKey.D7:
                     SettingsController.ShowMenu();
+                    break;
+                case ConsoleKey.D8:
+                    DoctorController.Run();
                     break;
             }
         }
