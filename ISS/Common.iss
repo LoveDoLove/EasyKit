@@ -18,14 +18,8 @@
 #ifndef MyDefaultDir
 #define MyDefaultDir "{commonpf64}\EasyKit"
 #endif
-#ifndef MyRegFile
-#define MyRegFile "{#MySourcePath}\ContextMenu-win-x64.reg"
-#endif
-#ifndef MyRegFileName
-#define MyRegFileName "ContextMenu-win-x64.reg"
-#endif
-#ifndef MyPublishFolder
-#define MyPublishFolder "{#MySourcePath}\..\publish\win-x64\"
+#ifndef MyArch
+#define MyArch "x64"
 #endif
 
 [Setup]
@@ -39,11 +33,11 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={#MyDefaultDir}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 DisableProgramGroupPage=yes
-LicenseFile={#MySourcePath}\..\LICENSE
+LicenseFile={src}\..\LICENSE
 OutputBaseFilename=EasyKit-{#MyAppVersion}-{#MyArch}
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile={#MySourcePath}\..\images\icon.ico
+SetupIconFile={src}\..\images\icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -51,8 +45,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 
 [Files]
-Source: "{#MyRegFile}"; DestDir: "{tmp}"; Flags: deleteafterinstall
-Source: "{#MyPublishFolder}*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{src}\ContextMenu-win-{#MyArch}.reg"; DestDir: "{tmp}"; Flags: deleteafterinstall
+Source: "{src}\..\publish\win-{#MyArch}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -60,4 +54,4 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 
 [Run]
-Filename: "regedit.exe"; Parameters: "/s ""{tmp}\{#MyRegFileName}"""; StatusMsg: "Adding context menu..."; Flags: runhidden
+Filename: "regedit.exe"; Parameters: "/s ""{tmp}\ContextMenu-win-{#MyArch}.reg"""; StatusMsg: "Adding context menu..."; Flags: runhidden

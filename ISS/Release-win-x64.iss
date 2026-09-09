@@ -10,12 +10,5 @@
 ; x64 Release Inno Setup Script
 #define MyArch "x64"
 #define MyDefaultDir "{commonpf64}\EasyKit"
-#define MyRegFile "{#MySourcePath}\ContextMenu-win-x64.reg"
-#define MyRegFileName "ContextMenu-win-x64.reg"
-#define MyPublishFolder "{#MySourcePath}\..\publish\win-x64\"
 
-#ifdef MySourcePath
-  #include "Common.iss"
-#else
-  #error "MySourcePath must be defined"
-#endif
+#include "Common.iss"
