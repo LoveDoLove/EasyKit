@@ -251,6 +251,14 @@ jobs:
             Pop-Location
           }
 
+      - name: Compute app version
+        id: app_version
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $appVersion = $version.TrimStart('v')
+          Write-Output "app_version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Output "Computed app version: $appVersion"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
@@ -259,7 +267,7 @@ jobs:
           prerelease: ${{ github.event.inputs.release_type == 'prerelease' }}
           generate_release_notes: true
           files: |
-            EasyKit-${{ steps.version.outputs.version }}-x64.exe
-            EasyKit-${{ steps.version.outputs.version }}-x86.exe
+            EasyKit-${{ steps.app_version.outputs.app_version }}-x64.exe
+            EasyKit-${{ steps.app_version.outputs.app_version }}-x86.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
