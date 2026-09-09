@@ -200,7 +200,7 @@ jobs:
           $mySourcePath = Join-Path $env:GITHUB_WORKSPACE "ISS"
           $version = "${{ steps.version.outputs.version }}"
           Write-Output "Compiling x64 installer with MySourcePath=$mySourcePath, MyAppVersion=$version"
-          & $iscc "/DMySourcePath=$mySourcePath" "/DMyAppVersion=$version" "ISS/Release-win-x64.iss"
+          & $iscc /DMySourcePath=$mySourcePath /DMyAppVersion=$version "ISS/Release-win-x64.iss"
           if ($LASTEXITCODE -ne 0) {
             throw "x64 installer compilation failed"
           }
@@ -211,7 +211,7 @@ jobs:
           $mySourcePath = Join-Path $env:GITHUB_WORKSPACE "ISS"
           $version = "${{ steps.version.outputs.version }}"
           Write-Output "Compiling x86 installer with MySourcePath=$mySourcePath, MyAppVersion=$version"
-          & $iscc "/DMySourcePath=$mySourcePath" "/DMyAppVersion=$version" "ISS/Release-win-x86.iss"
+          & $iscc /DMySourcePath=$mySourcePath /DMyAppVersion=$version "ISS/Release-win-x86.iss"
           if ($LASTEXITCODE -ne 0) {
             throw "x86 installer compilation failed"
           }
