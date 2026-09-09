@@ -34,6 +34,7 @@ public class LaravelController
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly CmdService _processService;
+    private readonly SecureProcessRunner _processRunner;
     private readonly PromptView _prompt;
     private readonly Software _software;
 
@@ -50,6 +51,18 @@ public class LaravelController
         _prompt = prompt;
         _notificationView = notificationView;
         _processService = new CmdService();
+        _processRunner = new SecureProcessRunner();
+    }
+
+    private (string output, string error, int exitCode) RunArtisanCommand(IEnumerable<string> arguments, string? workingDirectory = null)
+    {
+        return _processRunner.RunProcess("php", ["artisan", ..arguments], workingDirectory ?? Environment.CurrentDirectory);
+    }
+
+    private int RunArtisanCommandStreaming(IEnumerable<string> arguments, string? workingDirectory = null,
+        Action<string>? onOutput = null, Action<string>? onError = null)
+    {
+        return _processRunner.RunProcessStreaming("php", ["artisan", ..arguments], workingDirectory ?? Environment.CurrentDirectory, onOutput, onError);
     }
 
     public void RunPhpDiagnostics()
@@ -127,18 +140,17 @@ public class LaravelController
         }
     }
 
-    private bool RunArtisanCommand(string args, bool showOutput = true)
+    private bool RunArtisanCommandSafe(string command, bool showOutput = true)
     {
+        var args = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (showOutput)
         {
-            int exitCode =
-                _processService.RunProcessWithStreaming("php", $"artisan {args}", Environment.CurrentDirectory);
+            int exitCode = RunArtisanCommandStreaming(args);
             return exitCode == 0;
         }
         else
         {
-            var (output, error, exitCode) =
-                _processService.RunProcess("php", $"artisan {args}", Environment.CurrentDirectory);
+            var (output, error, exitCode) = RunArtisanCommand(args);
             return exitCode == 0;
         }
     }
@@ -211,12 +223,12 @@ public class LaravelController
         _processService.RunProcessInNewCmdWindow("composer", "install", Environment.CurrentDirectory);
         _console.WriteSuccess("✓ Installed Composer dependencies (see new window for details)");
 
-        if (RunArtisanCommand("key:generate"))
+        if (RunArtisanCommandSafe("key:generate"))
             _console.WriteSuccess("✓ Generated application key");
         else
             _console.WriteError("✗ Failed to generate key");
-        RunArtisanCommand("config:clear");
-        RunArtisanCommand("cache:clear");
+        RunArtisanCommandSafe("config:clear");
+        RunArtisanCommandSafe("cache:clear");
         _console.WriteSuccess("✓ Cleared configuration and cache");
         _console.WriteSuccess("\nSetup completed successfully!");
         Console.ReadLine();
@@ -295,7 +307,7 @@ public class LaravelController
         {
             _console.WriteInfo(msg);
             if (cmd.StartsWith("artisan "))
-                RunArtisanCommand(cmd.Substring(8));
+                RunArtisanCommandSafe(cmd.Substring(8));
             else
                 _processService.RunProcessInNewCmdWindow("composer", cmd, Environment.CurrentDirectory);
         }
@@ -330,7 +342,7 @@ public class LaravelController
     private void CreateStorageLink()
     {
         _console.WriteInfo("Creating storage symbolic link...");
-        if (RunArtisanCommand("storage:link"))
+        if (RunArtisanCommandSafe("storage:link"))
             _console.WriteSuccess("✓ Storage link created!");
         else
             _console.WriteError("✗ Failed to create storage link.");
@@ -342,7 +354,7 @@ public class LaravelController
         if (_confirmation.ConfirmAction("This will refresh your database. Are you sure?", false))
         {
             _console.WriteInfo("Running database seeding...");
-            if (RunArtisanCommand("migrate:fresh --seed"))
+            if (RunArtisanCommandSafe("migrate:fresh --seed"))
                 _console.WriteSuccess("✓ Database seeded successfully!");
             else
                 _console.WriteError("✗ Failed to seed database.");
@@ -359,19 +371,19 @@ public class LaravelController
     {
         _console.WriteInfo("Testing database connection...");
         // Try db:show first (Laravel 9+)
-        bool success = RunArtisanCommand("db:show", false);
+        bool success = RunArtisanCommandSafe("db:show", showOutput: false);
 
         // If db:show fails, fall back to older methods
         if (!success)
         {
             // For older Laravel versions
-            success = RunArtisanCommand("db:monitor", false);
+            success = RunArtisanCommandSafe("db:monitor", showOutput: false);
 
             // Last resort - simple connection test
             if (!success)
             {
                 _console.WriteInfo("Trying alternative connection test...");
-                success = RunArtisanCommand("migrate:status");
+                success = RunArtisanCommandSafe("migrate:status");
             }
         }
 
@@ -407,15 +419,15 @@ public class LaravelController
         }
 
         _console.WriteInfo("\nCache Status:");
-        bool cacheStatusSuccess = RunArtisanCommand("cache:status");
+        bool cacheStatusSuccess = RunArtisanCommandSafe("cache:status");
         if (!cacheStatusSuccess)
         {
             _console.WriteInfo("Available cache commands:");
-            RunArtisanCommand("list cache");
+            RunArtisanCommandSafe("list cache");
         }
 
         _console.WriteInfo("\nRoute List:");
-        bool routeListSuccess = RunArtisanCommand("route:list");
+        bool routeListSuccess = RunArtisanCommandSafe("route:list");
         if (!routeListSuccess) _console.WriteInfo("Please use \"php artisan route:list\" without unsupported options.");
         Console.ReadLine();
     }
@@ -434,7 +446,7 @@ public class LaravelController
                 "optimize:clear"
             };
             foreach (var cmd in commands)
-                RunArtisanCommand(cmd, false);
+                RunArtisanCommandSafe(cmd, showOutput: false);
             _console.WriteSuccess("✓ All cache cleared successfully!");
         }
         else
@@ -450,13 +462,13 @@ public class LaravelController
         _console.WriteInfo("Retrieving route list...");
 
         // Try with pagination first for better readability
-        bool success = RunArtisanCommand("route:list");
+        bool success = RunArtisanCommandSafe("route:list");
 
         if (!success)
         {
             // If that fails, try without any options
             _console.WriteInfo("Trying alternative route listing...");
-            RunArtisanCommand("route:list");
+            RunArtisanCommandSafe("route:list");
         }
 
         Console.ReadLine();

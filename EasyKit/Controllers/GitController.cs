@@ -35,6 +35,7 @@ public class GitController
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly CmdService _processService;
+    private readonly SecureProcessRunner _processRunner;
     private readonly PromptView _prompt;
     private readonly Software _software;
 
@@ -51,6 +52,24 @@ public class GitController
         _prompt = prompt;
         _notificationView = notificationView;
         _processService = new CmdService();
+        _processRunner = new SecureProcessRunner();
+    }
+
+    /// <summary>
+    ///     Safely runs a git command with proper argument handling.
+    /// </summary>
+    private (string output, string error, int exitCode) RunGitCommand(IEnumerable<string> arguments, string? workingDirectory = null)
+    {
+        return _processRunner.RunProcess("git", arguments, workingDirectory ?? Environment.CurrentDirectory);
+    }
+
+    /// <summary>
+    ///     Safely runs a git command with streaming output.
+    /// </summary>
+    private int RunGitCommandStreaming(IEnumerable<string> arguments, string? workingDirectory = null,
+        Action<string>? onOutput = null, Action<string>? onError = null)
+    {
+        return _processRunner.RunProcessStreaming("git", arguments, workingDirectory ?? Environment.CurrentDirectory, onOutput, onError);
     }
 
     /// <summary>
@@ -304,7 +323,7 @@ public class GitController
         }
 
         _console.WriteInfo("Committing changes...");
-        _processService.RunProcess("git", $"commit -m \"{message}\"", Environment.CurrentDirectory);
+        RunGitCommand(["commit", "-m", message]);
         _console.WriteSuccess("✓ Changes committed successfully!");
         WaitForUser();
     }
@@ -316,7 +335,7 @@ public class GitController
             remoteBranch = "origin main";
 
         _console.WriteInfo($"Pushing to {remoteBranch}...");
-        _processService.RunProcessWithStreaming("git", $"push {remoteBranch}", Environment.CurrentDirectory);
+        RunGitCommandStreaming(["push", remoteBranch]);
         _console.WriteSuccess("✓ Push completed!");
         WaitForUser();
     }
@@ -328,7 +347,7 @@ public class GitController
             remoteBranch = "origin main";
 
         _console.WriteInfo($"Pulling from {remoteBranch}...");
-        _processService.RunProcessWithStreaming("git", $"pull {remoteBranch}", Environment.CurrentDirectory);
+        RunGitCommandStreaming(["pull", remoteBranch]);
         _console.WriteSuccess("✓ Pull completed!");
         WaitForUser();
     }
@@ -365,7 +384,7 @@ public class GitController
         }
 
         _console.WriteInfo($"Creating branch '{branchName}'...");
-        _processService.RunProcess("git", $"checkout -b {branchName}", Environment.CurrentDirectory);
+        RunGitCommand(["checkout", "-b", branchName]);
         _console.WriteSuccess($"✓ Branch '{branchName}' created and checked out successfully!");
         WaitForUser();
     }
@@ -417,7 +436,7 @@ public class GitController
         }
 
         _console.WriteInfo($"Switching to branch '{branchName}'...");
-        _processService.RunProcess("git", $"checkout {branchName}", Environment.CurrentDirectory);
+        RunGitCommand(["checkout", branchName]);
         _console.WriteSuccess($"✓ Switched to branch '{branchName}' successfully!");
         WaitForUser();
     }
@@ -494,7 +513,7 @@ public class GitController
         }
 
         _console.WriteInfo($"Merging branch '{branchName}' into current branch '{currentBranch}'...");
-        _processService.RunProcessWithStreaming("git", $"merge {branchName}", Environment.CurrentDirectory);
+        RunGitCommandStreaming(["merge", branchName]);
         _console.WriteSuccess($"✓ Branch '{branchName}' merged into '{currentBranch}'!");
         WaitForUser();
     }
@@ -502,9 +521,11 @@ public class GitController
     private void StashChanges()
     {
         var message = _prompt.Prompt("Enter stash message (optional): ") ?? "";
-        var command = string.IsNullOrWhiteSpace(message) ? "stash" : $"stash push -m \"{message}\"";
         _console.WriteInfo("Stashing changes...");
-        _processService.RunProcess("git", command, Environment.CurrentDirectory);
+        if (string.IsNullOrWhiteSpace(message))
+            RunGitCommand(["stash"]);
+        else
+            RunGitCommand(["stash", "push", "-m", message]);
         _console.WriteSuccess("✓ Changes stashed successfully!");
         WaitForUser();
     }
@@ -512,11 +533,13 @@ public class GitController
     private void ApplyStash()
     {
         _console.WriteInfo("Available stashes:");
-        _processService.RunProcess("git", "stash list", Environment.CurrentDirectory);
+        RunGitCommand(["stash", "list"]);
         var stashId = _prompt.Prompt("Enter stash to apply (e.g. 'stash@{0}', leave empty for latest): ") ?? "";
-        var command = string.IsNullOrWhiteSpace(stashId) ? "stash apply" : $"stash apply {stashId}";
         _console.WriteInfo("Applying stash...");
-        _processService.RunProcess("git", command, Environment.CurrentDirectory);
+        if (string.IsNullOrWhiteSpace(stashId))
+            RunGitCommand(["stash", "apply"]);
+        else
+            RunGitCommand(["stash", "apply", stashId]);
         _console.WriteSuccess("✓ Stash applied successfully!");
         WaitForUser();
     }
@@ -674,11 +697,15 @@ public class GitController
         _console.WriteInfo($"Adding submodule from '{url}' to '{path}'...");
 
         // Run the git submodule add command and stream output for user feedback
-        string addCommand = url.StartsWith("--force") ? $"submodule add {url} {path}" : $"submodule add {url} {path}";
-        _processService.RunProcessWithStreaming("git", addCommand, Environment.CurrentDirectory);
+        var submoduleArgs = new List<string> { "submodule", "add" };
+        if (url.StartsWith("--force"))
+            submoduleArgs.Add("--force");
+        submoduleArgs.Add(url);
+        submoduleArgs.Add(path);
+        RunGitCommandStreaming(submoduleArgs);
         _console.WriteSuccess("✓ Submodule add command executed. Check above for any errors or output.");
         _console.WriteInfo("\nSubmodule Information:");
-        _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
+        RunGitCommand(["submodule", "status"]);
         _console.WriteInfo("\nYou can update this submodule later using 'Update submodule' option.");
         WaitForUser();
     }
@@ -967,13 +994,14 @@ public class GitController
         // Step 6: Remove submodule entry from .gitmodules
         if (File.Exists(".gitmodules"))
         {
-            var (rmModOut, rmModErr, rmModExit) = _processService.RunProcess(
-                "git", $"config --file=.gitmodules --remove-section submodule.{match.Replace('/', '.')} ",
-                Environment.CurrentDirectory);
+            var sectionName = $"submodule.{match.Replace('/', '.')}" ;
+            var (rmModOut, rmModErr, rmModExit) = RunGitCommand([
+                "config", "--file=.gitmodules", "--remove-section", sectionName
+            ]);
             if (rmModExit == 0)
             {
                 _console.WriteSuccess("✓ Removed submodule entry from .gitmodules.");
-                _processService.RunProcess("git", "add .gitmodules", Environment.CurrentDirectory);
+                RunGitCommand(["add", ".gitmodules"]);
             }
             else
             {
@@ -983,8 +1011,10 @@ public class GitController
         }
 
         // Step 7: Remove submodule entry from .git/config
-        var (rmCfgOut, rmCfgErr, rmCfgExit) = _processService.RunProcess(
-            "git", $"config --remove-section submodule.{match.Replace('/', '.')} ", Environment.CurrentDirectory);
+        var sectionName2 = $"submodule.{match.Replace('/', '.')}" ;
+        var (rmCfgOut, rmCfgErr, rmCfgExit) = RunGitCommand([
+            "config", "--remove-section", sectionName2
+        ]);
         if (rmCfgExit == 0)
             _console.WriteSuccess("✓ Removed submodule entry from .git/config.");
         else
@@ -992,8 +1022,7 @@ public class GitController
                 "[Warning] Could not automatically remove entry from .git/config. You may need to edit it manually.");
 
         // Step 8: Remove from index (but keep files for now)
-        var (rmIdxOut, rmIdxErr, rmIdxExit) = _processService.RunProcess(
-            "git", $"rm --cached {match}", Environment.CurrentDirectory);
+        var (rmIdxOut, rmIdxErr, rmIdxExit) = RunGitCommand(["rm", "--cached", match]);
         if (rmIdxExit == 0)
             _console.WriteSuccess("✓ Removed submodule from index.");
         else
@@ -1044,8 +1073,7 @@ public class GitController
             }
 
         // Step 11: Commit changes
-        var (commitOut, commitErr, commitExit) = _processService.RunProcess(
-            "git", $"commit -am \"Remove submodule {match}\"", Environment.CurrentDirectory);
+        var (commitOut, commitErr, commitExit) = RunGitCommand(["commit", "-am", $"Remove submodule {match}"]);
         if (commitExit == 0)
             _console.WriteSuccess("✓ Changes committed successfully.");
         else
@@ -1056,7 +1084,7 @@ public class GitController
         {
             _console.WriteSuccess($"✓ Submodule '{match}' removed successfully!");
             _console.WriteInfo("\nCurrent submodule status:");
-            _processService.RunProcess("git", "submodule status", Environment.CurrentDirectory);
+            RunGitCommand(["submodule", "status"]);
         }
         else
         {

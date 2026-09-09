@@ -36,6 +36,7 @@ public class ComposerController
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly CmdService _processService;
+    private readonly SecureProcessRunner _processRunner;
     private readonly PromptView _prompt;
     private readonly Software _software;
 
@@ -52,6 +53,24 @@ public class ComposerController
         _prompt = prompt;
         _notificationView = notificationView;
         _processService = new CmdService();
+        _processRunner = new SecureProcessRunner();
+    }
+
+    /// <summary>
+    ///     Safely runs a composer command with proper argument handling.
+    /// </summary>
+    private (string output, string error, int exitCode) RunComposerCommand(IEnumerable<string> arguments, string? workingDirectory = null)
+    {
+        return _processRunner.RunProcess("composer", arguments, workingDirectory ?? Environment.CurrentDirectory);
+    }
+
+    /// <summary>
+    ///     Safely runs a composer command with streaming output.
+    /// </summary>
+    private int RunComposerCommandStreaming(IEnumerable<string> arguments, string? workingDirectory = null,
+        Action<string>? onOutput = null, Action<string>? onError = null)
+    {
+        return _processRunner.RunProcessStreaming("composer", arguments, workingDirectory ?? Environment.CurrentDirectory, onOutput, onError);
     }
 
     public void ShowMenu()
@@ -89,7 +108,7 @@ public class ComposerController
     private void InstallPackages()
     {
         _console.WriteInfo("Installing Composer packages...");
-        _processService.RunProcessInNewCmdWindow("composer", "install", Environment.CurrentDirectory);
+        _processRunner.RunProcessInNewWindow("composer", ["install"]);
         _console.WriteSuccess("✓ Composer install launched in new window!");
         Console.ReadLine();
     }
@@ -97,7 +116,7 @@ public class ComposerController
     private void UpdatePackages()
     {
         _console.WriteInfo("Updating Composer packages...");
-        _processService.RunProcessInNewCmdWindow("composer", "update", Environment.CurrentDirectory);
+        _processRunner.RunProcessInNewWindow("composer", ["update"]);
         _console.WriteSuccess("✓ Composer update launched in new window!");
         Console.ReadLine();
     }
@@ -105,10 +124,27 @@ public class ComposerController
     private void RequirePackage()
     {
         var package = _prompt.Prompt("Enter package name (e.g. 'vendor/package'): ");
+        if (string.IsNullOrWhiteSpace(package))
+        {
+            _console.WriteError("Package name cannot be empty.");
+            Console.ReadLine();
+            return;
+        }
+
+        // Validate package name - only allow alphanumeric, slashes, hyphens, underscores
+        if (!System.Text.RegularExpressions.Regex.IsMatch(package, @"^[a-zA-Z0-9/_\-]+$"))
+        {
+            _console.WriteError("Invalid package name. Only alphanumeric characters, slashes, hyphens, and underscores are allowed.");
+            Console.ReadLine();
+            return;
+        }
+
         var dev = _confirmation.ConfirmAction("Is this a development dependency?", false);
-        var args = dev ? $"require --dev {package}" : $"require {package}";
         _console.WriteInfo($"Installing {package}...");
-        _processService.RunProcessInNewCmdWindow("composer", args, Environment.CurrentDirectory);
+        if (dev)
+            _processRunner.RunProcessInNewWindow("composer", ["require", "--dev", package]);
+        else
+            _processRunner.RunProcessInNewWindow("composer", ["require", package]);
         _console.WriteSuccess("✓ Composer require launched in new window!");
         Console.ReadLine();
     }
@@ -116,10 +152,38 @@ public class ComposerController
     private void CreateProject()
     {
         var package = _prompt.Prompt("Enter project package (e.g. 'laravel/laravel'): ");
+        if (string.IsNullOrWhiteSpace(package))
+        {
+            _console.WriteError("Package name cannot be empty.");
+            Console.ReadLine();
+            return;
+        }
+
         var directory = _prompt.Prompt("Enter project directory name: ");
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            _console.WriteError("Directory name cannot be empty.");
+            Console.ReadLine();
+            return;
+        }
+
+        // Validate package and directory names
+        if (!System.Text.RegularExpressions.Regex.IsMatch(package, @"^[a-zA-Z0-9/_\-]+$"))
+        {
+            _console.WriteError("Invalid package name. Only alphanumeric characters, slashes, hyphens, and underscores are allowed.");
+            Console.ReadLine();
+            return;
+        }
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(directory, @"^[a-zA-Z0-9/_\-]+$"))
+        {
+            _console.WriteError("Invalid directory name. Only alphanumeric characters, slashes, hyphens, and underscores are allowed.");
+            Console.ReadLine();
+            return;
+        }
+
         _console.WriteInfo($"Creating new project from {package}...");
-        _processService.RunProcessInNewCmdWindow("composer", $"create-project {package} {directory}",
-            Environment.CurrentDirectory);
+        _processRunner.RunProcessInNewWindow("composer", ["create-project", package, directory]);
         _console.WriteSuccess("✓ Composer create-project launched in new window!");
         Console.ReadLine();
     }
@@ -127,7 +191,7 @@ public class ComposerController
     private void RegenerateAutoload()
     {
         _console.WriteInfo("Regenerating autoload files...");
-        _processService.RunProcessWithStreaming("composer", "dump-autoload", Environment.CurrentDirectory);
+        RunComposerCommandStreaming(["dump-autoload"]);
         _console.WriteSuccess("✓ Autoload files regenerated!");
         Console.ReadLine();
     }
@@ -142,7 +206,7 @@ public class ComposerController
         }
 
         _console.WriteInfo("Validating composer.json...");
-        _processService.RunProcess("composer", "validate", Environment.CurrentDirectory);
+        RunComposerCommand(["validate"]);
         _console.WriteSuccess("✓ composer.json is valid!");
         Console.ReadLine();
     }
@@ -152,7 +216,7 @@ public class ComposerController
         if (_confirmation.ConfirmAction("Are you sure you want to clear Composer cache?", false))
         {
             _console.WriteInfo("Clearing Composer cache...");
-            _processService.RunProcessWithStreaming("composer", "clear-cache", Environment.CurrentDirectory);
+            RunComposerCommandStreaming(["clear-cache"]);
             _console.WriteSuccess("✓ Cache cleared successfully!");
         }
         else
@@ -193,7 +257,7 @@ public class ComposerController
         sb.AppendLine("===== COMPOSER Configuration Diagnostics =====\n");
         // Step 1: Check if Composer is accessible
         sb.AppendLine("Step 1: Checking if Composer is accessible in PATH");
-        var process = _processService.RunProcess("composer", "--version", Environment.CurrentDirectory);
+        var process = RunComposerCommand(["--version"]);
         if (process.exitCode == 0 && !string.IsNullOrWhiteSpace(process.output))
         {
             sb.AppendLine($"[OK] Composer is accessible. Version: {process.output.Trim()}");
@@ -212,7 +276,7 @@ public class ComposerController
 
         // Step 2: Check PHP version (optional, minimal)
         sb.AppendLine("\nStep 2: Checking PHP version");
-        var phpProcess = _processService.RunProcess("php", "--version", Environment.CurrentDirectory);
+        var phpProcess = _processRunner.RunProcess("php", ["--version"], Environment.CurrentDirectory);
         if (phpProcess.exitCode == 0 && !string.IsNullOrWhiteSpace(phpProcess.output))
             sb.AppendLine($"[OK] PHP is accessible. Version: {phpProcess.output.Split('\n')[0].Trim()}");
         else
@@ -221,8 +285,7 @@ public class ComposerController
         sb.AppendLine("\nStep 3: Validating composer.json");
         if (File.Exists("composer.json"))
         {
-            var valProcess =
-                _processService.RunProcess("composer", "validate --no-check-publish", Environment.CurrentDirectory);
+            var valProcess = RunComposerCommand(["validate", "--no-check-publish"]);
             sb.AppendLine($"composer.json Validity: {(valProcess.exitCode == 0 ? "Valid" : "Invalid")}");
             if (valProcess.exitCode != 0) sb.AppendLine($"Validation Error: {valProcess.error}");
         }

@@ -38,6 +38,7 @@ public class NpmController
     private readonly ConsoleService _console;
     private readonly NotificationView _notificationView;
     private readonly CmdService _processService;
+    private readonly SecureProcessRunner _processRunner;
     private readonly PromptView _prompt;
     private readonly Software _software;
 
@@ -54,6 +55,24 @@ public class NpmController
         _prompt = prompt;
         _notificationView = notificationView;
         _processService = new CmdService();
+        _processRunner = new SecureProcessRunner();
+    }
+
+    /// <summary>
+    ///     Safely runs an npm command with proper argument handling.
+    /// </summary>
+    private (string output, string error, int exitCode) RunNpmCommand(IEnumerable<string> arguments, string? workingDirectory = null)
+    {
+        return _processRunner.RunProcess(NPM, arguments, workingDirectory ?? Environment.CurrentDirectory);
+    }
+
+    /// <summary>
+    ///     Safely runs an npm command with streaming output.
+    /// </summary>
+    private int RunNpmCommandStreaming(IEnumerable<string> arguments, string? workingDirectory = null,
+        Action<string>? onOutput = null, Action<string>? onError = null)
+    {
+        return _processRunner.RunProcessStreaming(NPM, arguments, workingDirectory ?? Environment.CurrentDirectory, onOutput, onError);
     }
 
     public void ShowMenu()
@@ -117,7 +136,7 @@ public class NpmController
     private bool EnsureNpmInstalled()
     {
         // Use streaming for version check (quick, but user sees output)
-        _processService.RunProcessWithStreaming(NPM, "--version", Environment.CurrentDirectory);
+        RunNpmCommandStreaming(["--version"]);
         return true; // Assume success for MVP
     }
 
@@ -126,7 +145,7 @@ public class NpmController
         _console.WriteInfo("Installing npm packages...");
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcessInNewCmdWindow(NPM, "install", Environment.CurrentDirectory);
+            _processRunner.RunProcessInNewWindow(NPM, ["install"]);
             _console.WriteInfo("Started 'npm install' in a new command window.");
         }
 
@@ -142,11 +161,11 @@ public class NpmController
             return;
         }
 
-        _processService.RunProcessInNewCmdWindow(NCU, "--version", Environment.CurrentDirectory);
+        _processRunner.RunProcessInNewWindow(NCU, ["--version"]);
         _console.WriteInfo("Started 'ncu --version' in a new command window.");
-        _processService.RunProcessInNewCmdWindow(NPM, "install -g npm-check-updates", Environment.CurrentDirectory);
+        _processRunner.RunProcessInNewWindow(NPM, ["install", "-g", "npm-check-updates"]);
         _console.WriteInfo("Started 'npm install -g npm-check-updates' in a new command window.");
-        _processService.RunProcessInNewCmdWindow(NCU, "-i", Environment.CurrentDirectory);
+        _processRunner.RunProcessInNewWindow(NCU, ["-i"]);
         _console.WriteInfo("Started 'ncu -i' in a new command window.");
         Console.ReadLine();
     }
@@ -155,7 +174,7 @@ public class NpmController
     {
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcessInNewCmdWindow(NPM, "run build", Environment.CurrentDirectory);
+            _processRunner.RunProcessInNewWindow(NPM, ["run", "build"]);
             _console.WriteInfo("Started 'npm run build' in a new command window.");
         }
 
@@ -166,7 +185,7 @@ public class NpmController
     {
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcessInNewCmdWindow(NPM, "run dev", Environment.CurrentDirectory);
+            _processRunner.RunProcessInNewWindow(NPM, ["run", "dev"]);
             _console.WriteInfo("Started 'npm run dev' in a new command window.");
         }
 
@@ -177,7 +196,7 @@ public class NpmController
     {
         if (EnsureNpmInstalled())
         {
-            _processService.RunProcessWithStreaming(NPM, "audit", Environment.CurrentDirectory);
+            RunNpmCommandStreaming(["audit"]);
             _console.WriteInfo("Ran 'npm audit' with streaming output.");
         }
 
@@ -200,7 +219,22 @@ public class NpmController
         }
 
         var script = _prompt.Prompt("Enter npm script name (e.g. 'start'): ");
-        _processService.RunProcessInNewCmdWindow(NPM, $"run {script}", Environment.CurrentDirectory);
+        if (string.IsNullOrWhiteSpace(script))
+        {
+            _console.WriteError("Script name cannot be empty.");
+            Console.ReadLine();
+            return;
+        }
+
+        // Validate script name - only allow alphanumeric, hyphens, underscores, colons
+        if (!System.Text.RegularExpressions.Regex.IsMatch(script, @"^[a-zA-Z0-9_\-:]+$"))
+        {
+            _console.WriteError("Invalid script name. Only alphanumeric characters, hyphens, underscores, and colons are allowed.");
+            Console.ReadLine();
+            return;
+        }
+
+        _processRunner.RunProcessInNewWindow(NPM, ["run", script]);
         _console.WriteInfo($"Started 'npm run {script}' in a new command window.");
         Console.ReadLine();
     }
@@ -230,11 +264,11 @@ public class NpmController
 
     private void ResetCache()
     {
-        if (_prompt.ConfirmYesNo("Are you sure you want to reset the npm cache?", false))
+        if (_confirmationHelper.ConfirmAction("Are you sure you want to reset the npm cache?", false))
         {
             if (EnsureNpmInstalled())
             {
-                _processService.RunProcessWithStreaming(NPM, "cache clean --force", Environment.CurrentDirectory);
+                RunNpmCommandStreaming(["cache", "clean", "--force"]);
                 _console.WriteInfo("Ran 'npm cache clean --force' with streaming output.");
             }
             else
