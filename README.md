@@ -16,7 +16,7 @@
   <img src="images/icon.jpg" alt="EasyKit Logo" width="80" height="80">
   <h3 align="center">EasyKit</h3>
   <p align="center">
-    A .NET-powered toolkit for web developers providing a unified console UI for Git, NPM, Composer, and Laravel tools
+    A .NET-powered toolkit for web developers providing a unified console UI for Git, NPM, Composer, Laravel, and Python tools
     <br />
     <a href="https://github.com/LoveDoLove/EasyKit"><strong>Explore the docs »</strong></a>
     <br />
@@ -57,7 +57,7 @@
 
 ## About The Project
 
-EasyKit is a comprehensive Windows toolkit designed specifically for web developers. It provides a unified console interface that integrates multiple development tools including Git, NPM, Composer, and Laravel Artisan, making it easier to manage web development workflows on Windows systems.
+EasyKit is a comprehensive Windows toolkit designed specifically for web developers. It provides a unified console interface that integrates multiple development tools including Git, NPM, Composer, Laravel Artisan, and uv (Python), making it easier to manage web development workflows on Windows systems.
 
 Key features include:
 
@@ -65,17 +65,18 @@ Key features include:
 - **Git Integration**: Complete Git workflow management with secure command execution
 - **NPM Support**: Node.js package management
 - **pnpm Support**: First-class pnpm support with workspace/monorepo detection
-- **uv Support**: Python package/project/tool management (new!)
+- **uv Support**: Python package/project/tool management
 - **Composer Integration**: PHP dependency management
 - **Laravel Tools**: Artisan command execution
 - **Tool Marketplace**: Detect and install missing development tools
-- **EasyKit Doctor**: Comprehensive environment diagnostics (new!)
+- **EasyKit Doctor**: Comprehensive environment diagnostics
 - **Project Detection**: Automatic detection of project types (Git, Node.js, pnpm, Python, uv, PHP, .NET, Docker)
 - **Windows Optimized**: Designed specifically for Windows 10/11
 - **Modern .NET**: Built with .NET 8.0 for performance and reliability
 - **Security**: Secure process execution with shell injection prevention
 - **Context Menu Support**: Quick access from Windows Explorer
 - **Colorized Output**: Enhanced console experience with notifications
+- **Comprehensive Testing**: 48+ unit tests covering security and functionality
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -99,7 +100,7 @@ EasyKit is designed to run on Windows systems and provides an easy way to get st
 Before running EasyKit, ensure you have the following installed:
 
 - **Windows 10 or 11**
-- **.NET 8.0 SDK** - Download from [Microsoft .NET](https://dotnet.microsoft.com/download/dotnet/8.0)
+- **.NET 8.0 Runtime** - Download from [Microsoft .NET](https://dotnet.microsoft.com/download/dotnet/8.0)
 - **Optional Development Tools**:
   - Git (for Git operations)
   - Node.js and NPM (for JavaScript/TypeScript projects)
@@ -133,6 +134,7 @@ After installation, simply run EasyKit from your Start menu or by executing the 
 
 | Key | Feature | Description |
 |-----|---------|-------------|
+| 0 | Exit | Exit application |
 | 1 | Git Tools | Complete Git workflow management |
 | 2 | NPM Tools | Node.js package management |
 | 3 | pnpm Tools | pnpm package management with workspace support |
@@ -176,12 +178,14 @@ EasyKit has evolved significantly since its inception:
 
 ### Recent Additions (v4.2.3)
 
+- ✅ GitHub Actions CI/CD workflow for automated releases
+- ✅ Inno Setup installer packaging (x64/x86)
 - ✅ pnpm first-class support with workspace detection
 - ✅ uv Python package manager support
 - ✅ EasyKit Doctor diagnostic tool
 - ✅ Automatic project type detection
 - ✅ Secure process execution (shell injection prevention)
-- ✅ Comprehensive unit tests
+- ✅ Comprehensive unit tests (48+ tests)
 
 ### Future Plans
 
@@ -189,7 +193,7 @@ EasyKit has evolved significantly since its inception:
 - [ ] Add more Git features
 - [ ] Add Docker support
 - [ ] Add integration tests
-- [ ] Add CI/CD pipeline
+- [ ] Cross-platform support
 
 See the [open issues](https://github.com/LoveDoLove/EasyKit/issues) for a full list of proposed features and known issues.
 
